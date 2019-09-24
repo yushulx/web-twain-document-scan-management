@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamsoft Document Management</title>
+    <script type="text/javascript" src="https://unpkg.com/dwt/dist/dynamsoft.webtwain.min.js"> </script>
+    <style>
+        h1 {
+            font-size: 2em;
+            font-weight: bold;
+            color: #777777;
+            text-align: center
+        }
+
+        table {
+            margin: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <table>
+        <tr>
+            <td>
+                <input id='tag'>
+                <input type="button" value="Add Tag" onclick="addTag()" />
+                <select id="taglist" onchange="onTagChange()">
+                    <option value="default">All</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div id="dwtcontrolContainer"></div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <select id="source"></select>
+                <input type="button" value="Scan Image" onclick="scanImage()" />
+                <input id="btnUpload" type="button" value="Upload Image" onclick="uploadImage()">
+                <select id="view" onchange="onViewChange()">
+                        <option value="6">6x6</option>
+                    <option value="5">5x5</option>
+                    <option value="4">4x4</option>
+                    <option value="3">3x3</option>
+                    <option value="2">2x2</option>
+                    <option value="1">1x1</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+
+    <script type="text/javascript">
+        var DWObject;
+        var global_option_values = {};
+        window.onload = function () {
+            if (Dynamsoft) {
+                // Get a valid trial license from https://www.dynamsoft.com/CustomerPortal/Portal/Triallicense.aspx
+                Dynamsoft.WebTwainEnv.ProductKey = 't0126vQIAAGQTYLHjoyjiQ1AsFej37+JgaOeak1T7qjI1MfE2+F9KMLLf9buTDIQAxXItiLN1l7Uj0UZ+bb3OWW78Nci9DawpTRySA2ZkjhhGe7tyM+nDFHndJZ05weNCttEBk2xDM4+id3uEnfk2OmCSbWjm+c8csoin5B18WYul';
+                Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', onDWTReady);
+                Dynamsoft.WebTwainEnv.Load();
+            }
+
+        };
+
+        function onDWTReady() {
+            DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer');
+            if (DWObject) {
+                let view_select = document.getElementById('view');
+                DWObject.SetViewMode(view_select.value, view_select.value);
+                DWObject.SetDefaultTag('default');
+                DWObject.IfShowUI = false;
+                DWObject.Width = 480;
+                DWObject.Height = 640;
+                let count = DWObject.SourceCount;
+                let select = document.getElementById("source");
+
+                for (let i = 0; i < count; i++) {
+                    let source_name = DWObject.GetSourceNameItems(i);
+                    let option = document.createElement('option');
+                    option.value = i;
+                    option.text = source_name;
+                    select.appendChild(option);
+                }
+
+            }
+        }
+
+        function scanImage() {
+            if (!DWObject) return;
+
+            DWObject.IfDisableSourceAfterAcquire = true;
+            let bSelected = DWObject.SelectSource();
+
+            if (bSelected) {
+                let onSuccess, onFailure;
+                onSuccess = onFailure = function () {
+                    DWObject.CloseSource();
+                };
+
+                DWObject.OpenSource();
+                DWObject.AcquireImage(onSuccess, onFailure);
+            }
+        }
+
+        function addTag() {
+            let tag = document.getElementById('tag');
+            if (!tag.value || tag.value === '') return;
+
+            // Insert tag to tag list
+            let select = document.getElementById("taglist");
+
+            // Clear select options
+            // select.innerHTML = "";
+
+            if (!global_option_values[tag.value]) {
+                let option = document.createElement('option');
+                option.value = tag.value;
+                option.text = tag.value;
+                // select.appendChild(option);
+                // Add a new item to the head
+                select.insertBefore(option, select.childNodes[0]);
+                select.value = option.value;
+                global_option_values[tag.value] = tag.value;
+            }
+            else {
+                select.value = global_option_values[tag.value];
+            }
+
+
+            // Get selected images
+            let count = DWObject.SelectedImagesCount;
+            let indices = [];
+            for (let i = 0; i < count; ++i) {
+                indices.push(DWObject.GetSelectedImageIndex(i));
+            }
+
+            DWObject.TagImages(indices, tag.value);
+            DWObject.FilterImagesByTag(tag.value);
+        }
+
+        function onTagChange() {
+            let select = document.getElementById("taglist");
+            DWObject.FilterImagesByTag(select.value);
+        }
+
+        function uploadImage() {
+            if (!DWObject) return;
+
+            let onSuccess = function () { };
+            let onFailure = function (errorCode, errorString) { };
+
+            DWObject.IfShowFileDialog = true;
+            DWObject.LoadImageEx("", EnumDWT_ImageType.IT_ALL, onSuccess, onFailure);
+        }
+
+        function onViewChange() {
+            if (!DWObject) return;
+
+            let select = document.getElementById("view");
+            DWObject.SetViewMode(select.value, select.value);
+        }
+    </script>
+</body>
+
+</html>
