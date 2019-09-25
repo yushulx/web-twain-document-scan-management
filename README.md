@@ -14,3 +14,6 @@ Dynamsoft.WebTwainEnv.ProductKey = 'LICENSE-KEY';
 Open `index.html` in your web browser.
 
 ![web document management](https://www.codepool.biz/wp-content/uploads/2019/09/web-document-management.gif)
+
+## Blog
+[Web Document Management by Tagging Images](https://www.codepool.biz/web-document-management-tag-image.html)
