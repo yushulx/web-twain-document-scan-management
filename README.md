@@ -1,19 +1,62 @@
-# Web Document Management
+# Dynamic Web TWAIN Examples
+A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](https://www.dynamsoft.com/web-twain/overview/) for document scanning, uploading, editing, and more.
 
-Use [Dynamic Web TWAIN SDK](https://www.dynamsoft.com/Products/WebTWAIN_Overview.aspx) to create a simple web document management app based on tags.
+## Prerequisites
+- [Dynamic Web TWAIN License key](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt)
+- [HTTP Server](https://www.npmjs.com/package/http-server)
+    
+    ```bash
+    npm install -g http-server
+    ```
+    
+## Supported Platforms
+- Windows
+- macOS
+- Linux
 
-## Usage
-Install [Dynamic Web TWAIN](https://www.dynamsoft.com/Downloads/WebTWAIN_Download.aspx).
 
-Get a [trial license](https://www.dynamsoft.com/CustomerPortal/Admin/Accounts/TrialLicenses.aspx) and update the code:
+## Installation
 
-```js
-Dynamsoft.WebTwainEnv.ProductKey = 'LICENSE-KEY';
-```
+- [Full Package](https://www.dynamsoft.com/web-twain/downloads/)
+    1. Extract the package and copy the `Resources` folder to your project.
+    
+    2. Import the scripts in your HTML file:
+        ```html
+        <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+        <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+    
+        <script type="text/javascript"> 
+            Dynamsoft.DWT.ResourcesPath = 'Resources/';
+        </script>
+        ```
+    
+- [NPM Package](https://www.npmjs.com/package/dwt)
 
-Open `index.html` in your web browser.
+    1. Install the package:
+        
+        ```bash
+        npm install dwt
+        ```    
 
-![web document management](https://www.codepool.biz/wp-content/uploads/2019/09/web-document-management.gif)
+    2. Import the package in your HTML file:
+        ```javascript
+        <script src="node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
 
-## Blog
-[Web Document Management by Tagging Images](https://www.codepool.biz/web-document-management-tag-image.html)
+        <script type="text/javascript"> 
+            Dynamsoft.DWT.ResourcesPath = 'node_modules/dwt/dist/';
+        </script>
+        ```
+
+- CDN: 
+  ```html
+  <script type="text/javascript" src="https://unpkg.com/dwt/dist/dynamsoft.webtwain.min.js"> </script>
+
+  <script type="text/javascript"> 
+    Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
+  </script>
+  ```
+    
+## Windows Virtual Scanner 
+Install the [Virtual Scanner](https://download.dynamsoft.com/tool/twainds.win32.installer.2.1.3.msi) on Windows. The virtual scanner allows you to test the document scanning features without a physical scanner.
+
+You can also get the [virtual scanner source code](https://github.com/yushulx/windows-virtual-scanner) and customize it.

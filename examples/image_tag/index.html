@@ -39,14 +39,14 @@
             <td>
                 <select id="source"></select>
                 <input type="button" value="Scan Image" onclick="scanImage()" />
-                <input id="btnUpload" type="button" value="Upload Image" onclick="uploadImage()">
+                <input id="btnUpload" type="button" value="Load Image" onclick="loadImage()">
                 <select id="view" onchange="onViewChange()">
-                        <option value="6">6x6</option>
-                    <option value="5">5x5</option>
-                    <option value="4">4x4</option>
-                    <option value="3">3x3</option>
-                    <option value="2">2x2</option>
                     <option value="1">1x1</option>
+                    <option value="2">2x2</option>
+                    <option value="3">3x3</option>
+                    <option value="4">4x4</option>
+                    <option value="5">5x5</option>
+                    <option value="6">6x6</option>
                 </select>
             </td>
         </tr>
@@ -54,22 +54,27 @@
 
     <script type="text/javascript">
         var DWObject;
+        var deviceList = [];
         var global_option_values = {};
         window.onload = function () {
             if (Dynamsoft) {
-                // Get a valid trial license from https://www.dynamsoft.com/CustomerPortal/Portal/Triallicense.aspx
-                Dynamsoft.WebTwainEnv.ProductKey = 'LICENSE-KEY';
-                Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', onDWTReady);
-                Dynamsoft.WebTwainEnv.Load();
+                Dynamsoft.DWT.AutoLoad = false;
+                Dynamsoft.DWT.UseLocalService = true;
+                Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '640px', Height: '640px' }];
+                Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
+                // https://www.dynamsoft.com/customer/license/trialLicense?product=dwt
+                Dynamsoft.DWT.ProductKey = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
+                Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
+
+                Dynamsoft.DWT.Load();
             }
 
         };
 
-        function onDWTReady() {
-            DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer');
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
             if (DWObject) {
                 let view_select = document.getElementById('view');
-                DWObject.SetViewMode(view_select.value, view_select.value);
                 DWObject.SetDefaultTag('default');
                 DWObject.IfShowUI = false;
                 DWObject.Width = 480;
@@ -77,31 +82,33 @@
                 let count = DWObject.SourceCount;
                 let select = document.getElementById("source");
 
-                for (let i = 0; i < count; i++) {
-                    let source_name = DWObject.GetSourceNameItems(i);
-                    let option = document.createElement('option');
-                    option.value = i;
-                    option.text = source_name;
-                    select.appendChild(option);
-                }
-
+                DWObject.GetDevicesAsync().then(function (devices) {
+                    for (var i = 0; i < devices.length; i++) { // Get how many sources are installed in the system
+                        let option = document.createElement('option');
+                        option.value = devices[i].displayName;
+                        option.text = devices[i].displayName;
+                        deviceList.push(devices[i]);
+                        select.appendChild(option);
+                    }
+                }).catch(function (exp) {
+                    alert(exp.message);
+                });
             }
         }
 
         function scanImage() {
             if (!DWObject) return;
 
-            DWObject.IfDisableSourceAfterAcquire = true;
-            let bSelected = DWObject.SelectSource();
-
-            if (bSelected) {
-                let onSuccess, onFailure;
-                onSuccess = onFailure = function () {
-                    DWObject.CloseSource();
-                };
-
-                DWObject.OpenSource();
-                DWObject.AcquireImage(onSuccess, onFailure);
+            var sources = document.getElementById('source');
+            if (sources) {
+                DWObject.SelectDeviceAsync(deviceList[sources.selectedIndex]).then(function () {
+                    return DWObject.AcquireImageAsync({
+                        IfShowUI: false,
+                        IfCloseSourceAfterAcquire: true
+                    });
+                }).catch(function (exp) {
+                    alert(exp.message);
+                });
             }
         }
 
@@ -130,14 +137,8 @@
             }
 
 
-            // Get selected images
-            let count = DWObject.SelectedImagesCount;
-            let indices = [];
-            for (let i = 0; i < count; ++i) {
-                indices.push(DWObject.GetSelectedImageIndex(i));
-            }
-
-            DWObject.TagImages(indices, tag.value);
+            // Tag selected images
+            DWObject.TagImages(DWObject.SelectedImagesIndices, tag.value);
             DWObject.FilterImagesByTag(tag.value);
         }
 
@@ -146,21 +147,21 @@
             DWObject.FilterImagesByTag(select.value);
         }
 
-        function uploadImage() {
+        function loadImage() {
             if (!DWObject) return;
 
             let onSuccess = function () { };
             let onFailure = function (errorCode, errorString) { };
 
             DWObject.IfShowFileDialog = true;
-            DWObject.LoadImageEx("", EnumDWT_ImageType.IT_ALL, onSuccess, onFailure);
+            DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, onSuccess, onFailure);
         }
 
         function onViewChange() {
             if (!DWObject) return;
 
             let select = document.getElementById("view");
-            DWObject.SetViewMode(select.value, select.value);
+            DWObject.SetViewMode(parseInt(select.value), parseInt(select.value));
         }
     </script>
 </body>
