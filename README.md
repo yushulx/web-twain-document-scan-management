@@ -60,3 +60,7 @@ A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](ht
 Install the [Virtual Scanner](https://download.dynamsoft.com/tool/twainds.win32.installer.2.1.3.msi) on Windows. The virtual scanner allows you to test the document scanning features without a physical scanner.
 
 You can also get the [virtual scanner source code](https://github.com/yushulx/windows-virtual-scanner) and customize it.
+
+## Examples
+- [Basic Scan](./examples/basic_scan/)
+- [Image Tag](./examples/image_tag/)
