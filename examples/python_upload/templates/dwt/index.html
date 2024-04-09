@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<head>
+  <title>Dynamic Web Twain</title>
+  <meta charset="utf-8">
+  {% load static %}
+  {% csrf_token %}
+  <!-- Import Dynamic Web Twain library. Template will compile the actual path for us. -->
+  <script type="text/javascript" src="{% static 'dynamsoft.webtwain.initiate.js' %}"></script>
+  <script type="text/javascript" src="{% static 'dynamsoft.webtwain.config.js' %}"></script>
+  <script type="text/javascript" src="{% static 'jquery-3.6.0.min.js' %}"></script>
+</head>
+
+<body>
+  <div id="app">
+    <div id="dwtcontrolContainer"></div>
+    <button onclick="scan()">Scan</button>
+    <button onclick="upload()">Upload</button>
+  </div>
+  <script type="text/javascript">
+    var dwtObjct;
+
+    window.onload = function () {
+      if (Dynamsoft) {
+        Dynamsoft.DWT.AutoLoad = false;
+        Dynamsoft.DWT.UseLocalService = true;
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '640px', Height: '640px' }];
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
+        // https://www.dynamsoft.com/customer/license/trialLicense?product=dwt
+        Dynamsoft.DWT.ProductKey = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
+        Dynamsoft.DWT.ResourcesPath = 'static';
+        Dynamsoft.DWT.Load();
+      }
+
+    };
+
+    function Dynamsoft_OnReady() {
+      dwtObjct = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+    }
+
+    function scan() {
+      if (dwtObjct) {
+        dwtObjct.SelectSourceAsync().then(function () {
+          return dwtObjct.AcquireImageAsync({
+            IfCloseSourceAfterAcquire: true // Scanner source will be closed automatically after the scan.
+          });
+        }).catch(function (exp) {
+          alert(exp.message);
+        });
+      }
+    }
+
+    function upload() {
+      dwtObjct.HTTPPort = 8000;
+      var CurrentPathName = unescape(location.pathname); // get current PathName in plain ASCII
+      var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
+      var strActionPage = CurrentPath + "upload";
+      var strHostIP = "127.0.0.1";
+
+      var OnSuccess = function (httpResponse) {
+        alert("Succesfully uploaded");
+      };
+
+      var OnFailure = function (errorCode, errorString, httpResponse) {
+        alert(httpResponse);
+      };
+      var date = new Date();
+      var csrftoken = getCookie('csrftoken');
+      dwtObjct.SetHTTPFormField('csrfmiddlewaretoken', csrftoken);
+      dwtObjct.HTTPUploadThroughPostEx(
+        strHostIP,
+        dwtObjct.CurrentImageIndexInBuffer,
+        strActionPage,
+        date.getTime() + ".jpg",
+        1, // JPEG
+        OnSuccess, OnFailure
+      );
+    }
+
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = jQuery.trim(cookies[i]);
+          if (cookie.substring(0, name.length + 1) == (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
+</body>
