@@ -1,6 +1,9 @@
 # Dynamic Web TWAIN Examples
 A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](https://www.dynamsoft.com/web-twain/overview/) for document scanning, uploading, editing, and more.
 
+## SDK Version
+18.4.2
+
 ## Prerequisites
 - [Dynamic Web TWAIN License key](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt)
 - [HTTP Server](https://www.npmjs.com/package/http-server)
@@ -13,7 +16,6 @@ A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](ht
 - Windows
 - macOS
 - Linux
-
 
 ## Installation
 

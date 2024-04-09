@@ -14,13 +14,23 @@ This sample demonstrates how to use [Dynamic Web TWAIN](https://www.dynamsoft.co
 - [Dynamic Web TWAIN Trial License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dwt)
 
 ## How to Run This Sample
-1. Insert the license key in `index.html`:
+1. Configure the static files in `djangodwt/settings.py`:
+
+    ```python
+    STATIC_URL = '/static/'
+
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, "../../sdk")
+    ]
+    ```
+
+2. Insert the license key in `index.html`:
     
     ```js
     Dynamsoft.DWT.ProductKey = 'LICENSE-KEY';
     ```
 
-2. Execute the following commands to run the project:
+3. Execute the following commands to run the project:
 
     ```bash
     python manage.py makemigrations
@@ -28,7 +38,7 @@ This sample demonstrates how to use [Dynamic Web TWAIN](https://www.dynamsoft.co
     python manage.py runserver
     ``` 
     
-3. Open a web browser and navigate to `http://127.0.0.1:8000`.
+4. Open a web browser and navigate to `http://127.0.0.1:8000`.
 
     ![Web document scan by Python Django](https://www.dynamsoft.com/codepool/img/2020/09/django-scan-upload-document.jpg)
 
