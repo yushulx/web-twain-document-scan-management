@@ -1,0 +1,10 @@
+{
+  "name": "Scan-Documents-with-Node.JS",
+  "version": "1.0.0",
+  "main": "server.js",
+  "author": "DynamsoftRD",
+  "dependencies": {
+    "express": "^4.16.3",
+    "formidable": "^1.2.1"
+  }
+}
