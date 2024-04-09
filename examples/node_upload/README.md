@@ -23,3 +23,6 @@ This sample demonstrates how to implement a simple online document scanning and 
 3. Open `localhost:2024` in your browser.
 
     ![image](https://www.dynamsoft.com/codepool/img/2024/03/dynamic-web-twain-nodejs-document-scan.png)
+
+## Blog
+[How to Scan and Upload Documents with Dynamic Web TWAIN and Node.js](https://www.dynamsoft.com/codepool/nodejs-document-scan-upload-web-twain.html)
