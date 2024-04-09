@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Scan Documents with Node JS</title>
+	<script src="https://unpkg.com/dwt/dist/dynamsoft.webtwain.min.js"> </script>
+	<style>
+		h1 {
+			font-size: 2em;
+			font-weight: bold;
+			color: #777777;
+			text-align: center
+		}
+
+		table {
+			margin: auto;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>
+		Scan Documents with Node JS
+	</h1>
+	<table>
+		<tr>
+			<td>
+				<div id="dwtcontrolContainer"></div>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<input type="button" value="Load Image" onclick="LoadImages();" />
+				<input type="button" value="Scan Image" onclick="AcquireImage();" />
+				<input id="btnUpload" type="button" value="Upload Image" onclick="btnUpload_onclick()">
+			</td>
+		</tr>
+	</table>
+
+	<!--Custom script goes here-->
+	<script type="text/javascript">
+		var DWObject;
+
+		window.onload = function () {
+			Dynamsoft.DWT.AutoLoad = false;
+			Dynamsoft.DWT.UseLocalService = true;
+			Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '640px', Height: '640px' }];
+			Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
+			// https://www.dynamsoft.com/customer/license/trialLicense?product=dwt
+			Dynamsoft.DWT.ProductKey = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
+			Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
+
+			Dynamsoft.DWT.Load();
+		};
+
+		function Dynamsoft_OnReady() {
+			DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+		}
+
+		function AcquireImage() {
+			if (DWObject) {
+				DWObject.SelectSourceAsync().then(function () {
+					return DWObject.AcquireImageAsync({
+						IfCloseSourceAfterAcquire: true
+					});
+				}).catch(function (exp) {
+					alert(exp.message);
+				});
+			}
+		}
+
+		function LoadImages() {
+			if (DWObject) {
+				DWObject.LoadImageEx('', 5,
+					function () {
+					},
+					function (errorCode, errorString) {
+						alert('Load Image:' + errorString);
+					}
+				);
+			}
+		}
+
+		function btnUpload_onclick() {
+			var strHTTPServer = location.hostname;
+			DWObject.IfSSL = Dynamsoft.Lib.detect.ssl;
+			var _strPort = location.port == "" ? 80 : location.port;
+			if (Dynamsoft.Lib.detect.ssl == true)
+				_strPort = location.port == "" ? 443 : location.port;
+			DWObject.HTTPPort = _strPort;
+			var CurrentPathName = unescape(location.pathname);
+			var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
+			var strActionPage = CurrentPath + "upload";
+			var sFun = function () {
+				alert('success to upload!');
+			}, fFun = function () {
+				alert('fail to upload!');
+			};
+			var Digital = new Date();
+			var uploadfilename = Digital.getMilliseconds();
+			DWObject.HTTPUploadThroughPost(
+				strHTTPServer,
+				DWObject.CurrentImageIndexInBuffer,
+				strActionPage,
+				uploadfilename + ".jpg",
+				sFun, fFun
+			);
+		}
+	</script>
+</body>
+
+</html>
