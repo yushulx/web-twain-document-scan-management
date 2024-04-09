@@ -67,3 +67,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [ASP.NET Upload](./examples/asp_dotnet_upload/)
 - [Node.js Upload](./examples/node_upload/)
 - [Golang Upload](./examples/golang_upload/)
+- [Python Django Upload](./examples/python_upload/)
