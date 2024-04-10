@@ -1,11 +1,20 @@
 # Web Document Scanning with ASP.NET Core MVC
-This is a sample project that guides developer to integrate [Dynamic Web TWAIN](https://www.dynamsoft.com/web-twain/overview/) into ASP.NET Core MVC project. 
+This is a sample project that guides developer to integrate [Dynamic Web TWAIN](https://www.dynamsoft.com/web-twain/overview/) into an ASP.NET Core MVC project. 
 
 ## Requirement
 - [Dynamic Web TWAIN v18.4.2](https://www.dynamsoft.com/web-twain/downloads/)
 
 ## Usage
-1. Copy Dynamic Web TWAIN resource files from (`<Dynamic Web TWAIN installation path>/Resources>`) to `/wwwroot/lib/dwt`.
+1. Configure the static files in `Startup.cs`:
+
+    ```cs
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(
+    Path.Combine(env.ContentRootPath, "../../sdk")),
+        RequestPath = "/lib/dwt"
+    });
+    ```
 
 2. Request a [free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dwt) and then update the license key in `Views/Home/Index.cshtml`:
 
