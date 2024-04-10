@@ -66,7 +66,8 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 ## Examples
 - [Basic Scan](./examples/basic_scan/)
 - [Image Tag](./examples/image_tag/)
-- [ASP.NET Upload](./examples/asp_dotnet_upload/)
-- [Node.js Upload](./examples/node_upload/)
-- [Golang Upload](./examples/golang_upload/)
-- [Python Django Upload](./examples/python_upload/)
+- [ASP.NET MVC](./examples/asp_dotnet_upload/)
+- [Node.js](./examples/node_upload/)
+- [Golang](./examples/golang_upload/)
+- [Python Django](./examples/python_upload/)
+- [PHP Laravel](./examples/php_laravel/)
