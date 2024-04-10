@@ -43,7 +43,7 @@ This sample demonstrates how to use [Dynamic Web TWAIN](https://www.dynamsoft.co
     ![Web document scan by Python Django](https://www.dynamsoft.com/codepool/img/2020/09/django-scan-upload-document.jpg)
 
 ## Blog 
-[Online Document Scanning Apps with Django and Dynamic Web TWAIN](https://www.dynamsoft.com/codepool/online-document-scanning-django-webtwain.html)
+[Online Document Scanning Using Python Django and Dynamic Web TWAIN](https://www.dynamsoft.com/codepool/online-document-scanning-django-webtwain.html)
 
 
 
