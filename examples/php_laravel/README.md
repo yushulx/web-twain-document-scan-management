@@ -37,4 +37,4 @@ This sample demonstrates how to develop a web application for scanning and uploa
 
 
 ## Blog
-[How to Scan and Upload Documents in PHP Laravel Project](https://www.dynamsoft.com/codepool/upload-document-image-laravel-windows.html)
+[How to Scan and Upload Documents in PHP Laravel Project](https://www.dynamsoft.com/codepool/scan-upload-document-image-laravel-php.html)
