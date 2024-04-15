@@ -71,3 +71,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [Golang](./examples/golang_upload/)
 - [Python Django](./examples/python_upload/)
 - [PHP Laravel](./examples/php_laravel/)
+- [Polymer](./examples/polymer/)
