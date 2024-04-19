@@ -72,4 +72,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [Python Django](./examples/python_upload/)
 - [PHP Laravel](./examples/php_laravel/)
 - [Polymer](./examples/polymer/)
-- [Jade](./examples/jade/)
+- [Express Jade](./examples/jade/)
