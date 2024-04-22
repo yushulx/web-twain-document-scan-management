@@ -65,6 +65,7 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 
 ## Examples
 - [Basic Scan](./examples/basic_scan/)
+- [Custom UI](./examples/custom_ui/)
 - [Image Tag](./examples/image_tag/)
 - [ASP.NET MVC](./examples/asp_dotnet_upload/)
 - [Node.js](./examples/node_upload/)
