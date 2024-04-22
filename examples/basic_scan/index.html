@@ -7,8 +7,41 @@
 </head>
 
 <body>
-	<input type="button" value="Scan" onclick="AcquireImage();" />
-	<div id="dwtcontrolContainer" style="width: 640px; height: 640px;"></div>
+	<div class="row">
+		<label for="BW">
+			<input type="radio" value="0" name="PixelType">B&amp;W </label>
+		<label for="Gray">
+			<input type="radio" value="1" name="PixelType">Gray</label>
+		<label for="RGB">
+			<input type="radio" value="2" name="PixelType" checked="checked">Color</label>
+
+		<label>
+			<input type="checkbox" id="ADF" checked="checked">Auto Feeder</label>
+		<select id="Resolution">
+			<option value="100">100</option>
+			<option value="150">150</option>
+			<option value="200">200</option>
+			<option value="300">300</option>
+		</select>
+	</div>
+
+	<select id="sources"></select><br />
+	<button onclick="acquireImage()">Scan Documents</button>
+	<button onclick="openImage()">Load Documents</button>
+	<button onclick="removeSelected()">Remove Selected</button>
+	<button onclick="removeAll()">Remove All</button>
+
+	<div class="row">
+		<label style="font-size: x-large;">
+			<input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+		<label style="font-size: x-large;">
+			<input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+		<label style="font-size: x-large;">
+			<input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+		<button onclick="downloadDocument()">Download Documents</button>
+	</div>
+
+	<div id="document-container"></div>
 
 	<script src="main.js"></script>
 </body>
