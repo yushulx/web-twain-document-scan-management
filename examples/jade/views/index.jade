@@ -16,7 +16,7 @@ block content
     onclick='btnUpload_onclick()'
   )
   script(type='text/javascript').
-        var DWObject;
+        var dwtObject;
         window.onload = function () {
             if (Dynamsoft) {
                 Dynamsoft.DWT.AutoLoad = false;
@@ -33,13 +33,13 @@ block content
 
 
         function Dynamsoft_OnReady() {
-            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+            dwtObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
         }
         
         function AcquireImage() {
-            if (DWObject) {
-                DWObject.SelectSourceAsync().then(function () {
-                    return DWObject.AcquireImageAsync({
+            if (dwtObject) {
+                dwtObject.SelectSourceAsync().then(function () {
+                    return dwtObject.AcquireImageAsync({
                         IfCloseSourceAfterAcquire: true // Scanner source will be closed automatically after the scan.
                     });
                 }).catch(function (exp) {
@@ -49,8 +49,8 @@ block content
         }
 
         function btnUpload_onclick() {
-          if (DWObject) {
-            DWObject.HTTPPort = 3000;
+          if (dwtObject) {
+            dwtObject.HTTPPort = 3000;
             var CurrentPathName = unescape(location.pathname); 
             var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
             var strActionPage = CurrentPath + "upload";
@@ -60,9 +60,9 @@ block content
             }, fFun = function(){
 
             };
-            DWObject.HTTPUploadThroughPostEx(
+            dwtObject.HTTPUploadThroughPostEx(
                 strHostIP,
-                DWObject.CurrentImageIndexInBuffer,
+                dwtObject.CurrentImageIndexInBuffer,
                 strActionPage,
                 "test.jpg",
                 1,// JPEG

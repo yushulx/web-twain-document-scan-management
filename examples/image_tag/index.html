@@ -53,7 +53,7 @@
     </table>
 
     <script type="text/javascript">
-        var DWObject;
+        var dwtObject;
         var deviceList = [];
         var global_option_values = {};
         window.onload = function () {
@@ -72,17 +72,17 @@
         };
 
         function Dynamsoft_OnReady() {
-            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
-            if (DWObject) {
+            dwtObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+            if (dwtObject) {
                 let view_select = document.getElementById('view');
-                DWObject.SetDefaultTag('default');
-                DWObject.IfShowUI = false;
-                DWObject.Width = 480;
-                DWObject.Height = 640;
-                let count = DWObject.SourceCount;
+                dwtObject.SetDefaultTag('default');
+                dwtObject.IfShowUI = false;
+                dwtObject.Width = 480;
+                dwtObject.Height = 640;
+                let count = dwtObject.SourceCount;
                 let select = document.getElementById("source");
 
-                DWObject.GetDevicesAsync().then(function (devices) {
+                dwtObject.GetDevicesAsync().then(function (devices) {
                     for (var i = 0; i < devices.length; i++) { // Get how many sources are installed in the system
                         let option = document.createElement('option');
                         option.value = devices[i].displayName;
@@ -97,12 +97,12 @@
         }
 
         function scanImage() {
-            if (!DWObject) return;
+            if (!dwtObject) return;
 
             var sources = document.getElementById('source');
             if (sources) {
-                DWObject.SelectDeviceAsync(deviceList[sources.selectedIndex]).then(function () {
-                    return DWObject.AcquireImageAsync({
+                dwtObject.SelectDeviceAsync(deviceList[sources.selectedIndex]).then(function () {
+                    return dwtObject.AcquireImageAsync({
                         IfShowUI: false,
                         IfCloseSourceAfterAcquire: true
                     });
@@ -138,30 +138,30 @@
 
 
             // Tag selected images
-            DWObject.TagImages(DWObject.SelectedImagesIndices, tag.value);
-            DWObject.FilterImagesByTag(tag.value);
+            dwtObject.TagImages(dwtObject.SelectedImagesIndices, tag.value);
+            dwtObject.FilterImagesByTag(tag.value);
         }
 
         function onTagChange() {
             let select = document.getElementById("taglist");
-            DWObject.FilterImagesByTag(select.value);
+            dwtObject.FilterImagesByTag(select.value);
         }
 
         function loadImage() {
-            if (!DWObject) return;
+            if (!dwtObject) return;
 
             let onSuccess = function () { };
             let onFailure = function (errorCode, errorString) { };
 
-            DWObject.IfShowFileDialog = true;
-            DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, onSuccess, onFailure);
+            dwtObject.IfShowFileDialog = true;
+            dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, onSuccess, onFailure);
         }
 
         function onViewChange() {
-            if (!DWObject) return;
+            if (!dwtObject) return;
 
             let select = document.getElementById("view");
-            DWObject.SetViewMode(parseInt(select.value), parseInt(select.value));
+            dwtObject.SetViewMode(parseInt(select.value), parseInt(select.value));
         }
     </script>
 </body>

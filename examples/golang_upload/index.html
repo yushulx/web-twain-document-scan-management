@@ -39,7 +39,7 @@
 
     <!--Custom script goes here-->
     <script type="text/javascript">
-        var DWObject;
+        var dwtObject;
 
         window.onload = function () {
             Dynamsoft.DWT.AutoLoad = false;
@@ -54,13 +54,13 @@
         };
 
         function Dynamsoft_OnReady() {
-            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+            dwtObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
         }
 
         function AcquireImage() {
-            if (DWObject) {
-                DWObject.SelectSourceAsync().then(function () {
-                    return DWObject.AcquireImageAsync({
+            if (dwtObject) {
+                dwtObject.SelectSourceAsync().then(function () {
+                    return dwtObject.AcquireImageAsync({
                         IfCloseSourceAfterAcquire: true
                     });
                 }).catch(function (exp) {
@@ -70,8 +70,8 @@
         }
 
         function LoadImages() {
-            if (DWObject) {
-                DWObject.LoadImageEx('', 5,
+            if (dwtObject) {
+                dwtObject.LoadImageEx('', 5,
                     function () {
                     },
                     function (errorCode, errorString) {
@@ -83,11 +83,11 @@
 
         function btnUpload_onclick() {
             var strHTTPServer = location.hostname;
-            DWObject.IfSSL = Dynamsoft.Lib.detect.ssl;
+            dwtObject.IfSSL = Dynamsoft.Lib.detect.ssl;
             var _strPort = location.port == "" ? 80 : location.port;
             if (Dynamsoft.Lib.detect.ssl == true)
                 _strPort = location.port == "" ? 443 : location.port;
-            DWObject.HTTPPort = _strPort;
+            dwtObject.HTTPPort = _strPort;
             var CurrentPathName = unescape(location.pathname);
             var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
             var strActionPage = CurrentPath + "upload";
@@ -98,9 +98,9 @@
             };
             var Digital = new Date();
             var uploadfilename = Digital.getMilliseconds();
-            DWObject.HTTPUploadThroughPost(
+            dwtObject.HTTPUploadThroughPost(
                 strHTTPServer,
-                DWObject.CurrentImageIndexInBuffer,
+                dwtObject.CurrentImageIndexInBuffer,
                 strActionPage,
                 uploadfilename + ".jpg",
                 sFun, fFun

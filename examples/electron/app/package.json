@@ -1,0 +1,26 @@
+{
+    "name": "docscanner",
+    "version": "1.0.0",
+    "description": "Cross-platform document scanning application for Windows, Linux and macOS",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron main.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yushulx/electron-document-scan.git"
+    },
+    "keywords": [
+        "Dynamsoft",
+        "document scan",
+        "web twain",
+        "SDK",
+        "document scanning",
+        "document management"
+    ],
+    "author": "yushulx",
+    "homepage": "https://www.dynamsoft.com/web-twain/overview/",
+    "dependencies": {
+        "dwt": "^18.4.2"
+    }
+}
