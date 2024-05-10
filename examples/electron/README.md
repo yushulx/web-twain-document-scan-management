@@ -35,6 +35,22 @@ Refer to [https://github.com/electron/electron-quick-start](https://github.com/e
 
     ![electron document scanner](https://www.dynamsoft.com/codepool/img/2021/06/electron-document-scanner.png)
 
+## Packaging the App for Distribution
+1. Install **asar**.
+    
+    ```bash
+    npm install -g asar
+    ```
+
+2. Package the app:
+
+    ```bash
+    asar pack app app.asar
+    ```
+
+3. Download [Electron prebuilt package](https://github.com/electron/electron/releases) and copy the `app.asar` file to the `resources` folder.
+4. Run the app by executing the Electron binary.
+
 
 ## Blog
 [Cross-platform Document Scan Application with Electron](https://www.dynamsoft.com/codepool/electron-cross-platform-document-scanning-management.html)
