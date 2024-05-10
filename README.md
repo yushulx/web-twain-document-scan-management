@@ -74,3 +74,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [PHP Laravel](./examples/php_laravel/)
 - [Polymer](./examples/polymer/)
 - [Express Jade](./examples/jade/)
+- [Electron](./examples/electron/)

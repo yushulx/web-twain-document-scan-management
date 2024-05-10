@@ -1,0 +1,164 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Document Scanner</title>
+    <script src="node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
+    <style>
+        h1 {
+            font-size: 2em;
+            font-weight: bold;
+            color: #777777;
+            text-align: center
+        }
+
+        table {
+            margin: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>
+        Document Scanner
+    </h1>
+    <table>
+        <tr>
+            <td>
+                <!-- dwtcontrolContainer is the default div id for Dynamic Web TWAIN control.
+                   If you need to rename the id, you should also change the id in dynamsoft.webtwain.config.js accordingly. -->
+                <select size="1" id="source" style="position: relative; width: 220px;"></select>
+                <div id="dwtcontrolContainer"></div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <input type="button" value="Scan" onclick="scanImage();" />
+                <input type="button" value="Load" onclick="loadImage();" />
+                <div class="row">
+                    <label style="font-size: x-large;">
+                        <input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+                    <label style="font-size: x-large;">
+                        <input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+                    <label style="font-size: x-large;">
+                        <input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+                    <input type="button" value="Save" onclick="saveImage();" />
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <script type="text/javascript">
+        var console = window['console'] ? window['console'] : {
+            'log': function () { }
+        };
+
+        var dwtObject;
+        Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+        Dynamsoft.DWT.ResourcesPath = "node_modules/dwt/dist/";
+        var selectSources = document.getElementById("source");
+
+        Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {
+            dwtObject = obj;
+
+            dwtObject.Viewer.bind(document.getElementById("dwtcontrolContainer"));
+            dwtObject.Viewer.width = 640;
+            dwtObject.Viewer.height = 640;
+            dwtObject.Viewer.show();
+            onReady();
+        }, (errorString) => {
+            console.log(errorString);
+        });
+
+        function onReady() {
+            if (dwtObject) {
+                dwtObject.IfShowUI = false;
+                // https://www.dynamsoft.com/web-twain/docs/info/api/Dynamsoft_Enum.html
+                dwtObject.GetDevicesAsync(Dynamsoft.DWT.EnumDWT_DeviceType.TWAINSCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.TWAINX64SCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.ESCLSCANNER).then((sources) => {
+                    sourceList = sources;
+
+                    selectSources.options.length = 0;
+                    for (let i = 0; i < sources.length; i++) {
+                        let option = document.createElement("option");
+                        option.text = sources[i].displayName;
+                        option.value = i.toString();
+                        selectSources.add(option);
+                    }
+                });
+            }
+        }
+
+        function scanImage() {
+            if (!dwtObject)
+                return;
+
+            if (selectSources) {
+                var pixelTypeInputs = document.getElementsByName("PixelType");
+                for (var i = 0; i < pixelTypeInputs.length; i++) {
+                    if ((pixelTypeInputs[i]).checked) {
+                        pixelType = (pixelTypeInputs[i]).value;
+                        break;
+                    }
+                }
+                dwtObject.SelectDeviceAsync(sourceList[selectSources.selectedIndex]).then(() => {
+
+                    return dwtObject.OpenSourceAsync()
+
+                }).then(() => {
+
+                    return dwtObject.AcquireImageAsync({
+                        IfDisableSourceAfterAcquire: true
+                    })
+
+                }).then(() => {
+
+                    if (dwtObject) {
+
+                        dwtObject.CloseSource();
+
+                    }
+
+                }).catch(
+
+                    (e) => {
+
+                        console.error(e)
+
+                    }
+
+                )
+            } else {
+                alert("No Source Available!");
+            }
+        }
+
+        function loadImage() {
+            if (!dwtObject) return;
+
+            let onSuccess = function () { };
+            let onFailure = function (errorCode, errorString) { };
+
+            dwtObject.IfShowFileDialog = true;
+            dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, onSuccess, onFailure);
+        }
+
+        function saveImage() {
+            if (dwtObject) {
+                if ((document.getElementById("imgTypejpeg")).checked == true) {
+                    if (dwtObject.GetImageBitDepth(dwtObject.CurrentImageIndexInBuffer) == 1)
+                        dwtObject.ConvertToGrayScale(dwtObject.CurrentImageIndexInBuffer);
+                    dwtObject.SaveAsJPEG("DynamicWebTWAIN.jpg", dwtObject.CurrentImageIndexInBuffer);
+                }
+                else if ((document.getElementById("imgTypetiff")).checked == true)
+                    dwtObject.SaveAllAsMultiPageTIFF("DynamicWebTWAIN.tiff");
+                else if ((document.getElementById("imgTypepdf")).checked == true)
+                    dwtObject.SaveAllAsPDF("DynamicWebTWAIN.pdf");
+            }
+        }
+    </script>
+</body>
+
+</html>

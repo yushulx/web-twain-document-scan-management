@@ -16,7 +16,7 @@
     <input id="btnUpload" type="button" value="Upload Image" onclick="upload()">
 
     <script>
-    var DWObject;
+    var dwtObject;
     var deviceList = [];
 
     window.onload = function() {
@@ -40,14 +40,14 @@
     };
 
     function Dynamsoft_OnReady() {
-        DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+        dwtObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
         var token = document.querySelector("meta[name='_token']").getAttribute("content");
-        DWObject.SetHTTPFormField('_token', token);
+        dwtObject.SetHTTPFormField('_token', token);
 
-        let count = DWObject.SourceCount;
+        let count = dwtObject.SourceCount;
         let select = document.getElementById("source");
 
-        DWObject.GetDevicesAsync().then(function(devices) {
+        dwtObject.GetDevicesAsync().then(function(devices) {
             for (var i = 0; i < devices.length; i++) { // Get how many sources are installed in the system
                 let option = document.createElement('option');
                 option.value = devices[i].displayName;
@@ -64,18 +64,18 @@
         var OnSuccess = function() {};
         var OnFailure = function(errorCode, errorString) {};
 
-        if (DWObject) {
-            DWObject.IfShowFileDialog = true;
-            DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure);
+        if (dwtObject) {
+            dwtObject.IfShowFileDialog = true;
+            dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure);
         }
     }
 
     function acquireImage() {
-        if (DWObject) {
+        if (dwtObject) {
             var sources = document.getElementById('source');
             if (sources) {
-                DWObject.SelectDeviceAsync(deviceList[sources.selectedIndex]).then(function() {
-                    return DWObject.AcquireImageAsync({
+                dwtObject.SelectDeviceAsync(deviceList[sources.selectedIndex]).then(function() {
+                    return dwtObject.AcquireImageAsync({
                         IfShowUI: false,
                         IfCloseSourceAfterAcquire: true
                     });
@@ -96,9 +96,9 @@
         };
 
         var date = new Date();
-        DWObject.HTTPUploadThroughPostEx(
+        dwtObject.HTTPUploadThroughPostEx(
             "{{ route('dwtupload.upload') }}",
-            DWObject.CurrentImageIndexInBuffer,
+            dwtObject.CurrentImageIndexInBuffer,
             '',
             date.getTime() + ".jpg",
             1, // JPEG
