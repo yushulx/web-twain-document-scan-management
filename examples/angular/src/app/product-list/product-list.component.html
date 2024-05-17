@@ -1,0 +1,30 @@
+
+<div *ngFor="let product of products">
+  <h3>
+    <div>
+      <ng-template [ngIf]="product.id === 'acquire-image'">
+        <a [title]="product.name + ' details'" [routerLink]="['/acquire-image']">>
+          {{ product.name }}
+        </a>
+      </ng-template>
+      <ng-template [ngIf]="product.id === 'image-editor'">
+        <a [title]="product.name + ' details'" [routerLink]="['/image-editor']">>
+          {{ product.name }}
+        </a>
+      </ng-template>
+      <ng-template [ngIf]="product.id === 'remote-scan'">
+        <a [title]="product.name + ' details'" [routerLink]="['/remote-scan']">>
+          {{ product.name }}
+        </a>
+      </ng-template>
+    </div>
+  </h3>
+
+  <p *ngIf="product.description">Description: {{ product.description }}</p>
+</div>
+
+<!-- 
+Copyright Google LLC. All Rights Reserved.
+Use of this source code is governed by an MIT-style license that
+can be found in the LICENSE file at https://angular.io/license
+-->

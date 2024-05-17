@@ -1,0 +1,29 @@
+<div class="row">
+    <label for="BW">
+        <input type="radio" value="0" name="PixelType">B&amp;W </label>
+    <label for="Gray">
+        <input type="radio" value="1" name="PixelType">Gray</label>
+    <label for="RGB">
+        <input type="radio" value="2" name="PixelType" checked="checked">Color</label>
+</div>
+
+<div>Service:
+    <select (change)="onServiceChange($event)">
+        <option *ngFor="let option of serviceOptions" [value]="option.value">{{ option.label }}</option>
+    </select>
+</div>
+
+<div>Source: <select id="sources"></select></div>
+<button (click)="acquireImage()">Scan Documents</button>
+
+<div id="dwtcontrolContainer"></div>
+
+<div class="row">
+    <label style="font-size: x-large;">
+        <input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+    <label style="font-size: x-large;">
+        <input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+    <label style="font-size: x-large;">
+        <input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+</div>
+<button (click)="downloadDocument()">Download Documents</button>
