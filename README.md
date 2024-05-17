@@ -75,3 +75,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [Polymer](./examples/polymer/)
 - [Express Jade](./examples/jade/)
 - [Electron](./examples/electron/)
+- [Angular](./examples/angular/)

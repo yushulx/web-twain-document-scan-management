@@ -1,0 +1,35 @@
+<select id="sources"></select><br />
+<div class="row">
+    <button (click)="acquireImage()">Scan</button>
+    <button (click)="openImage()">Load</button>
+</div>
+
+<div class="row">
+    <div id="dwtcontrolContainer"></div>
+    <div id="dwtcontrolContainerLargeViewer"></div>
+</div>
+
+<div style="width: 800px;">
+    <input style="font-size: x-large;" type="button" value=" |< " (click)="firstImage()"/>
+    <input style="font-size: x-large;" type="button" value=" < " (click)="preImage()"/>
+    <input style="font-size: x-large;" type="text" size="2" id="DW_CurrentImage" readonly="readonly" value="0" /> /
+    <input style="font-size: x-large;" type="text" size="2" id="DW_TotalImage" readonly="readonly" value="0" />
+    <input style="font-size: x-large;" type="button" value=" > " (click)="nextImage()"/>
+    <input style="font-size: x-large;" type="button" value=" >| " (click)="lastImage()"/> Preview Mode:
+    <select style="font-size: x-large;" size="1" id="DW_PreviewMode" (change)="setMode()">
+        <option value="0">1X1</option>
+        <option value="1">2X2</option>
+        <option value="2">3X3</option>
+        <option value="3">4X4</option>
+        <option value="4">5X5</option>
+    </select>
+</div>
+<div class="row">
+    <button (click)="removeSelected()">Remove Selected</button>
+    <button (click)="removeAll()">Remove All</button>
+    <button (click)="rotateLeft()">Rotate Left</button>
+    <button (click)="rotateRight()">Rotate Right</button>
+    <button (click)="mirror()">Mirror</button>
+    <button (click)="flip()">Flip</button>
+    <button (click)="showImageEditor()" id="imageEditor">Hide Editor</button>
+</div>
