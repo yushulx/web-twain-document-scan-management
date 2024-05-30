@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Use Dynamic Web TWAIN to Scan</title>
+    <script src="qwebchannel.js"></script>
+    <script src="node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+
+<body>
+    <select size="1" id="source" style="position: relative; width: 220px;"></select>
+
+    <div id="dwtcontrolContainer"></div>
+    <!-- <input type="button" value="Scan" onclick="acquireImage();" />
+    <input type="button" value="Download" onclick="getCurrentImage();" /> -->
+
+    <script type="text/javascript">
+        var dwtObject;
+        Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+        // Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@18.5.0/dist";
+        Dynamsoft.DWT.ResourcesPath = "node_modules/dwt/dist/";
+        var selectSources = document.getElementById("source");
+        var sourceList = [];
+
+        Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {
+            dwtObject = obj;
+
+            dwtObject.Viewer.bind(document.getElementById("dwtcontrolContainer"));
+            dwtObject.Viewer.width = 640;
+            dwtObject.Viewer.height = 640;
+            dwtObject.Viewer.show();
+
+            onReady();
+        }, (errorString) => {
+            console.log(errorString);
+        });
+
+        var backend;
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            backend = channel.objects.backend;
+        });
+
+
+        function onReady() {
+            if (dwtObject) {
+                dwtObject.IfShowUI = false;
+                // https://www.dynamsoft.com/web-twain/docs/info/api/Dynamsoft_Enum.html
+                dwtObject.GetDevicesAsync(Dynamsoft.DWT.EnumDWT_DeviceType.TWAINSCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.TWAINX64SCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.ESCLSCANNER).then((sources) => {
+                    sourceList = sources;
+                    selectSources.options.length = 0;
+                    for (let i = 0; i < sources.length; i++) {
+                        let option = document.createElement("option");
+                        option.text = sources[i].displayName;
+                        option.value = i.toString();
+                        selectSources.add(option);
+                    }
+                });
+            }
+        }
+
+        async function acquireImage() {
+            if (!dwtObject) {
+                alert("Please wait for the document to be loaded completely.");
+                return;
+            }
+
+            if (selectSources) {
+                try {
+                    await dwtObject.SelectDeviceAsync(sourceList[selectSources.selectedIndex]);
+                    await dwtObject.OpenSourceAsync();
+                    dwtObject.AcquireImageAsync({
+                        IfDisableSourceAfterAcquire: true
+                    });
+                } catch (e) {
+                    console.error(e);
+                }
+
+                dwtObject.CloseSource();
+            } else {
+                alert("No Source Available!");
+            }
+        }
+
+        function getCurrentImage() {
+            if (dwtObject) {
+                dwtObject.ConvertToBase64(
+                    [dwtObject.CurrentImageIndexInBuffer],
+                    Dynamsoft.DWT.EnumDWT_ImageType.IT_JPG,
+                    function (result, indices, type) {
+                        backend.onDataReady(result.getData(0, result.getLength()))
+                    },
+                    function (errorCode, errorString) {
+                        console.log(errorString);
+                    }
+                );
+            }
+        }
+
+        function loadImage() {
+            if (!dwtObject)
+                return;
+            dwtObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
+            let ret = dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+        }
+    </script>
+</body>
+
+</html>
