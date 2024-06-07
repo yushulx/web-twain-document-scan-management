@@ -77,3 +77,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [Electron](./examples/electron/)
 - [Angular](./examples/angular/)
 - [Python Qt](./examples/qt/)
+- [Flutter Windows Desktop](./examples/flutter_windows_desktop/)
