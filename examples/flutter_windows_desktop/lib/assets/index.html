@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Dynamic Web TWAIN</title>
+    <script src="node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
+    <style>
+        .container {
+            position: absolute;
+            top: 10%;
+            left: 10;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="document-container" class="container"></div>
+
+    <script>
+        if (window.chrome.webview != "undefined") {
+            window.chrome.webview.addEventListener('message', function (event) {
+                let data = JSON.parse(JSON.stringify(event.data));
+                if (data.event === "acquire") {
+                    acquireImage(data.index);
+                }
+                else if (data.event === "load") {
+                    openImage();
+                }
+                else if (data.event === "removeAll") {
+                    removeAll();
+                }
+                else if (data.event === "removeSelected") {
+                    removeSelected();
+                }
+                else if (data.event === "download") {
+                    downloadDocument();
+                }
+            });
+        }
+
+        var sourceNames = [];
+        var sourceList = [];
+        Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+        Dynamsoft.DWT.ResourcesPath = "node_modules/dwt/dist/";
+        var dwtObject = null;
+        Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {
+            dwtObject = obj;
+
+            dwtObject.Viewer.bind(document.getElementById("document-container"));
+            dwtObject.Viewer.width = 640;
+            dwtObject.Viewer.height = 640;
+            dwtObject.Viewer.show();
+            onReady();
+        }, (errorString) => {
+            console.log(errorString);
+        });
+
+        function onReady() {
+            if (dwtObject != null) {
+
+                dwtObject.IfShowUI = false;
+
+                dwtObject.GetDevicesAsync(Dynamsoft.DWT.EnumDWT_DeviceType.TWAINSCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.TWAINX64SCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.ESCLSCANNER).then((sources) => {
+                    sourceList = sources;
+
+                    for (let i = 0; i < sources.length; i++) {
+                        sourceNames.push(sources[i].displayName);
+                    }
+
+                    if (sources.length > 0) {
+                        if (window.chrome.webview != "undefined") {
+                            var param = {
+                                "event": "sourceNames",
+                                "data": sourceNames
+                            }
+                            window.chrome.webview.postMessage(param);
+                        }
+                    }
+                });
+            }
+        }
+
+        function removeAll() {
+            if (!dwtObject || dwtObject.HowManyImagesInBuffer == 0)
+                return;
+
+            dwtObject.RemoveAllImages();
+        }
+
+        function removeSelected() {
+            if (!dwtObject || dwtObject.HowManyImagesInBuffer == 0)
+                return;
+
+            dwtObject.RemoveImage(dwtObject.CurrentImageIndexInBuffer);
+        }
+
+        function openImage() {
+            if (!dwtObject)
+                return;
+            dwtObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
+            let ret = dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+        }
+
+        function acquireImage(index) {
+            if (!dwtObject)
+                return;
+
+            if (sourceList.length > 0) {
+                dwtObject.SelectDeviceAsync(sourceList[index]).then(() => {
+
+                    return dwtObject.OpenSourceAsync()
+
+                }).then(() => {
+
+                    return dwtObject.AcquireImageAsync({
+                    })
+
+                }).then(() => {
+
+                    if (dwtObject) {
+
+                        dwtObject.CloseSource();
+
+                    }
+
+                }).catch(
+
+                    (e) => {
+
+                        console.error(e)
+
+                    }
+
+                )
+            }
+
+
+        }
+
+        function downloadDocument() {
+            if (dwtObject) {
+                dwtObject.SaveAllAsPDF("DynamicWebTWAIN.pdf");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
