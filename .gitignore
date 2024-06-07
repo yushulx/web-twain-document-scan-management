@@ -2,3 +2,4 @@ node_modules
 obj
 bin
 .vs
+/examples/electron/*.asar
