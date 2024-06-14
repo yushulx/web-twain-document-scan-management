@@ -78,3 +78,4 @@ You can also get the [virtual scanner source code](https://github.com/yushulx/wi
 - [Angular](./examples/angular/)
 - [Python Qt](./examples/qt/)
 - [Flutter Windows Desktop](./examples/flutter_windows_desktop/)
+- [Web Document Viewer](./examples/document_viewer/)
