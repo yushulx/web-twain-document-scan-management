@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DDV - HelloWorld</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@1.1.0/dist/ddv.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@1.1.0/dist/ddv.js"></script>
+</head>
+<style>
+
+</style>
+
+<body>
+    <h1>Document Viewer</h1>
+    <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <label>
+            Get a License key from <a href="https://www.dynamsoft.com/customer/license/trialLicense?product=ddv"
+                target="_blank">here</a>
+        </label>
+        <input type="text"
+            placeholder="DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="
+            id="licensekey">
+        <button id="activateButton">Activate SDK</button>
+
+        <div id="input-container">
+            <input type="file" id="fileInput" accept="application/pdf,image/png,image/jpeg,image/tiff">
+            <input type="text" placeholder="File name" id="filename">
+            <select id="format">
+                <option value="pdf">PDF</option>
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="tiff">TIFF</option>
+            </select>
+            <button id="saveButton">Convert</button>
+            <div class="row">
+                <div class="full-img">
+                    <img id="scanner-image">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="thumb-bar" id="thumb-bar">
+                    <div class="thumb-box" id="thumb-box">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div id="imageGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+        <div class="document-viewer">
+            <label>EditViewer</label>
+            <div id="edit-viewer"></div>
+        </div>
+
+        <div class="document-viewer">
+            <label>CaptureViewer</label>
+            <div id="capture-viewer"></div>
+        </div>
+
+        <div class="document-viewer">
+            <label>PerspectiveViewer</label>
+            <div id="perspective-viewer"></div>
+        </div>
+
+        <div class="document-viewer">
+            <label>BrowseViewer</label>
+            <div id="browse-viewer"></div>
+        </div>
+    </div>
+
+
+
+    <script src="main.js"></script>
+</body>
+
+</html>
