@@ -22,3 +22,6 @@ The sample demonstrates how to integrate Dynamic Web TWAIN into Windows desktop 
     ```
 
     ![flutter desktop scanner application with Dynamic Web TWAIN](https://www.dynamsoft.com/codepool/img/2023/03/flutter-windows-desktop-web-twain.gif)
+
+## Blog
+[How to Integrate Dynamic Web TWAIN into Flutter Windows Desktop Application](https://www.dynamsoft.com/codepool/flutter-windows-desktop-web-twain.html)
