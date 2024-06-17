@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dynamsoft RESTful API Example</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="https://unpkg.com/axios@1.6.7/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="connection">
+        <h2>Prerequisites</h2>
+        <ul>
+            <li>
+                <div class="row">
+                    <label>Get a License key from <a
+                            href="https://www.dynamsoft.com/customer/license/trialLicense?product=dbr"
+                            target="_blank">here</a>. </label>
+                    <input type="text" id="inputText" placeholder="Place your license key here for document scanning">
+                </div>
+            </li>
+            <br />
+            <li>
+                <div class="row">
+                    <label>Install and run the latest Dynamsoft Service.
+                    </label>
+                    <ul>
+                        <li><a href="https://demo.dynamsoft.com/DWT/DWTResources/dist/DynamsoftServiceSetup.msi"
+                                target="_blank">Windows</a></li>
+                        <li><a href="https://demo.dynamsoft.com/DWT/DWTResources/dist/DynamsoftServiceSetup.pkg"
+                                target="_blank">Mac</a></li>
+                        <li><a href="https://demo.dynamsoft.com/DWT/DWTResources/dist/DynamsoftServiceSetup.deb"
+                                target="_blank">Linux</a></li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+
+
+
+
+
+    </div>
+
+    <!-- Dynamic Web TWAIN -->
+    <div class="container" id="dwt">
+        <div class="row">
+            <div>
+                <button id="query-devices-button">Get Devices</button>
+                <select id="sources">
+                </select>
+                <button id="scan-button">Scan Documents</button>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <div class="full-img">
+                <img id="document-image">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="thumb-bar" id="thumb-bar">
+                <div class="thumb-box" id="thumb-box">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>
