@@ -12,6 +12,9 @@ Effortlessly scan paper documents to web pages using the Dynamic Web TWAIN RESTf
 
 - Obtain a [free trial license](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt) for Dynamic Web TWAIN.
 
+## Online Demo
+https://yushulx.me/web-twain-document-scan-management/examples/rest_api/
+
 ## Code Snippet
 - The host value:
 
