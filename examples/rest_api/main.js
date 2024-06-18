@@ -2,7 +2,7 @@ let activateButton = document.getElementById("activate-button");
 let loadingIndicator = document.getElementById("loading-indicator");
 let container = document.getElementById("container");
 const port = window.location.protocol === 'https:' ? 18623 : 18622;
-const host = window.location.protocol + '//' + "local.dynamsoft.com:" + port;
+const host = window.location.protocol + '//' + "127.0.0.1:" + port;
 var data = [];
 
 let queryDevicesButton = document.getElementById("query-devices-button");
