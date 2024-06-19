@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
-    "debug": "~4.3.4",
+    "debug": "~4.3.5",
     "dwt": "^18.4.2",
     "express": "^4.19.2",
     "http-errors": "~1.6.3",
