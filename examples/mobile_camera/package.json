@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "axios": "^1.3.4",
+    "dwt": "^18.5.0-patch-20240517",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "qrcode": "^1.5.1",
+    "socket.io": "^4.6.1",
+    "sqlite3": "^5.1.6"
+  }
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Mobile Capture and Upload</title>
+    <script src="utils.js"></script>
+    <link rel="stylesheet" href="styles.css"/>
+</head>
+
+<body>
+    <form id='myForm' action="javascript:void(0)" method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*">
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="message-box">
+        <div id="message-content">
+            <p id="message-text"></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('myForm');
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            let id = decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent("socketid").replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
+            formData.append('id', id);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(function (response) {
+                    console.log(response);
+                    showMessage("Your file has been uploaded.");
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    showMessage(error, 3000);
+                });
+        });
+    </script>
+
+</body>
+
+</html>
