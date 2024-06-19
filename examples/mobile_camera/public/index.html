@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Dynamic Web TWAIN</title>
+    <script src="/node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
+    <script src="/node_modules/qrcode/build/qrcode.js"></script>
+    <script src="/node_modules/socket.io/client-dist/socket.io.js"></script>
+    <script src="utils.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <h1> Dynamic Web TWAIN Sample</h1>
+    <div class="row">
+        <label for="BW">
+            <input type="radio" value="0" name="PixelType">B&amp;W </label>
+        <label for="Gray">
+            <input type="radio" value="1" name="PixelType">Gray</label>
+        <label for="RGB">
+            <input type="radio" value="2" name="PixelType" checked="checked">Color</label>
+
+        <label>
+            <input type="checkbox" id="ADF" checked="checked">Auto Feeder</label>
+        <select id="Resolution">
+            <option value="100">100</option>
+            <option value="150">150</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+        </select>
+    </div>
+
+    <select id="sources"></select><br />
+    <button onclick="acquireImage()">Scan Documents</button>
+    <button onclick="openImage()">Load Documents</button>
+    <button onclick="removeSelected()">Remove Selected</button>
+    <button onclick="removeAll()">Remove All</button>
+
+    <div class="row">
+        <label style="font-size: x-large;">
+            <input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+        <label style="font-size: x-large;">
+            <input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+        <label style="font-size: x-large;">
+            <input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+        <button onclick="downloadDocument()">Download Documents</button>
+        <button class="mobile-button" id="generate">Mobile Camera</button>
+    </div>
+
+
+    <div class="qr-popup">
+        <div class="qr-box">
+            <span class="qr-close">&times;</span>
+            <canvas id="qr-canvas"></canvas>
+        </div>
+    </div>
+    <div id="message-box">
+        <div id="message-content">
+            <p id="message-text"></p>
+        </div>
+    </div>
+
+    <div id="document-container"></div>
+
+    <script>
+        const socket = io();
+        socket.on('message', (data) => {
+            try {
+                let imageid = JSON.parse(data).filename;
+                if (imageid && dwtObject) {
+                    dwtObject.HTTPDownload(window.location.host + "/image/" + imageid, "", () => { }, () => { })
+                    qrPopup.style.display = "none";
+                    showMessage("Received a document from mobile device.");
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        });
+
+        const generateBtn = document.getElementById('generate');
+        const qrPopup = document.querySelector(".qr-popup");
+        const qrClose = document.querySelector(".qr-close");
+
+        generateBtn.addEventListener('click', () => {
+            let url = '';
+            if (window.location.protocol === 'https:') {
+                url = 'https://' + window.location.host + "/mobile.html?socketid=" + socket.id;
+            } else {
+                url = 'http://' + window.location.host + "/mobile.html?socketid=" + socket.id;
+            }
+            console.log(url);
+            QRCode.toCanvas(document.getElementById('qr-canvas'), url, function (error) {
+                if (error) console.error(error)
+            })
+
+            qrPopup.style.display = "block";
+
+            qrClose.onclick = function () {
+                qrPopup.style.display = "none";
+            };
+        });
+
+        var selectSources = document.getElementById("sources");
+        var sourceList = [];
+        Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+        Dynamsoft.DWT.ResourcesPath = "/node_modules/dwt/dist/";
+        var dwtObject = null;
+        Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {
+            dwtObject = obj;
+
+            dwtObject.Viewer.bind(document.getElementById("document-container"));
+            dwtObject.Viewer.width = 640;
+            dwtObject.Viewer.height = 640;
+            dwtObject.Viewer.show();
+            onReady();
+        }, (errorString) => {
+            console.log(errorString);
+        });
+
+        function onReady() {
+            if (dwtObject != null) {
+
+                dwtObject.IfShowUI = false;
+
+                dwtObject.GetDevicesAsync(Dynamsoft.DWT.EnumDWT_DeviceType.TWAINSCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.TWAINX64SCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.ESCLSCANNER).then((sources) => {
+                    sourceList = sources;
+
+                    selectSources.options.length = 0;
+                    for (let i = 0; i < sources.length; i++) {
+                        let option = document.createElement("option");
+                        option.text = sources[i].displayName;
+                        option.value = i.toString();
+                        selectSources.add(option);
+                    }
+                });
+            }
+        }
+
+        function removeAll() {
+            if (!dwtObject || dwtObject.HowManyImagesInBuffer == 0)
+                return;
+
+            dwtObject.RemoveAllImages();
+        }
+
+        function removeSelected() {
+            if (!dwtObject || dwtObject.HowManyImagesInBuffer == 0)
+                return;
+
+            dwtObject.RemoveImage(dwtObject.CurrentImageIndexInBuffer);
+        }
+
+        function openImage() {
+            if (!dwtObject)
+                return;
+            dwtObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
+            let ret = dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+        }
+
+        function acquireImage() {
+            if (!dwtObject)
+                return;
+
+            if (selectSources) {
+                var pixelTypeInputs = document.getElementsByName("PixelType");
+                for (var i = 0; i < pixelTypeInputs.length; i++) {
+                    if ((pixelTypeInputs[i]).checked) {
+                        pixelType = (pixelTypeInputs[i]).value;
+                        break;
+                    }
+                }
+                dwtObject.SelectDeviceAsync(sourceList[selectSources.selectedIndex]).then(() => {
+
+                    return dwtObject.OpenSourceAsync()
+
+                }).then(() => {
+
+                    return dwtObject.AcquireImageAsync({
+                        IfFeederEnabled: document.getElementById("ADF").checked,
+                        PixelType: pixelType,
+                        Resolution: parseInt(document.getElementById("Resolution").value),
+                        IfDisableSourceAfterAcquire: true
+                    })
+
+                }).then(() => {
+
+                    if (dwtObject) {
+
+                        dwtObject.CloseSource();
+
+                    }
+
+                }).catch(
+
+                    (e) => {
+
+                        console.error(e)
+
+                    }
+
+                )
+            } else {
+                alert("No Source Available!");
+            }
+        }
+
+        function downloadDocument() {
+            if (dwtObject) {
+                if ((document.getElementById("imgTypejpeg")).checked == true) {
+                    if (dwtObject.GetImageBitDepth(dwtObject.CurrentImageIndexInBuffer) == 1)
+                        dwtObject.ConvertToGrayScale(dwtObject.CurrentImageIndexInBuffer);
+                    dwtObject.SaveAsJPEG("DynamicWebTWAIN.jpg", dwtObject.CurrentImageIndexInBuffer);
+                }
+                else if ((document.getElementById("imgTypetiff")).checked == true)
+                    dwtObject.SaveAllAsMultiPageTIFF("DynamicWebTWAIN.tiff");
+                else if ((document.getElementById("imgTypepdf")).checked == true)
+                    dwtObject.SaveAllAsPDF("DynamicWebTWAIN.pdf");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
