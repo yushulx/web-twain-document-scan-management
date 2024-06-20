@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebChannel import QWebChannel
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 
 import os
 from dbr import *
@@ -48,6 +48,10 @@ class Backend(QObject):
 class WebView(QWebEngineView):
     def __init__(self):
         QWebEngineView.__init__(self)
+
+        self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
+        self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        self.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
 
         # Load web page and resource files to QWebEngineView
         file_path = os.path.abspath(os.path.join(
