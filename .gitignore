@@ -3,3 +3,6 @@ obj
 bin
 .vs
 /examples/electron/*.asar
+site-packages
+.DS_Store
+examples/qt/pyvenv.cfg
