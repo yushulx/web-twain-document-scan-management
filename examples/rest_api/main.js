@@ -39,7 +39,7 @@ scanButton.onclick = async () => {
 
     let parameters = {
         license: license,
-        device: JSON.parse(device),
+        device: JSON.parse(device)['device'],
     };
 
     parameters.config = {
