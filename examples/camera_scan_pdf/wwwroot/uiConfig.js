@@ -104,6 +104,8 @@ export const mobileEditViewerUiConfig = {
                 },
                 Dynamsoft.DDV.Elements.Load,
                 {
+                    // https://www.dynamsoft.com/document-viewer/docs/ui/customize/elements.html#event
+                    // Bind click event to "Save" button
                     type: Dynamsoft.DDV.Elements.Button,
                     className: "ddv-button ddv-button-download",
                     events: {
