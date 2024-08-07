@@ -1,0 +1,95 @@
+{
+  "name": "dynamsoft-document-normalizer",
+  "version": "2.0.20",
+  "description": "Dynamsoft Document Normalizer (DDN) is an SDK designed to detect quadrilaterals (quads for short) such as document/table boundaries and more from images, then perform document normalization on the images in the detected quads.",
+  "files": [
+    "/dist/*.js",
+    "/dist/*.mjs",
+    "/dist/*.html",
+    "/dist/*.wasm",
+    "/dist/**/*.d.ts",
+    "/dist/**/*.json",
+    "/LEGAL.txt",
+    "API Reference.url",
+    "samples.url"
+  ],
+  "homepage": "https://www.dynamsoft.com/document-normalizer/docs/web/programming/javascript/user-guide/index.html",
+  "main": "./dist/ddn.js",
+  "module": "./dist/ddn.esm.js",
+  "exports": {
+    ".": {
+      "types": {
+        "require": "./dist/types/ddn.d.cts",
+        "import": "./dist/types/ddn.d.ts"
+      },
+      "import": "./dist/ddn.esm.js",
+      "require": "./dist/ddn.js"
+    }
+  },
+  "types": "./dist/types/ddn.d.ts",
+  "sideEffects": true,
+  "scripts": {
+    "build": "rollup -c --environment BUILD:production",
+    "update:readme": "updateReadme --package=dynamsoft-document-normalizer --version=latest --html",
+    "update:prod": "updatePackage --package=dynamsoft-document-normalizer --version=auto --env=production --tag=latest",
+    "update:beta": "updatePackage --package=dynamsoft-document-normalizer --version=auto --env=beta --tag=beta",
+    "update:iv": "updatePackage --package=dynamsoft-document-normalizer --version=auto --env=internalVersion --tag=iv",
+    "update:dev": "updatePackage --package=dynamsoft-document-normalizer --version=auto --env=development --tag=latest",
+    "updateLink:npm": "updateLink --source=npm",
+    "updateLink:zip": "updateLink --source=zip",
+    "updateLink:github": "updateLink --source=github",
+    "updateCore:prod": "updateImportedPkg --package=dynamsoft-core --no-dev",
+    "updateCore:dev": "updateImportedPkg --package=dynamsoft-core --dev",
+    "makeZip": "makeZip --package=dynamsoft-document-normalizer --version=auto --sampleBranch=_dev --structure=new --otherPkgs=dynamsoft-capture-vision-std dynamsoft-image-processing dynamsoft-core dynamsoft-license dynamsoft-capture-vision-router dynamsoft-utility",
+    "makeZip_dev": "makeZip --package=dynamsoft-document-normalizer --version=auto --sampleBranch=_dev --structure=new --otherPkgs=@dynamsoft/dynamsoft-capture-vision-std @dynamsoft/dynamsoft-image-processing @dynamsoft/dynamsoft-core @dynamsoft/dynamsoft-license @dynamsoft/dynamsoft-capture-vision-router @dynamsoft/dynamsoft-utility",
+    "easyPublish": "npm run update:dev && npm i @dynamsoft/dynamsoft-core@latest && npm run build && npm publish"
+  },
+  "keywords": [
+    "HTML5 document capture",
+    "JavaScript document capture",
+    "Web document capture",
+    "document capture",
+    "normalization",
+    "border cropping",
+    "deskewing",
+    "perspective correction",
+    "contrast adjustment",
+    "brightness adjustment",
+    "WebAssembly",
+    "SDK"
+  ],
+  "author": {
+    "name": "Dynamsoft",
+    "url": "https://www.dynamsoft.com"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dynamsoft/document-normalizer-javascript.git"
+  },
+  "maintainers": [
+    {
+      "name": "Dynamsoft",
+      "email": "support@dynamsoft.com"
+    }
+  ],
+  "devDependencies": {
+    "@dynamsoft/dynamsoft-capture-vision-router": "^2.0.20-dev-20231226174326",
+    "@dynamsoft/rd2-scripts": "^0.1.4",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@rollup/plugin-terser": "^0.4.3",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@scannerproxy/curscript-path": "^2.0.1",
+    "@types/node": "^20.7.1",
+    "rollup": "^2.79.1",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "dynamsoft-core": "^3.0.30"
+  }
+}

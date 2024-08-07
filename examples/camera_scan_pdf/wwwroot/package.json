@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "dynamsoft-capture-vision-router": "^2.0.30",
+    "dynamsoft-core": "^3.0.30",
+    "dynamsoft-document-normalizer": "^2.0.20",
+    "dynamsoft-document-viewer": "^1.1.0",
+    "dynamsoft-license": "^3.0.20"
+  }
+}
