@@ -16,6 +16,8 @@ window.initSDK = async function (license) {
 
     let result = true;
     try {
+        //let baseUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+        Dynamsoft.DDV.Core.engineResourcePath = "/js/dynamsoft-document-viewer/dist/engine";
         Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
         Dynamsoft.DDV.Core.loadWasm();
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
@@ -28,69 +30,73 @@ window.initSDK = async function (license) {
 },
 
 window.initializeCaptureViewer = async (dotnetRef) => {    
-    await Dynamsoft.DDV.Core.init();
-    await initDocDetectModule(Dynamsoft.DDV, Dynamsoft.CVR);
+    try {
+        await Dynamsoft.DDV.Core.init();
+        await initDocDetectModule(Dynamsoft.DDV, Dynamsoft.CVR);
 
-    const captureViewer = new Dynamsoft.DDV.CaptureViewer({
-        container: "container",
-        uiConfig: isMobile() ? mobileCaptureViewerUiConfig : pcCaptureViewerUiConfig,
-        viewerConfig: {
-            acceptedPolygonConfidence: 60,
-            enableAutoDetect: true,
-        }
-    });
-
-    await captureViewer.play({ resolution: [1920, 1080] });
-    captureViewer.on("showPerspectiveViewer", () => switchViewer(0, 1, 0));
-
-    const perspectiveViewer = new Dynamsoft.DDV.PerspectiveViewer({
-        container: "container",
-        groupUid: captureViewer.groupUid,
-        uiConfig: isMobile() ? mobilePerspectiveUiConfig : pcPerspectiveUiConfig,
-        viewerConfig: { scrollToLatest: true }
-    });
-
-    perspectiveViewer.hide();
-    perspectiveViewer.on("backToCaptureViewer", () => {
-        switchViewer(1, 0, 0);
-        captureViewer.play();
-    });
-
-    perspectiveViewer.on("showEditViewer", () => switchViewer(0, 0, 1));
-
-    const editViewer = new Dynamsoft.DDV.EditViewer({
-        container: "container",
-        groupUid: captureViewer.groupUid,
-        uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
-    });
-
-    editViewer.hide();
-    editViewer.on("backToPerspectiveViewer", () => switchViewer(0, 1, 0));
-    editViewer.on("save", async () => {
-        let blob = await editViewer.currentDocument.saveToPdf();
-
-        // convert blob to base64
-
-        let reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = function () {
-            let base64data = reader.result;
-            if (dotnetRef) {
-                dotnetRef.invokeMethodAsync('SavePdfFromBlob', base64data.split(',')[1])
+        const captureViewer = new Dynamsoft.DDV.CaptureViewer({
+            container: "container",
+            uiConfig: isMobile() ? mobileCaptureViewerUiConfig : pcCaptureViewerUiConfig,
+            viewerConfig: {
+                acceptedPolygonConfidence: 60,
+                enableAutoDetect: true,
             }
-        }
-        
-    });
+        });
 
-    const switchViewer = (c, p, e) => {
-        captureViewer.hide();
+        await captureViewer.play({ resolution: [1920, 1080] });
+        captureViewer.on("showPerspectiveViewer", () => switchViewer(0, 1, 0));
+
+        const perspectiveViewer = new Dynamsoft.DDV.PerspectiveViewer({
+            container: "container",
+            groupUid: captureViewer.groupUid,
+            uiConfig: isMobile() ? mobilePerspectiveUiConfig : pcPerspectiveUiConfig,
+            viewerConfig: { scrollToLatest: true }
+        });
+
         perspectiveViewer.hide();
+        perspectiveViewer.on("backToCaptureViewer", () => {
+            switchViewer(1, 0, 0);
+            captureViewer.play();
+        });
+
+        perspectiveViewer.on("showEditViewer", () => switchViewer(0, 0, 1));
+
+        const editViewer = new Dynamsoft.DDV.EditViewer({
+            container: "container",
+            groupUid: captureViewer.groupUid,
+            uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
+        });
+
         editViewer.hide();
-        if (c) captureViewer.show();
-        else captureViewer.stop();
-        if (p) perspectiveViewer.show();
-        if (e) editViewer.show();
-    };
+        editViewer.on("backToPerspectiveViewer", () => switchViewer(0, 1, 0));
+        editViewer.on("save", async () => {
+            let blob = await editViewer.currentDocument.saveToPdf();
+
+            // convert blob to base64
+            let reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function () {
+                let base64data = reader.result;
+                if (dotnetRef) {
+                    dotnetRef.invokeMethodAsync('SavePdfFromBlob', base64data.split(',')[1])
+                }
+            }
+
+        });
+
+        const switchViewer = (c, p, e) => {
+            captureViewer.hide();
+            perspectiveViewer.hide();
+            editViewer.hide();
+            if (c) captureViewer.show();
+            else captureViewer.stop();
+            if (p) perspectiveViewer.show();
+            if (e) editViewer.show();
+        };
+    }
+    catch (e) {
+        alert(e);
+    }
 };
 
 //document.addEventListener("DOMContentLoaded", function () {
