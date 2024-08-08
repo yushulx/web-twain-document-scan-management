@@ -1,4 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Components.WebView.Maui;
+using Microsoft.Extensions.Logging;
+
+
+#if ANDROID
+using ScanToPDF.Platforms.Android;
+#endif
 
 namespace ScanToPDF
 {
@@ -12,6 +18,11 @@ namespace ScanToPDF
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                }).ConfigureMauiHandlers(handlers =>
+                {
+#if ANDROID
+                    handlers.AddHandler<BlazorWebView, MauiBlazorWebViewHandler>();
+#endif
                 });
 
             builder.Services.AddMauiBlazorWebView();

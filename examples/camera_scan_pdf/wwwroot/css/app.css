@@ -85,19 +85,36 @@ h1:focus {
     }
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overscroll-behavior-y: none;
-}
 
 #container {
-    /*position: fixed;*/ /* Ensures the div stays in place even when scrolling */
-    /*top: 0;*/ /* Aligns the div to the top of the viewport */
-    /*left: 0;*/ /* Aligns the div to the left of the viewport */
-    width: 80vw; /* Sets the width to 100% of the viewport width */
-    height: 100vh; /* Sets the height to 100% of the viewport height */
-    /*z-index: 1000;*/ /* Ensures the div is on top of other elements */
+    width: 88vw;
+    height: 80vh;
 }
+
+.btn {
+    background-color: #007BFF; /* Blue color */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 12px; /* Rounded corners */
+    transition-duration: 0.4s; /* Animation for hover effect */
+}
+
+    .btn:hover {
+        background-color: #0056b3; /* Darker blue on hover */
+        color: white;
+    }
+
+.center-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full height of the viewport */
+}
+
