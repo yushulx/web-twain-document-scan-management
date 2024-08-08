@@ -1,5 +1,6 @@
 // interop.js
 // https://github.com/Dynamsoft/mobile-web-capture/tree/master/samples/relatively-complete-doc-capturing-workflow
+var isInitialized = false;
 import { isMobile, initDocDetectModule } from "./utils.js";
 import {
     mobileCaptureViewerUiConfig,
@@ -10,11 +11,21 @@ import {
     pcEditViewerUiConfig
 } from "./uiConfig.js";
 
-(async () => {
-    Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
-    Dynamsoft.DDV.Core.loadWasm();
-    await Dynamsoft.License.LicenseManager.initLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", true);
-})();
+window.initSDK = async function (license) {
+    if (isInitialized) return true;
+
+    let result = true;
+    try {
+        Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
+        Dynamsoft.DDV.Core.loadWasm();
+        await Dynamsoft.License.LicenseManager.initLicense(license, true);
+        isInitialized = true;
+    } catch (e) {
+        console.log(e);
+        result = false;
+    }
+    return result;
+},
 
 window.initializeCaptureViewer = async (dotnetRef) => {    
     await Dynamsoft.DDV.Core.init();

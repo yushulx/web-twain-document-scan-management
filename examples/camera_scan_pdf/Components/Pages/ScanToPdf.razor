@@ -1,0 +1,89 @@
+﻿@page "/scantopdf"
+
+@inject IJSRuntime JSRuntime
+
+<div id="container"></div>
+
+@code {
+    private DotNetObjectReference<ScanToPdf> objRef;
+    private bool isGranted = false;
+
+    protected override void OnInitialized()
+    {
+        objRef = DotNetObjectReference.Create(this);
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+            if (status == PermissionStatus.Granted)
+            {
+                isGranted = true;
+            }
+            else
+            {
+                status = await Permissions.RequestAsync<Permissions.Camera>();
+                if (status == PermissionStatus.Granted)
+                {
+                    isGranted = true;
+                }
+            }
+
+            if (isGranted)
+            {
+                StateHasChanged();
+                await JSRuntime.InvokeVoidAsync("initializeCaptureViewer", objRef);
+            }
+
+        }
+    }
+
+    [JSInvokable("SavePdfFromBlob")]
+    public async void SavePdfFromBlob(string base64String)
+    {
+        if (!string.IsNullOrEmpty(base64String))
+        {
+            byte[] imageBytes = Convert.FromBase64String(base64String);
+
+
+#if WINDOWS
+    string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+#elif ANDROID
+    string folderPath = FileSystem.AppDataDirectory;
+#elif IOS || MACCATALYST
+    string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+#else
+            throw new PlatformNotSupportedException("Platform not supported");
+#endif
+            string filePath = Path.Combine(folderPath, GenerateFilename());
+            try
+            {
+                await File.WriteAllBytesAsync(filePath, imageBytes);
+                await JSRuntime.InvokeVoidAsync("displayAlert", $"Image saved to {filePath}");
+                await Share.RequestAsync(new ShareFileRequest
+                    {
+                        Title = "Share PDF File",
+                        File = new ShareFile(filePath)
+                    });
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("displayAlert", $"Error saving image: {ex.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Failed to fetch the image.");
+        }
+    }
+
+    private static string GenerateFilename()
+    {
+        DateTime now = DateTime.Now;
+        string timestamp = now.ToString("yyyyMMdd_HHmmss");
+        return $"{timestamp}.pdf";
+    }
+}

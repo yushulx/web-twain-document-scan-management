@@ -1,53 +1,34 @@
 ﻿@page "/"
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
-<div id="container"></div>
+@if (initialized == false)
+{
+    <p>Initializing SDK...</p>
+}
+else
+{
+    <div class="center-screen">
+        <button class="btn" @onclick="StartScanner">Scan Documents to PDF</button>
+    </div>
+}
 
 @code {
-    private DotNetObjectReference<Home> objRef;
+    Boolean initialized = false;
 
     protected override void OnInitialized()
     {
-        objRef = DotNetObjectReference.Create(this);
+        Init();
     }
 
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    public async void Init()
     {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("initializeCaptureViewer", objRef);
-        }
+        initialized = await JSRuntime.InvokeAsync<Boolean>("initSDK", "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==");
+        StateHasChanged();
     }
 
-    [JSInvokable("SavePdfFromBlob")]
-    public async void SavePdfFromBlob(string base64String)
+    public void StartScanner()
     {
-        if (!string.IsNullOrEmpty(base64String))
-        {
-            byte[] imageBytes = Convert.FromBase64String(base64String);
-            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), GenerateFilename());
-
-            try
-            {
-                await File.WriteAllBytesAsync(filePath, imageBytes);
-                await JSRuntime.InvokeVoidAsync("displayAlert", $"Image saved to {filePath}");
-            }
-            catch (Exception ex)
-            {
-                await JSRuntime.InvokeVoidAsync("displayAlert", $"Error saving image: {ex.Message}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Failed to fetch the image.");
-        }
-    }
-
-    private static string GenerateFilename()
-    {
-        DateTime now = DateTime.Now;
-        string timestamp = now.ToString("yyyyMMdd_HHmmss");
-        return $"{timestamp}.pdf";
+        NavigationManager.NavigateTo("scantopdf");
     }
 }
