@@ -28,5 +28,15 @@ https://github.com/user-attachments/assets/70a51cea-aba6-402d-9007-aeabd8aae10c
     ```
 
 2. Build and run the app in Visual Studio 2022 or Visual Studio Code.
-    
+
+    **Android**
+   
     <img src="https://www.dynamsoft.com/codepool/img/2024/08/document-pdf-scanner.jpg" width="300" alt="document PDF scanner with .NET MAUI Blazor">
+
+    **iPadOS**
+   
+    <img src="https://www.dynamsoft.com/codepool/img/2024/08/document-pdf-scanner-ipados.PNG" width="300" alt="document PDF scanner with .NET MAUI Blazor">
+
+    **Windows**
+   
+    <img src="https://www.dynamsoft.com/codepool/img/2024/08/document-pdf-scanner-windows.png" width="300" alt="document PDF scanner with .NET MAUI Blazor">
