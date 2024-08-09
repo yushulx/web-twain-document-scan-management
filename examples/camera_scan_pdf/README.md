@@ -1,6 +1,8 @@
-# Cross-Platform PDF Scanner with .NET MAUI Blazor
+# Cross-Platform Document PDF Scanner with .NET MAUI Blazor
 
-This repository demonstrates how to create a cross-platform PDF scanner app using .NET MAUI Blazor and the [Dynamsoft Mobile Web Capture SDK](https://www.dynamsoft.com/use-cases/mobile-web-capture-sdk/). It supports document capturing, image editing, and PDF generation.
+This repository demonstrates how to create a cross-platform document PDF scanner app using .NET MAUI Blazor and the [Dynamsoft Mobile Web Capture SDK](https://www.dynamsoft.com/use-cases/mobile-web-capture-sdk/). It supports document capturing, image editing, and PDF generation.
+
+https://github.com/user-attachments/assets/70a51cea-aba6-402d-9007-aeabd8aae10c
 
 ## Features
 
