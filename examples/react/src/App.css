@@ -1,0 +1,65 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 4vmin;
+  pointer-events: none;
+}
+
+.dwt-logo {
+  height: 3vmin;
+  pointer-events: none;
+}
+
+.ds-logo {
+  height: 3vmin;
+  pointer-events: none;
+  float: right;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 5vh;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-main {
+  padding: 2vh;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+footer {
+  margin: 8px 0;
+  width: 100%;
+}
+
+footer div a {
+  display: flex;
+  align-items: center;
+}
+
+footer div {
+  margin: 0 auto;
+  display: flex;
+  width: 560px;
+  align-items: center;
+  line-height: 20px;
+}
