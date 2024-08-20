@@ -31,5 +31,7 @@ Follow these steps to set up and run the project:
     ```
 4. Open `http://localhost:3000` to view the app in your browser.
 
+    ![React web document management](https://www.dynamsoft.com/codepool/img/2021/06/react-web-document-management.gif)
+   
 ## Blog
 [React Development: Web Document Management App](https://www.dynamsoft.com/codepool/react-document-scanning-web-twain.html)
