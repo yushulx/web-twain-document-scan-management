@@ -1,0 +1,120 @@
+{
+  "name": "dynamsoft-capture-vision-router",
+  "version": "2.0.30",
+  "description": "The Dynamsoft Capture Vision Router module is the cornerstone of the Dynamsoft Capture Vision architecture.",
+  "files": [
+    "/dist/*.js",
+    "/dist/*.mjs",
+    "/dist/*.map",
+    "/dist/*.html",
+    "/dist/*.wasm",
+    "/dist/**/*.d.ts",
+    "/dist/**/*.json",
+    "/API Reference.url",
+    "/LEGAL.txt"
+  ],
+  "homepage": "https://dynamsoft.com/capture-vision/docs/web/programming/javascript/?ver=latest",
+  "main": "./dist/cvr.js",
+  "module": "./dist/cvr.esm.js",
+  "exports": {
+    ".": {
+      "types": {
+        "require": "./dist/types/cvr.d.cts",
+        "import": "./dist/types/cvr.d.ts"
+      },
+      "import": "./dist/cvr.esm.js",
+      "require": "./dist/cvr.js"
+    }
+  },
+  "types": "dist/types/cvr.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dynamsoft/capture-vision-router-javascript.git"
+  },
+  "type": "module",
+  "sideEffects": true,
+  "author": {
+    "name": "Dynamsoft",
+    "url": "https://www.dynamsoft.com"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest"
+  },
+  "maintainers": [
+    {
+      "name": "Dynamsoft",
+      "email": "support@dynamsoft.com"
+    }
+  ],
+  "keywords": [
+    "dynamsoft",
+    "dynamsoft-capture-vision",
+    "webassembly",
+    "sdk",
+    "javascript",
+    "typescript",
+    "router",
+    "coordinator"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compress-glue-js": "terser public/cvr_wasm_glue.js -c computed_props=false -o dist/cvr_wasm_glue.js",
+    "build-dev": "rollup -c --environment BUILD:development",
+    "build": "rollup -c --environment BUILD:production",
+    "update:readme": "updateReadme --package=dynamsoft-capture-vision-router --version=latest --no-html",
+    "update:prod": "updatePackage --package=dynamsoft-capture-vision-router --version=auto --env=production --tag=latest",
+    "update:beta": "updatePackage --package=dynamsoft-capture-vision-router --version=auto --env=beta --tag=beta",
+    "update:iv": "updatePackage --package=dynamsoft-capture-vision-router --version=auto --env=internalVersion --tag=iv",
+    "update:dev": "updatePackage --package=dynamsoft-capture-vision-router --version=auto --env=development --tag=latest",
+    "updateLink:npm": "updateLink --source=npm",
+    "updateLink:zip": "updateLink --source=zip",
+    "updateLink:github": "updateLink --source=github",
+    "updateCore:prod": "updateImportedPkg --package=dynamsoft-core --no-dev",
+    "updateCore:dev": "updateImportedPkg --package=dynamsoft-core --dev",
+    "updateDBR:prod": "updateImportedPkg --package=dynamsoft-barcode-reader --no-dev",
+    "updateDBR:dev": "updateImportedPkg --package=dynamsoft-barcode-reader --dev",
+    "updateDLR:prod": "updateImportedPkg --package=dynamsoft-label-recognizer --no-dev",
+    "updateDLR:dev": "updateImportedPkg --package=dynamsoft-label-recognizer --dev",
+    "updateDDN:prod": "updateImportedPkg --package=dynamsoft-document-normalizer --no-dev",
+    "updateDDN:dev": "updateImportedPkg --package=dynamsoft-document-normalizer --dev",
+    "easyPublish": "npm run update:dev && npm i @dynamsoft/dynamsoft-core@latest && npm run build-dev && npm publish"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.21.0",
+    "@babel/preset-env": "^7.20.2",
+    "@dynamsoft/dynamsoft-barcode-reader": "^10.0.20-dev-20240111145703",
+    "@dynamsoft/dynamsoft-code-parser": "^2.0.20-dev-20240111145632",
+    "@dynamsoft/dynamsoft-document-normalizer": "^2.0.20-dev-20240111134814",
+    "@dynamsoft/dynamsoft-label-recognizer": "^3.0.30-dev-20240111145810",
+    "@dynamsoft/dynamsoft-license": "^3.0.20-dev-20240111135000",
+    "@dynamsoft/rd2-scripts": "^0.1.4",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@rollup/plugin-terser": "^0.4.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@scannerproxy/curscript-path": "^2.0.1",
+    "@types/node": "^20.2.5",
+    "detect-browser-node-ssr": "^3.0.2",
+    "mutable-promise": "^1.1.13",
+    "rollup": "^3.17.2",
+    "tslib": "^2.5.0",
+    "typescript": "^4.9.5"
+  },
+  "peerDependencies": {
+    "node-fetch": "^2.6.5",
+    "node-localstorage": "^2.2.1"
+  },
+  "peerDependenciesMeta": {
+    "node-fetch": {
+      "optional": true
+    },
+    "node-localstorage": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "dynamsoft-core": "^3.0.30"
+  }
+}

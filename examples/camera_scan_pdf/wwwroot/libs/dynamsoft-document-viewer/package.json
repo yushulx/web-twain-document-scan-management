@@ -1,0 +1,59 @@
+{
+    "name": "dynamsoft-document-viewer",
+    "version": "2.0.0",
+    "author": {
+        "name": "Dynamsoft",
+        "url": "https://www.dynamsoft.com"
+    },
+    "license": "SEE LICENSE IN LICENSE.txt",
+    "description": "Dynamsoft Document Viewer (DDV) is an SDK designed to provide different types of viewers to configure and achieve different processing flows for documents.",
+    "devDependencies": {},
+    "directories": {},
+    "files": [
+		"Api Reference.html",
+		"legal.txt",
+		"dist/ddv.css",
+		"dist/ddv.es.js",
+		"dist/ddv.js",
+		"dist/index.d.ts",
+		"dist/engine/ddv-crypto.wasm",
+		"dist/engine/ddv-imagecore.wasm",
+		"dist/engine/ddv-imageio.wasm",
+		"dist/engine/ddv-imageio.worker.js",
+		"dist/engine/ddv-imageproc.wasm",
+		"dist/engine/ddv-imageproc-simd.wasm",
+		"dist/engine/ddv-pdfreader.wasm",
+		"dist/engine/dls.license.dialog.html"
+    ],
+    "homepage": "https://www.dynamsoft.com/document-viewer/docs/introduction/index.html",
+    "keywords": [
+        "user interface customize",
+        "viewer",
+        "capturing",
+        "perspective transformation",
+        "image filter",
+        "document detect",
+        "annotation",
+        "pdf viewer"
+    ],
+    "main": "dist/ddv.es.js",
+    "module": "dist/ddv.es.js",
+    "maintainers": [
+        {
+            "name": "Dynamsoft Support Team",
+            "email": "support@dynamsoft.com"
+        }
+    ],
+    "optionalDependencies": {},
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Dynamsoft/document-viewer-javascript"
+    },
+    "types": "dist/index.d.ts",
+	"type": "module",
+	"sideEffects": false,
+    "private":false,
+	"dependencies": {
+        "dynamsoft-core": "*"
+    }
+}

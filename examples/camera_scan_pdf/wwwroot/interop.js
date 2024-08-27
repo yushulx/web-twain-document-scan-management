@@ -17,7 +17,7 @@ window.initSDK = async function (license) {
     let result = true;
     try {
         //let baseUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
-        Dynamsoft.DDV.Core.engineResourcePath = "/js/dynamsoft-document-viewer/dist/engine";
+        Dynamsoft.DDV.Core.engineResourcePath = "/libs/dynamsoft-document-viewer/dist/engine";
         Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
         Dynamsoft.DDV.Core.loadWasm();
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
@@ -70,7 +70,12 @@ window.initializeCaptureViewer = async (dotnetRef) => {
         editViewer.hide();
         editViewer.on("backToPerspectiveViewer", () => switchViewer(0, 1, 0));
         editViewer.on("save", async () => {
-            let blob = await editViewer.currentDocument.saveToPdf();
+            // https://www.dynamsoft.com/document-viewer/docs/api/interface/idocument/index.html#savetopdf
+            const pdfSettings = {
+                saveAnnotation: "annotation",
+            };
+
+            let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
 
             // convert blob to base64
             let reader = new FileReader();
