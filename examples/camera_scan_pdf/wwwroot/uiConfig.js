@@ -128,6 +128,7 @@ export const mobileEditViewerUiConfig = {
                 Dynamsoft.DDV.Elements.Undo,
                 Dynamsoft.DDV.Elements.Delete,
                 Dynamsoft.DDV.Elements.Load,
+                Dynamsoft.DDV.Elements.AnnotationSet
             ],
         },
     ],
@@ -249,6 +250,7 @@ export const pcEditViewerUiConfig = {
                         Dynamsoft.DDV.Elements.DeleteCurrent,
                         Dynamsoft.DDV.Elements.DeleteAll,
                         Dynamsoft.DDV.Elements.Pan,
+                        Dynamsoft.DDV.Elements.AnnotationSet
                     ],
                 },
                 {

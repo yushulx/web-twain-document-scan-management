@@ -1,6 +1,6 @@
 {
     "name": "dynamsoft-document-viewer",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "author": {
         "name": "Dynamsoft",
         "url": "https://www.dynamsoft.com"
@@ -27,15 +27,14 @@
     ],
     "homepage": "https://www.dynamsoft.com/document-viewer/docs/introduction/index.html",
     "keywords": [
-        "document",
-        "page",
         "user interface customize",
         "viewer",
         "capturing",
         "perspective transformation",
-        "editing",
         "image filter",
-        "document detect"
+        "document detect",
+        "annotation",
+        "pdf viewer"
     ],
     "main": "dist/ddv.es.js",
     "module": "dist/ddv.es.js",
