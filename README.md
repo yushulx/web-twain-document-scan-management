@@ -5,7 +5,7 @@ A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](ht
 18.4.2
 
 ## Prerequisites
-- [Dynamic Web TWAIN License key](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt)
+- [Dynamic Web TWAIN License key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 - [HTTP Server](https://www.npmjs.com/package/http-server)
     
     ```bash
