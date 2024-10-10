@@ -11,7 +11,7 @@ This sample demonstrates how to use [Dynamic Web TWAIN](https://www.dynamsoft.co
     python -m pip install Django
     python -m django --version
     ```
-- [Dynamic Web TWAIN Trial License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dwt)
+- [Dynamic Web TWAIN Trial License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## How to Run This Sample
 1. Configure the static files in `djangodwt/settings.py`:

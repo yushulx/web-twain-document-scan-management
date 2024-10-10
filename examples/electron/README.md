@@ -10,7 +10,7 @@ Refer to [https://github.com/electron/electron-quick-start](https://github.com/e
 - index.html - The web page that is rendered, acting as the app's renderer process.
 
 ## Usage
-1. Request a [trial license](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt) and update the license key in `index.html`:
+1. Request a [trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and update the license key in `index.html`:
 
       ```js
       Dynamsoft.DWT.ProductKey = 'LICENSE-KEY';

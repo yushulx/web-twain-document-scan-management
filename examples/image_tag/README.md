@@ -3,7 +3,7 @@
 Use Dynamic Web TWAIN APIs to manage scanned documents by tags.
 
 ## Usage
-1. Request a [trial license](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt) and update the license key in `index.html`:
+1. Request a [trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and update the license key in `index.html`:
 
       ```js
       Dynamsoft.DWT.ProductKey = 'LICENSE-KEY';

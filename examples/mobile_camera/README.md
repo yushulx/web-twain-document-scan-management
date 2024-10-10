@@ -10,7 +10,7 @@ The sample showcases a scenario where documents can be captured using a mobile c
     ```bash
     npm creatdb.js
     ```
-3. Apply for a [trial license](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt) of Dynamic Web TWAIN and replace the license key in `index.html`:
+3. Apply for a [trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) of Dynamic Web TWAIN and replace the license key in `index.html`:
     ```js
     Dynamsoft.DWT.ProductKey = "LICENSE-KEY";
     ```

@@ -7,7 +7,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Prerequisites
 - **Node.js**: Ensure Node.js is installed on your system.
-- **Dynamic Web TWAIN License**: Obtain a [free trial license](https://www.dynamsoft.com/customer/license/trialLicense) for the Dynamic Web TWAIN SDK.
+- **Dynamic Web TWAIN License**: Obtain a [free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) for the Dynamic Web TWAIN SDK.
 
 ## Getting Started
 

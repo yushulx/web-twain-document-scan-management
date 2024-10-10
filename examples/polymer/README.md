@@ -3,7 +3,7 @@
 This is a sample project that guides you to build a web document scanning app with [Dynamic Web TWAIN](https://www.dynamsoft.com/web-twain/overview/) and [Polymer](https://polymer-library.polymer-project.org/3.0/docs/devguide/feature-overview).
 
 ## Prerequisites
-- [Dynamic Web TWAIN License Key](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt)
+- [Dynamic Web TWAIN License Key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## How to Run
 1. Replace `LICENSE-KEY` in `my-view1.js` with your own license key.

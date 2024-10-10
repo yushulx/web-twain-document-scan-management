@@ -84,7 +84,7 @@ Apart from the browsers, the operating systems may impose some limitations of th
 
 ## License Key
 
-[![](https://img.shields.io/badge/Get-30--day%20FREE%20Trial%20License-blue)](https://www.dynamsoft.com/customer/license/trialLicense/?product=mwc&utm_source=npm)
+[![](https://img.shields.io/badge/Get-30--day%20FREE%20Trial%20License-blue)](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## Adding the dependency
 
@@ -128,7 +128,7 @@ Review the complete code:
 <script type="module">
     (async () => {
         // Public trial license which is valid for 24 hours
-        // You can request a 30-day trial key from https://www.dynamsoft.com/customer/license/trialLicense/?product=mwc
+        // You can request a 30-day trial key from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
         Dynamsoft.DDV.Core.license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
         Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/engine";
         await Dynamsoft.DDV.Core.init();

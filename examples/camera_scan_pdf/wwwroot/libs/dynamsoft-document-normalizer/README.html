@@ -1,261 +1,362 @@
 <html>
-  <head>
-    <title>Dynamsoft Document Normalizer for Your Website - User Guide</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta charset="UTF-8">
-    <style type='text/css'>
+
+<head>
+  <title>Dynamsoft Document Normalizer for Your Website - User Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <style type='text/css'>
+    body {
+      font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: #111;
+      background-color: #fbfbfb;
+      -webkit-text-size-adjust: 100%;
+      -webkit-font-feature-settings: "kern" 1;
+      -moz-font-feature-settings: "kern" 1;
+      -o-font-feature-settings: "kern" 1;
+      font-feature-settings: "kern" 1;
+      font-kerning: normal;
+      padding: 30px;
+    }
+
+    @media only screen and (max-width: 600px) {
       body {
-        font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
-        color: #111;
-        background-color: #fbfbfb;
-        -webkit-text-size-adjust: 100%;
-        -webkit-font-feature-settings: "kern" 1;
-        -moz-font-feature-settings: "kern" 1;
-        -o-font-feature-settings: "kern" 1;
-        font-feature-settings: "kern" 1;
-        font-kerning: normal;
-        padding: 30px;
+        padding: 5px;
       }
-      
-      @media only screen and (max-width: 600px) {
-        body {
-            padding: 5px;
-        }
-        body>#content {
-            padding: 0px 20px 20px 20px !important;
-        }
-      }
-      
+
       body>#content {
-        margin: 0px;
-        max-width: 900px;
-        border: 1px solid #e1e4e8;
-        padding: 10px 40px;
-        padding-bottom: 20px;
-        border-radius: 2px;
-        margin-left: auto;
-        margin-right: auto;
+        padding: 0px 20px 20px 20px !important;
       }
-      
-      hr {
-        color: #bbb;
-        background-color: #bbb;
-        height: 1px;
-        flex: 0 1 auto;
-        margin: 1em 0;
-        padding: 0;
-        border: none;
-      }
-      
-      
-      /**
+    }
+
+    body>#content {
+      margin: 0px;
+      max-width: 900px;
+      border: 1px solid #e1e4e8;
+      padding: 10px 40px;
+      padding-bottom: 20px;
+      border-radius: 2px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    hr {
+      color: #bbb;
+      background-color: #bbb;
+      height: 1px;
+      flex: 0 1 auto;
+      margin: 1em 0;
+      padding: 0;
+      border: none;
+    }
+
+
+    /**
       * Links
       */
-      
-      a {
-        color: #0366d6;
-        text-decoration: none;
-      }
-      
-      a:visited {
-        color: #0366d6;
-      }
-      
-      a:hover {
-        color: #0366d6;
-        text-decoration: underline;
-      }
-      
-      pre {
-        background-color: #f6f8fa;
-        border-radius: 3px;
-        font-size: 85%;
-        line-height: 1.45;
-        overflow: auto;
-        padding: 16px;
-      }
-      
-      
-      /**
+
+    a {
+      color: #0366d6;
+      text-decoration: none;
+    }
+
+    a:visited {
+      color: #0366d6;
+    }
+
+    a:hover {
+      color: #0366d6;
+      text-decoration: underline;
+    }
+
+    pre {
+      background-color: #f6f8fa;
+      border-radius: 3px;
+      font-size: 85%;
+      line-height: 1.45;
+      overflow: auto;
+      padding: 16px;
+    }
+
+
+    /**
       * Code blocks
       */
-      
-      code {
-        background-color: rgba(27, 31, 35, .05);
-        border-radius: 3px;
-        font-size: 85%;
-        margin: 0;
-        word-wrap: break-word;
-        padding: .2em .4em;
-        font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, Courier, monospace;
-      }
-      
-      pre>code {
-        background-color: transparent;
-        border: 0;
-        display: inline;
-        line-height: inherit;
-        margin: 0;
-        overflow: visible;
-        padding: 0;
-        word-wrap: normal;
-        font-size: 100%;
-      }
-      
-      
-      /**
+
+    code {
+      background-color: rgba(27, 31, 35, .05);
+      border-radius: 3px;
+      font-size: 85%;
+      margin: 0;
+      word-wrap: break-word;
+      padding: .2em .4em;
+      font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, Courier, monospace;
+    }
+
+    pre>code {
+      background-color: transparent;
+      border: 0;
+      display: inline;
+      line-height: inherit;
+      margin: 0;
+      overflow: visible;
+      padding: 0;
+      word-wrap: normal;
+      font-size: 100%;
+    }
+
+
+    /**
       * Blockquotes
       */
-      
-      blockquote {
-        margin-left: 30px;
-        margin-top: 0px;
-        margin-bottom: 16px;
-        border-left-width: 3px;
-        padding: 0 1em;
-        color: #828282;
-        border-left: 4px solid #e8e8e8;
-        padding-left: 15px;
-        font-size: 18px;
-        letter-spacing: -1px;
-        font-style: italic;
-      }
-      
-      blockquote * {
-        font-style: normal !important;
-        letter-spacing: 0;
-        color: #6a737d !important;
-      }
-      
-      
-      /**
+
+    blockquote {
+      margin-left: 30px;
+      margin-top: 0px;
+      margin-bottom: 16px;
+      border-left-width: 3px;
+      padding: 0 1em;
+      color: #828282;
+      border-left: 4px solid #e8e8e8;
+      padding-left: 15px;
+      font-size: 18px;
+      letter-spacing: -1px;
+      font-style: italic;
+    }
+
+    blockquote * {
+      font-style: normal !important;
+      letter-spacing: 0;
+      color: #6a737d !important;
+    }
+
+
+    /**
       * Tables
       */
-      
-      table {
-        border-spacing: 2px;
-        display: block;
-        font-size: 14px;
-        overflow: auto;
-        width: 100%;
-        margin-bottom: 16px;
-        border-spacing: 0;
-        border-collapse: collapse;
-      }
-      
-      td {
-        padding: 6px 13px;
-        border: 1px solid #dfe2e5;
-      }
-      
-      th {
-        font-weight: 600;
-        padding: 6px 13px;
-        border: 1px solid #dfe2e5;
-      }
-      
-      tr {
-        background-color: #fff;
-        border-top: 1px solid #c6cbd1;
-      }
-      
-      table tr:nth-child(2n) {
-        background-color: #f6f8fa;
-      }
-      
-      
-      /**
+
+    table {
+      border-spacing: 2px;
+      display: block;
+      font-size: 14px;
+      overflow: auto;
+      width: 100%;
+      margin-bottom: 16px;
+      border-spacing: 0;
+      border-collapse: collapse;
+    }
+
+    td {
+      padding: 6px 13px;
+      border: 1px solid #dfe2e5;
+    }
+
+    th {
+      font-weight: 600;
+      padding: 6px 13px;
+      border: 1px solid #dfe2e5;
+    }
+
+    tr {
+      background-color: #fff;
+      border-top: 1px solid #c6cbd1;
+    }
+
+    table tr:nth-child(2n) {
+      background-color: #f6f8fa;
+    }
+
+
+    /**
       * Others
       */
-      
-      img {
-        max-width: 100%;
-      }
-      
-      p {
-        line-height: 24px;
-        font-weight: 400;
-        font-size: 16px;
-        color: #24292e;
-      }
-      
-      ul {
-        margin-top: 0;
-      }
-      
-      li {
-        color: #24292e;
-        font-size: 16px;
-        font-weight: 400;
-        line-height: 1.5;
-      }
-      
-      li+li {
-        margin-top: 0.25em;
-      }
-      
-      * {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-        color: #24292e;
-      }
-      
-      a:visited {
-        color: #0366d6;
-      }
-      
-      h1,
-      h2,
-      h3 {
-        border-bottom: 1px solid #eaecef;
-        color: #111;
-        /* Darker */
-      }
-      
-      code>* {
-        font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
-      }
-    </style>
-    <style type='text/css'>pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}.hljs{color:#383a42;background:#fafafa}.hljs-comment,.hljs-quote{color:#a0a1a7;font-style:italic}.hljs-doctag,.hljs-formula,.hljs-keyword{color:#a626a4}.hljs-deletion,.hljs-name,.hljs-section,.hljs-selector-tag,.hljs-subst{color:#e45649}.hljs-literal{color:#0184bb}.hljs-addition,.hljs-attribute,.hljs-meta .hljs-string,.hljs-regexp,.hljs-string{color:#50a14f}.hljs-attr,.hljs-number,.hljs-selector-attr,.hljs-selector-class,.hljs-selector-pseudo,.hljs-template-variable,.hljs-type,.hljs-variable{color:#986801}.hljs-bullet,.hljs-link,.hljs-meta,.hljs-selector-id,.hljs-symbol,.hljs-title{color:#4078f2}.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#c18401}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:700}.hljs-link{text-decoration:underline}</style>
-  </head>
-  <body>
-    <div id='content'>
-<h1 id="document-normalizer-for-your-website---user-guide">Document Normalizer for Your Website - User Guide</h1>
-<p>With Dynamsoft Document Normalizer JavaScript edition, you can add to your website the ability to take pictures of documents with your camera and normalize them to obtain high-quality images for further processing or archiving purposes.</p>
-<blockquote>
-  <p>Dynamsoft Document Normalizer v2.0.11 and above is based on Dynamsoft Capture Vision Architecture. To learn more, read <a href="https://www.dynamsoft.com/capture-vision/docs/core/introduction/">Introduction to Dynamsoft Capture Vision</a>.</p>
-</blockquote>
-<p>In this guide, you'll learn step-by-step how to build such a simple solution in a web page.</p>
-<p><span style="font-size:20px">Table of Contents</span></p>
-<ul>
-<li><a href="#document-normalizer-for-your-website---user-guide">Document Normalizer for Your Website - User Guide</a></li>
-<li><a href="#hello-world---simplest-implementation">Hello World - Simplest Implementation</a><ul>
-<li><a href="#understand-the-code">Understand the code</a></li>
-<li><a href="#about-the-code">About the code</a></li>
-<li><a href="#run-the-example">Run the example</a></li></ul></li>
-<li><a href="#building-your-own-page">Building your own page</a><ul>
-<li><a href="#include-the-sdk">Include the SDK</a></li>
-<li><a href="#use-a-cdn">Use a CDN</a></li>
-<li><a href="#host-the-sdk-yourself">Host the SDK yourself</a></li>
-<li><a href="#define-necessary-html-elements">Define necessary HTML elements</a></li>
-<li><a href="#prepare-the-sdk-for-the-task">Prepare the SDK for the task</a></li>
-<li><a href="#start-the-detection">Start the detection</a></li>
-<li><a href="#review-and-adjust-the-boundary">Review and adjust the boundary</a></li>
-<li><a href="#normalize-the-document">Normalize the document</a></li>
-<li><a href="#output-the-document-as-a-file">Output the document as a file</a></li>
-<li><a href="#restart-task">Restart task</a></li></ul></li>
-<li><a href="#system-requirements">System requirements</a></li>
-<li><a href="#release-notes">Release notes</a></li>
-<li><a href="#next-steps">Next steps</a></li>
-</ul>
-<h2 id="hello-world---simplest-implementation">Hello World - Simplest Implementation</h2>
-<p>The solution consists of two steps</p>
-<ol>
-<li>Detect the document boundaries</li>
-<li>Normalize the document based on the detected boundaries</li>
-</ol>
-<h3 id="understand-the-code">Understand the code</h3>
-<p>The following sample code sets up the SDK and implements boundary detection on a web page, which is just the first step in capturing a normalized image of your document. We'll cover the second step later in <a href="#building-your-own-page">Building Your Own Page</a>.</p>
-<pre><code class="hljs html language-html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">html</span>&gt;</span>
+
+    img {
+      max-width: 100%;
+    }
+
+    p {
+      line-height: 24px;
+      font-weight: 400;
+      font-size: 16px;
+      color: #24292e;
+    }
+
+    ul {
+      margin-top: 0;
+    }
+
+    li {
+      color: #24292e;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    li+li {
+      margin-top: 0.25em;
+    }
+
+    * {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      color: #24292e;
+    }
+
+    a:visited {
+      color: #0366d6;
+    }
+
+    h1,
+    h2,
+    h3 {
+      border-bottom: 1px solid #eaecef;
+      color: #111;
+      /* Darker */
+    }
+
+    code>* {
+      font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+    }
+  </style>
+  <style type='text/css'>
+    pre code.hljs {
+      display: block;
+      overflow-x: auto;
+      padding: 1em
+    }
+
+    code.hljs {
+      padding: 3px 5px
+    }
+
+    .hljs {
+      color: #383a42;
+      background: #fafafa
+    }
+
+    .hljs-comment,
+    .hljs-quote {
+      color: #a0a1a7;
+      font-style: italic
+    }
+
+    .hljs-doctag,
+    .hljs-formula,
+    .hljs-keyword {
+      color: #a626a4
+    }
+
+    .hljs-deletion,
+    .hljs-name,
+    .hljs-section,
+    .hljs-selector-tag,
+    .hljs-subst {
+      color: #e45649
+    }
+
+    .hljs-literal {
+      color: #0184bb
+    }
+
+    .hljs-addition,
+    .hljs-attribute,
+    .hljs-meta .hljs-string,
+    .hljs-regexp,
+    .hljs-string {
+      color: #50a14f
+    }
+
+    .hljs-attr,
+    .hljs-number,
+    .hljs-selector-attr,
+    .hljs-selector-class,
+    .hljs-selector-pseudo,
+    .hljs-template-variable,
+    .hljs-type,
+    .hljs-variable {
+      color: #986801
+    }
+
+    .hljs-bullet,
+    .hljs-link,
+    .hljs-meta,
+    .hljs-selector-id,
+    .hljs-symbol,
+    .hljs-title {
+      color: #4078f2
+    }
+
+    .hljs-built_in,
+    .hljs-class .hljs-title,
+    .hljs-title.class_ {
+      color: #c18401
+    }
+
+    .hljs-emphasis {
+      font-style: italic
+    }
+
+    .hljs-strong {
+      font-weight: 700
+    }
+
+    .hljs-link {
+      text-decoration: underline
+    }
+  </style>
+</head>
+
+<body>
+  <div id='content'>
+    <h1 id="document-normalizer-for-your-website---user-guide">Document Normalizer for Your Website - User Guide</h1>
+    <p>With Dynamsoft Document Normalizer JavaScript edition, you can add to your website the ability to take pictures
+      of documents with your camera and normalize them to obtain high-quality images for further processing or archiving
+      purposes.</p>
+    <blockquote>
+      <p>Dynamsoft Document Normalizer v2.0.11 and above is based on Dynamsoft Capture Vision Architecture. To learn
+        more, read <a href="https://www.dynamsoft.com/capture-vision/docs/core/introduction/">Introduction to Dynamsoft
+          Capture Vision</a>.</p>
+    </blockquote>
+    <p>In this guide, you'll learn step-by-step how to build such a simple solution in a web page.</p>
+    <p><span style="font-size:20px">Table of Contents</span></p>
+    <ul>
+      <li><a href="#document-normalizer-for-your-website---user-guide">Document Normalizer for Your Website - User
+          Guide</a></li>
+      <li><a href="#hello-world---simplest-implementation">Hello World - Simplest Implementation</a>
+        <ul>
+          <li><a href="#understand-the-code">Understand the code</a></li>
+          <li><a href="#about-the-code">About the code</a></li>
+          <li><a href="#run-the-example">Run the example</a></li>
+        </ul>
+      </li>
+      <li><a href="#building-your-own-page">Building your own page</a>
+        <ul>
+          <li><a href="#include-the-sdk">Include the SDK</a></li>
+          <li><a href="#use-a-cdn">Use a CDN</a></li>
+          <li><a href="#host-the-sdk-yourself">Host the SDK yourself</a></li>
+          <li><a href="#define-necessary-html-elements">Define necessary HTML elements</a></li>
+          <li><a href="#prepare-the-sdk-for-the-task">Prepare the SDK for the task</a></li>
+          <li><a href="#start-the-detection">Start the detection</a></li>
+          <li><a href="#review-and-adjust-the-boundary">Review and adjust the boundary</a></li>
+          <li><a href="#normalize-the-document">Normalize the document</a></li>
+          <li><a href="#output-the-document-as-a-file">Output the document as a file</a></li>
+          <li><a href="#restart-task">Restart task</a></li>
+        </ul>
+      </li>
+      <li><a href="#system-requirements">System requirements</a></li>
+      <li><a href="#release-notes">Release notes</a></li>
+      <li><a href="#next-steps">Next steps</a></li>
+    </ul>
+    <h2 id="hello-world---simplest-implementation">Hello World - Simplest Implementation</h2>
+    <p>The solution consists of two steps</p>
+    <ol>
+      <li>Detect the document boundaries</li>
+      <li>Normalize the document based on the detected boundaries</li>
+    </ol>
+    <h3 id="understand-the-code">Understand the code</h3>
+    <p>The following sample code sets up the SDK and implements boundary detection on a web page, which is just the
+      first step in capturing a normalized image of your document. We'll cover the second step later in <a
+        href="#building-your-own-page">Building Your Own Page</a>.</p>
+    <pre><code class="hljs html language-html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">html</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span>&gt;</span>
 
 <span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span>
@@ -303,49 +404,85 @@
 
 <span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span>
 </code></pre>
-<hr />
-<h4 id="about-the-code">About the code</h4>
-<ul>
-<li><p><code>Dynamsoft.License.LicenseManager.initLicense()</code>: initializes the license using a license key string.</p></li>
-<li><p><code>Dynamsoft.Core.CoreModule.loadWasm(["DDN"])</code>: preloads the <code>DocumentNormalizer</code> module, saving time in preparing for document border detection and image normalization.</p></li>
-<li><p><code>Dynamsoft.CVR.CaptureVisionRouter.createInstance()</code>: initializes the <code>router</code> variable by creating an instance of the <code>CaptureVisionRouter</code> class. An instance of <code>CaptureVisionRouter</code> is the core of any solution based on Dynamsoft Capture Vision architecture.</p></li>
-</ul>
-<blockquote>
-  <p>Read more on <a href="https://www.dynamsoft.com/capture-vision/docs/core/architecture/#capture-vision-router">what is CaptureVisionRouter</a></p>
-</blockquote>
-<ul>
-<li><p><code>Dynamsoft.DCE.CameraEnhancer.createInstance(view)</code>: initializes the <code>cameraEnhancer</code> variable by creating an instance of the <code>CameraEnhancer</code> class.</p></li>
-<li><p><code>setInput()</code>: <code>router</code> connects to the image source through the <a href="https://www.dynamsoft.com/capture-vision/docs/web//programming/javascript/api-reference/core/image-source-adapter.html">Image Source Adapter</a> interface with the method <code>setInput()</code>.</p></li>
-</ul>
-<blockquote>
-  <p>The image source in our case is a CameraEnhancer object created with <code>Dynamsoft.DCE.CameraEnhancer.createInstance(view)</code></p>
-  <p>In some cases, a different camera might be required instead of the default one. Also, a different resolution might work better. To change the camera or the resolution, use the <code>CameraEnhancer</code> instance <code>cameraEnhancer</code>. Learn more <a href="https://www.dynamsoft.com/camera-enhancer/docs/programming/javascript/api-reference/camera-control.html?ver=4.0.0&utm_source=npm&product=ddn&package=js">here</a>.</p>
-</blockquote>
-<ul>
-<li><code>startCapturing("DetectDocumentBoundaries_Default")</code> : starts to run images through a pre-defined process which, in the case of "DetectDocumentBoundaries_Default", tries to find the boundary of a document present in the image(s).</li>
-</ul>
-<h3 id="run-the-example">Run the example</h3>
-<p>Create a text file called "Detect-A-Document-Boundary.html", fill it with the code above and save it. After that, open the example page in your browser, allow the page to access your camera, and the video will be displayed on the page. Afterwards, you will see the detected boundaries displayed on the video in real time.</p>
-<blockquote>
-  <p>NOTE:</p>
-  <p>The sample code requires the following to run:</p>
-  <ol>
-  <li>Internet connection</li>
-  <li><a href="#system-requirements">A supported browser</a></li>
-  <li>An accessible Camera</li>
-  </ol>
-</blockquote>
-<p>Please note:</p>
-<ul>
-<li>Although the page should work properly when opened directly as a file ("file:///"), it's recommended that you deploy it to a web server and access it via HTTPS.</li>
-<li>On first use, you need to wait a few seconds for the SDK to initialize.</li>
-<li>The license "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9" used in this sample is an online license good for 24 hours and requires network connection to work. To test the SDK further, you can request a 30-day trial license via the <a href="https://www.dynamsoft.com/customer/license/trialLicense?utm_source=npm&architecture=dcv&product=ddn&package=js">customer portal</a>.</li>
-</ul>
-<p>If the test doesn't go as expected, you can <a href="https://www.dynamsoft.com/company/customer-service/#contact">contact us</a>.</p>
-<h2 id="building-your-own-page">Building your own page</h2>
-<p>In this section, we'll break down and show all the steps needed to build the solution in a web page.</p>
-<p>We'll build on this skeleton page:</p>
-<pre><code class="hljs html language-html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">html</span>&gt;</span>
+    <hr />
+    <h4 id="about-the-code">About the code</h4>
+    <ul>
+      <li>
+        <p><code>Dynamsoft.License.LicenseManager.initLicense()</code>: initializes the license using a license key
+          string.</p>
+      </li>
+      <li>
+        <p><code>Dynamsoft.Core.CoreModule.loadWasm(["DDN"])</code>: preloads the <code>DocumentNormalizer</code>
+          module, saving time in preparing for document border detection and image normalization.</p>
+      </li>
+      <li>
+        <p><code>Dynamsoft.CVR.CaptureVisionRouter.createInstance()</code>: initializes the <code>router</code> variable
+          by creating an instance of the <code>CaptureVisionRouter</code> class. An instance of
+          <code>CaptureVisionRouter</code> is the core of any solution based on Dynamsoft Capture Vision architecture.
+        </p>
+      </li>
+    </ul>
+    <blockquote>
+      <p>Read more on <a
+          href="https://www.dynamsoft.com/capture-vision/docs/core/architecture/#capture-vision-router">what is
+          CaptureVisionRouter</a></p>
+    </blockquote>
+    <ul>
+      <li>
+        <p><code>Dynamsoft.DCE.CameraEnhancer.createInstance(view)</code>: initializes the <code>cameraEnhancer</code>
+          variable by creating an instance of the <code>CameraEnhancer</code> class.</p>
+      </li>
+      <li>
+        <p><code>setInput()</code>: <code>router</code> connects to the image source through the <a
+            href="https://www.dynamsoft.com/capture-vision/docs/web//programming/javascript/api-reference/core/image-source-adapter.html">Image
+            Source Adapter</a> interface with the method <code>setInput()</code>.</p>
+      </li>
+    </ul>
+    <blockquote>
+      <p>The image source in our case is a CameraEnhancer object created with
+        <code>Dynamsoft.DCE.CameraEnhancer.createInstance(view)</code>
+      </p>
+      <p>In some cases, a different camera might be required instead of the default one. Also, a different resolution
+        might work better. To change the camera or the resolution, use the <code>CameraEnhancer</code> instance
+        <code>cameraEnhancer</code>. Learn more <a
+          href="https://www.dynamsoft.com/camera-enhancer/docs/programming/javascript/api-reference/camera-control.html?ver=4.0.0&utm_source=npm&product=ddn&package=js">here</a>.
+      </p>
+    </blockquote>
+    <ul>
+      <li><code>startCapturing("DetectDocumentBoundaries_Default")</code> : starts to run images through a pre-defined
+        process which, in the case of "DetectDocumentBoundaries_Default", tries to find the boundary of a document
+        present in the image(s).</li>
+    </ul>
+    <h3 id="run-the-example">Run the example</h3>
+    <p>Create a text file called "Detect-A-Document-Boundary.html", fill it with the code above and save it. After that,
+      open the example page in your browser, allow the page to access your camera, and the video will be displayed on
+      the page. Afterwards, you will see the detected boundaries displayed on the video in real time.</p>
+    <blockquote>
+      <p>NOTE:</p>
+      <p>The sample code requires the following to run:</p>
+      <ol>
+        <li>Internet connection</li>
+        <li><a href="#system-requirements">A supported browser</a></li>
+        <li>An accessible Camera</li>
+      </ol>
+    </blockquote>
+    <p>Please note:</p>
+    <ul>
+      <li>Although the page should work properly when opened directly as a file ("file:///"), it's recommended that you
+        deploy it to a web server and access it via HTTPS.</li>
+      <li>On first use, you need to wait a few seconds for the SDK to initialize.</li>
+      <li>The license "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9" used in this sample is an online license good for 24
+        hours and requires network connection to work. To test the SDK further, you can request a 30-day trial license
+        via the <a
+          href="https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform">customer
+          portal</a>.</li>
+    </ul>
+    <p>If the test doesn't go as expected, you can <a
+        href="https://www.dynamsoft.com/company/customer-service/#contact">contact us</a>.</p>
+    <h2 id="building-your-own-page">Building your own page</h2>
+    <p>In this section, we'll break down and show all the steps needed to build the solution in a web page.</p>
+    <p>We'll build on this skeleton page:</p>
+    <pre><code class="hljs html language-html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">html</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span>
     <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"viewport"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"width=device-width, initial-scale=1.0"</span> /&gt;</span>
@@ -358,65 +495,77 @@
 <span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span>
 </code></pre>
-<h3 id="include-the-sdk">Include the SDK</h3>
-<p>To utilize the SDK, the initial step involves including the corresponding resource files:</p>
-<ul>
-<li><code>core.js</code>: Required, encompasses common classes, interfaces, and enumerations that are shared across all Dynamsoft SDKs.</li>
-<li><code>license.js</code>: Required, introduces the <code>LicenseManager</code> class, which manages the licensing for all Dynamsoft SDKs.</li>
-<li><code>utility.js</code>Optional, encompasses auxiliary classes that are shared among all Dynamsoft SDKs.</li>
-<li><code>dbr.js</code>: Required, defines interfaces and enumerations specifically tailored to the barcode reader module.</li>
-<li><code>cvr.js</code>: Required, introduces the <code>CaptureVisionRouter</code> class, which governs the entire image processing workflow.</li>
-<li><code>dce.js</code>: Recommended, comprises classes that offer camera support and basic user interface functionalities.</li>
-</ul>
-<h4 id="use-a-cdn">Use a CDN</h4>
-<p>The simplest way to include the SDK is to use either the <a href="https://jsdelivr.com/">jsDelivr</a> or <a href="https://unpkg.com/">UNPKG</a> CDN.</p>
-<ul>
-<li>jsDelivr</li>
-</ul>
-<pre><code class="hljs html language-html">  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+    <h3 id="include-the-sdk">Include the SDK</h3>
+    <p>To utilize the SDK, the initial step involves including the corresponding resource files:</p>
+    <ul>
+      <li><code>core.js</code>: Required, encompasses common classes, interfaces, and enumerations that are shared
+        across all Dynamsoft SDKs.</li>
+      <li><code>license.js</code>: Required, introduces the <code>LicenseManager</code> class, which manages the
+        licensing for all Dynamsoft SDKs.</li>
+      <li><code>utility.js</code>Optional, encompasses auxiliary classes that are shared among all Dynamsoft SDKs.</li>
+      <li><code>dbr.js</code>: Required, defines interfaces and enumerations specifically tailored to the barcode reader
+        module.</li>
+      <li><code>cvr.js</code>: Required, introduces the <code>CaptureVisionRouter</code> class, which governs the entire
+        image processing workflow.</li>
+      <li><code>dce.js</code>: Recommended, comprises classes that offer camera support and basic user interface
+        functionalities.</li>
+    </ul>
+    <h4 id="use-a-cdn">Use a CDN</h4>
+    <p>The simplest way to include the SDK is to use either the <a href="https://jsdelivr.com/">jsDelivr</a> or <a
+        href="https://unpkg.com/">UNPKG</a> CDN.</p>
+    <ul>
+      <li>jsDelivr</li>
+    </ul>
+    <pre><code class="hljs html language-html">  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-license@3.0.20/dist/license.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-utility@1.0.20/dist/utility.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-document-normalizer@2.0.20/dist/ddn.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-router@2.0.30/dist/cvr.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/dynamsoft-camera-enhancer@4.0.1/dist/dce.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
-<ul>
-<li>UNPKG</li>
-</ul>
-<pre><code class="hljs html language-html">  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+    <ul>
+      <li>UNPKG</li>
+    </ul>
+    <pre><code class="hljs html language-html">  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-license@3.0.20/dist/license.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-utility@1.0.20/dist/utility.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-document-normalizer@2.0.20/dist/ddn.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-capture-vision-router@2.0.30/dist/cvr.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/dynamsoft-camera-enhancer@4.0.1/dist/dce.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
-<h4 id="host-the-sdk-yourself">Host the SDK yourself</h4>
-<p>Besides using the CDN, you can also download the SDK and host its files on your own website / server before including it in your application.</p>
-<p>Options to download the SDK:</p>
-<ul>
-<li><p>From the website</p>
-<p><a href="https://www.dynamsoft.com/document-normalizer/downloads/?ver=2.0.20&utm_source=npm">Download the JavaScript ZIP package</a></p></li>
-<li><p>yarn</p></li>
-</ul>
-<pre><code class="hljs cmd language-cmd">  yarn add dynamsoft-core@<span class="hljs-number">3</span>.<span class="hljs-number">0</span>.<span class="hljs-number">30</span> --save
+    <h4 id="host-the-sdk-yourself">Host the SDK yourself</h4>
+    <p>Besides using the CDN, you can also download the SDK and host its files on your own website / server before
+      including it in your application.</p>
+    <p>Options to download the SDK:</p>
+    <ul>
+      <li>
+        <p>From the website</p>
+        <p><a href="https://www.dynamsoft.com/document-normalizer/downloads/?ver=2.0.20&utm_source=npm">Download the
+            JavaScript ZIP package</a></p>
+      </li>
+      <li>
+        <p>yarn</p>
+      </li>
+    </ul>
+    <pre><code class="hljs cmd language-cmd">  yarn add dynamsoft-core@<span class="hljs-number">3</span>.<span class="hljs-number">0</span>.<span class="hljs-number">30</span> --save
   yarn add dynamsoft-license@<span class="hljs-number">3</span>.<span class="hljs-number">0</span>.<span class="hljs-number">20</span> --save
   yarn add dynamsoft-utility@<span class="hljs-number">1</span>.<span class="hljs-number">0</span>.<span class="hljs-number">20</span> --save
   yarn add dynamsoft-document-normalizer@<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">20</span> --save
   yarn add dynamsoft-capture-vision-router@<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">30</span> --save
   yarn add dynamsoft-camera-enhancer@<span class="hljs-number">4</span>.<span class="hljs-number">0</span>.<span class="hljs-number">1</span> --save
 </code></pre>
-<ul>
-<li>npm</li>
-</ul>
-<pre><code class="hljs cmd language-cmd">  npm install dynamsoft-core@<span class="hljs-number">3</span>.<span class="hljs-number">0</span>.<span class="hljs-number">30</span> --save
+    <ul>
+      <li>npm</li>
+    </ul>
+    <pre><code class="hljs cmd language-cmd">  npm install dynamsoft-core@<span class="hljs-number">3</span>.<span class="hljs-number">0</span>.<span class="hljs-number">30</span> --save
   npm install dynamsoft-license@<span class="hljs-number">3</span>.<span class="hljs-number">0</span>.<span class="hljs-number">20</span> --save
   npm install dynamsoft-utility@<span class="hljs-number">1</span>.<span class="hljs-number">0</span>.<span class="hljs-number">20</span> --save
   npm install dynamsoft-document-normalizer@<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">20</span> --save
   npm install dynamsoft-capture-vision-router@<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">30</span> --save
   npm install dynamsoft-camera-enhancer@<span class="hljs-number">4</span>.<span class="hljs-number">0</span>.<span class="hljs-number">1</span> --save
 </code></pre>
-<p>Depending on how you downloaded the SDK and where you put it, you can typically include it like this:</p>
-<pre><code class="hljs html language-html">  <span class="hljs-comment">&lt;!-- Upon extracting the zip package into your project, you can generally include it in the following manner --&gt;</span>
+    <p>Depending on how you downloaded the SDK and where you put it, you can typically include it like this:</p>
+    <pre><code class="hljs html language-html">  <span class="hljs-comment">&lt;!-- Upon extracting the zip package into your project, you can generally include it in the following manner --&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./dynamsoft/distributables/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./dynamsoft/distributables/dynamsoft-license@3.0.20/dist/license.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./dynamsoft/distributables/dynamsoft-utility@1.0.20/dist/utility.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
@@ -424,33 +573,33 @@
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./dynamsoft/distributables/dynamsoft-capture-vision-router@2.0.30/dist/cvr.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./dynamsoft/distributables/dynamsoft-camera-enhancer@4.0.1/dist/dce.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
-<p>or</p>
-<pre><code class="hljs html language-html">  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+    <p>or</p>
+    <pre><code class="hljs html language-html">  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-core@3.0.30/dist/core.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-license@3.0.20/dist/license.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-utility@1.0.20/dist/utility.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-document-normalizer@2.0.20/dist/dbr.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-capture-vision-router@2.0.30/dist/cvr.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./node_modules/dynamsoft-camera-enhancer@4.0.1/dist/dce.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
-<h3 id="define-necessary-html-elements">Define necessary HTML elements</h3>
-<p>For this solution, we define three buttons and three <code>&lt;div&gt;</code> elements.</p>
-<pre><code class="hljs html language-html"><span class="hljs-tag">&lt;<span class="hljs-name">button</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"start-detecting"</span> <span class="hljs-attr">onclick</span>=<span class="hljs-string">"startDetecting()"</span>&gt;</span>Start Detecting<span class="hljs-tag">&lt;/<span class="hljs-name">button</span>&gt;</span>
+    <h3 id="define-necessary-html-elements">Define necessary HTML elements</h3>
+    <p>For this solution, we define three buttons and three <code>&lt;div&gt;</code> elements.</p>
+    <pre><code class="hljs html language-html"><span class="hljs-tag">&lt;<span class="hljs-name">button</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"start-detecting"</span> <span class="hljs-attr">onclick</span>=<span class="hljs-string">"startDetecting()"</span>&gt;</span>Start Detecting<span class="hljs-tag">&lt;/<span class="hljs-name">button</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">button</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"restart-detecting"</span> <span class="hljs-attr">onclick</span>=<span class="hljs-string">"restartDetecting()"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"display: none"</span>&gt;</span>Restart Detecting<span class="hljs-tag">&lt;/<span class="hljs-name">button</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">button</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"normalize-with-confirmed-quad"</span> <span class="hljs-attr">disabled</span>&gt;</span>Normalize<span class="hljs-tag">&lt;/<span class="hljs-name">button</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">br</span> /&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"div-ui-container"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"margin-top: 10px; height: 450px"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"div-image-container"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"display: none; width: 100%; height: 70vh"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"normalized-result"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 </code></pre>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">const</span> btnStart = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#start-detecting"</span>);
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">const</span> btnStart = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#start-detecting"</span>);
 <span class="hljs-keyword">const</span> btnRestart = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#restart-detecting"</span>);
 <span class="hljs-keyword">const</span> btnNormalize = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#normalize-with-confirmed-quad"</span>);
 <span class="hljs-keyword">const</span> cameraViewContainer = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#div-ui-container"</span>);
 <span class="hljs-keyword">const</span> imageEditorViewContainer = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#div-image-container"</span>);
 <span class="hljs-keyword">const</span> normalizedImageContainer = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#normalized-result"</span>);
 </code></pre>
-<h3 id="prepare-the-sdk-for-the-task">Prepare the SDK for the task</h3>
-<p>The following function executes as soon as the page loads to get the SDK prepared:</p>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">let</span> cameraEnhancer = <span class="hljs-literal">null</span>;
+    <h3 id="prepare-the-sdk-for-the-task">Prepare the SDK for the task</h3>
+    <p>The following function executes as soon as the page loads to get the SDK prepared:</p>
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">let</span> cameraEnhancer = <span class="hljs-literal">null</span>;
 <span class="hljs-keyword">let</span> router = <span class="hljs-literal">null</span>;
 <span class="hljs-keyword">let</span> items;
 <span class="hljs-keyword">let</span> layer;
@@ -478,13 +627,20 @@ Dynamsoft.Core.CoreModule.loadWasm([<span class="hljs-string">"DDN"</span>])
   router.setInput(cameraEnhancer);
 })();
 </code></pre>
-<p>The code was explained earlier. Please refer to <a href="#about-the-code">About the Code</a>.</p>
-<h3 id="start-the-detection">Start the detection</h3>
-<p>Once the image processing is complete, the results are sent to all the registered <code>CapturedResultReceiver</code> objects. Each <code>CapturedResultReceiver</code> object may encompass one or multiple callback functions associated with various result types. In our task, we need to detect the document border and normalize it, so we use callback function <code>onCapturedResultReceived</code> to get both detected borders and the original image for later normalization.</p>
-<blockquote>
-  <p>Read more on <a href="https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/core/basic-structures/captured-result-receiver.html"><code>CapturedResultReceiver</code></a></p>
-</blockquote>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">let</span> cvrReady = (<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initCVR</span>(<span class="hljs-params"></span>) </span>{
+    <p>The code was explained earlier. Please refer to <a href="#about-the-code">About the Code</a>.</p>
+    <h3 id="start-the-detection">Start the detection</h3>
+    <p>Once the image processing is complete, the results are sent to all the registered
+      <code>CapturedResultReceiver</code> objects. Each <code>CapturedResultReceiver</code> object may encompass one or
+      multiple callback functions associated with various result types. In our task, we need to detect the document
+      border and normalize it, so we use callback function <code>onCapturedResultReceived</code> to get both detected
+      borders and the original image for later normalization.
+    </p>
+    <blockquote>
+      <p>Read more on <a
+          href="https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/core/basic-structures/captured-result-receiver.html"><code>CapturedResultReceiver</code></a>
+      </p>
+    </blockquote>
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">let</span> cvrReady = (<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initCVR</span>(<span class="hljs-params"></span>) </span>{
   <span class="hljs-comment">/**
    * Creates a CaptureVisionRouter instance and configure the task to detect document boundaries.
    * Also, make sure the original image is returned after it has been processed.
@@ -512,8 +668,8 @@ Dynamsoft.Core.CoreModule.loadWasm([<span class="hljs-string">"DDN"</span>])
   <span class="hljs-comment">/* Do something with the result items*/</span>
 }
 </code></pre>
-<p>And we define the function <code>startDetecting</code> like this:</p>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">startDetecting</span>(<span class="hljs-params"></span>) </span>{
+    <p>And we define the function <code>startDetecting</code> like this:</p>
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">startDetecting</span>(<span class="hljs-params"></span>) </span>{
   <span class="hljs-keyword">try</span> {
     <span class="hljs-keyword">await</span> (promiseCVRReady = promiseCVRReady || <span class="hljs-function">(<span class="hljs-params"><span class="hljs-keyword">async</span> (</span>) =&gt;</span> {
       <span class="hljs-keyword">await</span> cvrReady;
@@ -534,46 +690,54 @@ Dynamsoft.Core.CoreModule.loadWasm([<span class="hljs-string">"DDN"</span>])
   }
 }
 </code></pre>
-<p>The steps of the workflow is as follows</p>
-<ol>
-<li><code>cameraEnhancer</code> streams the video, captures live video frames and stores them in a buffer.</li>
-<li><code>router</code> gets the video frames from <code>Image Source Adapter</code> and passes them to be processed by an internal <code>DocumentNormalizer</code> instance. The <code>cameraEnhancer</code> used here is a special implementation of the <code>Image Source Adapter</code>.</li>
-<li>The internal <code>DocumentNormalizer</code> instance returns the found document boundaries, known as <code>quadsResultItems</code>, to <code>router</code>.</li>
-<li>The <code>router</code> can output all types of CapturedResults that need to be captured through the <code>onCapturedResultReceived</code> callback function. In this example code we use the callback function to output <code>quadsResultItems</code> and <code>originalImageResultItem</code>.</li>
-</ol>
-<blockquote>
-  <p>Also note that the <code>quadsResultItems</code> are drawn over the video automatically to show the detection in action.</p>
-</blockquote>
-<p><em>Note</em>:</p>
-<ul>
-<li><code>router</code> is engineered to consistently request images from the image source.</li>
-<li>Three preset templates are at your disposal for document normalizing or border detection:</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>Template Name</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>DetectDocumentBoundaries_Default</strong></td>
-<td>Detect document border on images.</td>
-</tr>
-<tr>
-<td><strong>NormalizeDocument_Default</strong></td>
-<td>Input an ROI and an image and normalize it.</td>
-</tr>
-<tr>
-<td><strong>DetectAndNormalizeDocument_Default</strong></td>
-<td>Detect document border on images and normalize it</td>
-</tr>
-</tbody>
-</table>
-<h3 id="review-and-adjust-the-boundary">Review and adjust the boundary</h3>
-<p>First we update the callback function, use a specific condition to ensure that the camera has stabilized:</p>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleCapturedResult</span>(<span class="hljs-params">result</span>) </span>{
+    <p>The steps of the workflow is as follows</p>
+    <ol>
+      <li><code>cameraEnhancer</code> streams the video, captures live video frames and stores them in a buffer.</li>
+      <li><code>router</code> gets the video frames from <code>Image Source Adapter</code> and passes them to be
+        processed by an internal <code>DocumentNormalizer</code> instance. The <code>cameraEnhancer</code> used here is
+        a special implementation of the <code>Image Source Adapter</code>.</li>
+      <li>The internal <code>DocumentNormalizer</code> instance returns the found document boundaries, known as
+        <code>quadsResultItems</code>, to <code>router</code>.
+      </li>
+      <li>The <code>router</code> can output all types of CapturedResults that need to be captured through the
+        <code>onCapturedResultReceived</code> callback function. In this example code we use the callback function to
+        output <code>quadsResultItems</code> and <code>originalImageResultItem</code>.
+      </li>
+    </ol>
+    <blockquote>
+      <p>Also note that the <code>quadsResultItems</code> are drawn over the video automatically to show the detection
+        in action.</p>
+    </blockquote>
+    <p><em>Note</em>:</p>
+    <ul>
+      <li><code>router</code> is engineered to consistently request images from the image source.</li>
+      <li>Three preset templates are at your disposal for document normalizing or border detection:</li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Template Name</th>
+          <th>Function</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DetectDocumentBoundaries_Default</strong></td>
+          <td>Detect document border on images.</td>
+        </tr>
+        <tr>
+          <td><strong>NormalizeDocument_Default</strong></td>
+          <td>Input an ROI and an image and normalize it.</td>
+        </tr>
+        <tr>
+          <td><strong>DetectAndNormalizeDocument_Default</strong></td>
+          <td>Detect document border on images and normalize it</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3 id="review-and-adjust-the-boundary">Review and adjust the boundary</h3>
+    <p>First we update the callback function, use a specific condition to ensure that the camera has stabilized:</p>
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleCapturedResult</span>(<span class="hljs-params">result</span>) </span>{
       <span class="hljs-comment">/* Update the result of the latest frame to the global variable items*/</span>
       items = result.items;
       <span class="hljs-comment">/* Do something with the result */</span>
@@ -618,9 +782,12 @@ Dynamsoft.Core.CoreModule.loadWasm([<span class="hljs-string">"DDN"</span>])
       }
     }
 </code></pre>
-<p>The SDK tries to find the boundary of the document in each and every image processed. This happens very fast and we don't always get the perfect boundary for normalization. Therefore, we can refine the boundary within the <code>ImageEditorView</code> to enhance its quality before proceeding with the normalization process.<br />
-To do this, we can record the manually edited border information by:</p>
-<pre><code class="hljs js language-js">btnNormalize.addEventListener(<span class="hljs-string">"click"</span>, <span class="hljs-keyword">async</span> () =&gt; {
+    <p>The SDK tries to find the boundary of the document in each and every image processed. This happens very fast and
+      we don't always get the perfect boundary for normalization. Therefore, we can refine the boundary within the
+      <code>ImageEditorView</code> to enhance its quality before proceeding with the normalization process.<br />
+      To do this, we can record the manually edited border information by:
+    </p>
+    <pre><code class="hljs js language-js">btnNormalize.addEventListener(<span class="hljs-string">"click"</span>, <span class="hljs-keyword">async</span> () =&gt; {
   <span class="hljs-comment">/* Gets the selected quadrilateral. */</span>
   <span class="hljs-keyword">let</span> seletedItems = imageEditorView.getSelectedDrawingItems();
   <span class="hljs-keyword">let</span> quad;
@@ -631,16 +798,20 @@ To do this, we can record the manually edited border information by:</p>
   }
 });
 </code></pre>
-<p>Now, the behavior will be</p>
-<ol>
-<li>The page constantly detect the boundary of the document in the video.</li>
-<li>When the border is successfully found for 30 consecutive frames, the page hides the video stream and draw both the image and the boundary in the "imageEditorViewer".</li>
-<li>The user can adjust the boundary to be more precise.</li>
-</ol>
-<h3 id="normalize-the-document">Normalize the document</h3>
-<p>After the user has adjusted the boundary or determined that the found boundary is good enough, he can press the button "Normalize" to carry out the normalization as the last step of the solution.<br />
-One way to use the adjusted border is to set it as the new ROI in the template <code>NormalizeDocument_Default</code>. You can simply update the code like this:</p>
-<pre><code class="hljs js language-js">btnNormalize.addEventListener(<span class="hljs-string">"click"</span>, <span class="hljs-keyword">async</span> () =&gt; {
+    <p>Now, the behavior will be</p>
+    <ol>
+      <li>The page constantly detect the boundary of the document in the video.</li>
+      <li>When the border is successfully found for 30 consecutive frames, the page hides the video stream and draw both
+        the image and the boundary in the "imageEditorViewer".</li>
+      <li>The user can adjust the boundary to be more precise.</li>
+    </ol>
+    <h3 id="normalize-the-document">Normalize the document</h3>
+    <p>After the user has adjusted the boundary or determined that the found boundary is good enough, he can press the
+      button "Normalize" to carry out the normalization as the last step of the solution.<br />
+      One way to use the adjusted border is to set it as the new ROI in the template
+      <code>NormalizeDocument_Default</code>. You can simply update the code like this:
+    </p>
+    <pre><code class="hljs js language-js">btnNormalize.addEventListener(<span class="hljs-string">"click"</span>, <span class="hljs-keyword">async</span> () =&gt; {
   <span class="hljs-comment">/* Gets the selected quadrilateral. */</span>
   <span class="hljs-keyword">let</span> seletedItems = imageEditorView.getSelectedDrawingItems();
   <span class="hljs-keyword">let</span> quad;
@@ -670,24 +841,25 @@ One way to use the adjusted border is to set it as the new ROI in the template <
   btnNormalize.disabled = <span class="hljs-literal">true</span>;
 });
 </code></pre>
-<p>The added behavior is:</p>
-<ol>
-<li>The user hits "Normalize Image"</li>
-<li>The image gets normalized with the adjusted boundary</li>
-<li>The normalized image shows up on the page</li>
-</ol>
-<h3 id="output-the-document-as-a-file">Output the document as a file</h3>
-<p>We can output the document as a file with the help of the class <code>Dynamsoft.Utility.ImageManager</code>. To do this, we change the following line in the function "normalizeImage()":</p>
-<pre><code class="hljs js language-js">normalizedImageContainer.append(normalizeResult.items[<span class="hljs-number">0</span>].toCanvas());
+    <p>The added behavior is:</p>
+    <ol>
+      <li>The user hits "Normalize Image"</li>
+      <li>The image gets normalized with the adjusted boundary</li>
+      <li>The normalized image shows up on the page</li>
+    </ol>
+    <h3 id="output-the-document-as-a-file">Output the document as a file</h3>
+    <p>We can output the document as a file with the help of the class <code>Dynamsoft.Utility.ImageManager</code>. To
+      do this, we change the following line in the function "normalizeImage()":</p>
+    <pre><code class="hljs js language-js">normalizedImageContainer.append(normalizeResult.items[<span class="hljs-number">0</span>].toCanvas());
 </code></pre>
-<p>to </p>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">const</span> imageManager = <span class="hljs-keyword">new</span> Dynamsoft.Utility.ImageManager();
+    <p>to </p>
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">const</span> imageManager = <span class="hljs-keyword">new</span> Dynamsoft.Utility.ImageManager();
 imageManager.saveToFile(normalizeResult.items[<span class="hljs-number">0</span>].imageData, <span class="hljs-string">"result.jpg"</span>, <span class="hljs-literal">true</span>);
 </code></pre>
-<p>Then once a document has been normalized, it is downloaded as JPEG file in the browser.</p>
-<h3 id="restart-task">Restart task</h3>
-<p>You can also add a button to restart the entire task:</p>
-<pre><code class="hljs js language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">restartDetecting</span>(<span class="hljs-params"></span>) </span>{
+    <p>Then once a document has been normalized, it is downloaded as JPEG file in the browser.</p>
+    <h3 id="restart-task">Restart task</h3>
+    <p>You can also add a button to restart the entire task:</p>
+    <pre><code class="hljs js language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">restartDetecting</span>(<span class="hljs-params"></span>) </span>{
   <span class="hljs-comment">/* Reset the UI elements and restart the detection task. */</span>
   imageEditorViewContainer.style.display = <span class="hljs-string">"none"</span>;
   normalizedImageContainer.innerHTML = <span class="hljs-string">""</span>;
@@ -699,64 +871,88 @@ imageManager.saveToFile(normalizeResult.items[<span class="hljs-number">0</span>
   <span class="hljs-keyword">await</span> router.startCapturing(<span class="hljs-string">"DetectDocumentBoundaries_Default"</span>);
 }
 </code></pre>
-<!--TODO-->
-<p>You can also test the code above at <a href="https://jsfiddle.net/DynamsoftTeam/L4m7r1db/">https://jsfiddle.net/DynamsoftTeam/</a></p>
-<p align="center" style="text-align:center; white-space: normal; ">
-  <a target="_blank" href="https://https://jsfiddle.net/DynamsoftTeam/L4m7r1db/" title="Run via JSFiddle">
-    <img src="https://cdn.jsdelivr.net/npm/simple-icons@3.0.1/icons/jsfiddle.svg" alt="Run via JSFiddle" width="20" height="20" style="width:20px;height:20px;">
-  </a>
-</p>
-<h2 id="system-requirements">System requirements</h2>
-<p>The SDK requires the following features to work:</p>
-<ul>
-<li><p>Secure context (HTTPS deployment)</p>
-<p>When deploying your application / website for production, make sure to serve it via a secure HTTPS connection. This is required for two reasons</p></li>
-<li><p>Access to the camera video stream is only granted in a security context. Most browsers impose this restriction.</p></li>
-</ul>
-<blockquote>
-  <p>Some browsers like Chrome may grant the access for <code>http://127.0.0.1</code> and <code>http://localhost</code> or even for pages opened directly from the local disk (<code>file:///...</code>). This can be helpful for temporary development and test.</p>
-</blockquote>
-<ul>
-<li><p>Dynamsoft License requires a secure context to work.</p></li>
-<li><p><code>WebAssembly</code>, <code>Blob</code>, <code>URL</code>/<code>createObjectURL</code>, <code>Web Workers</code></p>
-<p>The above four features are required for the SDK to work.</p></li>
-</ul>
-<p>The following table is a list of supported browsers based on the above requirements:</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:center;">Browser Name</th>
-<th style="text-align:center;">Version</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center;">Chrome</td>
-<td style="text-align:center;">v78+</td>
-</tr>
-<tr>
-<td style="text-align:center;">Firefox</td>
-<td style="text-align:center;">v62+</td>
-</tr>
-<tr>
-<td style="text-align:center;">Safari</td>
-<td style="text-align:center;">v14+</td>
-</tr>
-<tr>
-<td style="text-align:center;">Edge</td>
-<td style="text-align:center;">v79+</td>
-</tr>
-</tbody>
-</table>
-<p>Apart from the browsers, the operating systems may impose some limitations of their own that could restrict the use of the SDK.</p>
-<h2 id="release-notes">Release notes</h2>
-<p>Learn what are included in each release at <a href="https://www.dynamsoft.com/document-normalizer/docs/programming/javascript/release-notes/?ver=latest">https://www.dynamsoft.com/document-normalizer/docs/programming/javascript/release-notes/?ver=latest</a>.</p>
-<h2 id="next-steps">Next steps</h2>
-<p>Now that you have got the SDK integrated, you can choose to move forward in the following directions</p>
-<ol>
-<li>Check out the <a href="https://github.com/Dynamsoft/document-normalizer-javascript-samples">official samples</a>.</li>
-<li>Learn about the available <a href="https://www.dynamsoft.com/document-normalizer/docs/web/programming/javascript/api-reference/?ver=latest">APIs</a>.</li>
-</ol>
-    </div>
-  </body>
+    <!--TODO-->
+    <p>You can also test the code above at <a
+        href="https://jsfiddle.net/DynamsoftTeam/L4m7r1db/">https://jsfiddle.net/DynamsoftTeam/</a></p>
+    <p align="center" style="text-align:center; white-space: normal; ">
+      <a target="_blank" href="https://https://jsfiddle.net/DynamsoftTeam/L4m7r1db/" title="Run via JSFiddle">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@3.0.1/icons/jsfiddle.svg" alt="Run via JSFiddle" width="20"
+          height="20" style="width:20px;height:20px;">
+      </a>
+    </p>
+    <h2 id="system-requirements">System requirements</h2>
+    <p>The SDK requires the following features to work:</p>
+    <ul>
+      <li>
+        <p>Secure context (HTTPS deployment)</p>
+        <p>When deploying your application / website for production, make sure to serve it via a secure HTTPS
+          connection. This is required for two reasons</p>
+      </li>
+      <li>
+        <p>Access to the camera video stream is only granted in a security context. Most browsers impose this
+          restriction.</p>
+      </li>
+    </ul>
+    <blockquote>
+      <p>Some browsers like Chrome may grant the access for <code>http://127.0.0.1</code> and
+        <code>http://localhost</code> or even for pages opened directly from the local disk (<code>file:///...</code>).
+        This can be helpful for temporary development and test.
+      </p>
+    </blockquote>
+    <ul>
+      <li>
+        <p>Dynamsoft License requires a secure context to work.</p>
+      </li>
+      <li>
+        <p><code>WebAssembly</code>, <code>Blob</code>, <code>URL</code>/<code>createObjectURL</code>,
+          <code>Web Workers</code>
+        </p>
+        <p>The above four features are required for the SDK to work.</p>
+      </li>
+    </ul>
+    <p>The following table is a list of supported browsers based on the above requirements:</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:center;">Browser Name</th>
+          <th style="text-align:center;">Version</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center;">Chrome</td>
+          <td style="text-align:center;">v78+</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;">Firefox</td>
+          <td style="text-align:center;">v62+</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;">Safari</td>
+          <td style="text-align:center;">v14+</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;">Edge</td>
+          <td style="text-align:center;">v79+</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Apart from the browsers, the operating systems may impose some limitations of their own that could restrict the
+      use of the SDK.</p>
+    <h2 id="release-notes">Release notes</h2>
+    <p>Learn what are included in each release at <a
+        href="https://www.dynamsoft.com/document-normalizer/docs/programming/javascript/release-notes/?ver=latest">https://www.dynamsoft.com/document-normalizer/docs/programming/javascript/release-notes/?ver=latest</a>.
+    </p>
+    <h2 id="next-steps">Next steps</h2>
+    <p>Now that you have got the SDK integrated, you can choose to move forward in the following directions</p>
+    <ol>
+      <li>Check out the <a href="https://github.com/Dynamsoft/document-normalizer-javascript-samples">official
+          samples</a>.</li>
+      <li>Learn about the available <a
+          href="https://www.dynamsoft.com/document-normalizer/docs/web/programming/javascript/api-reference/?ver=latest">APIs</a>.
+      </li>
+    </ol>
+  </div>
+</body>
+
 </html>

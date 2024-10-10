@@ -39,7 +39,7 @@ typescript                      4.6.4
     npm install
     ```
 
-2. Apply for a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt) and update the license key in `dynamic-web-twain.service.ts` file:
+2. Apply for a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and update the license key in `dynamic-web-twain.service.ts` file:
     
     ```typescript
     Dynamsoft.DWT.ProductKey = "LICENSE-KEY";

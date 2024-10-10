@@ -3,7 +3,7 @@
 The sample demonstrates how to integrate Dynamic Web TWAIN into Windows desktop applications using Flutter WebView.
 
 ## Getting Started
-1. Apply for a trial license at [https://www.dynamsoft.com/customer/license/trialLicense](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt) and update the license key in `lib/assets/index.html`:
+1. Apply for a trial license at [https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and update the license key in `lib/assets/index.html`:
     ```html
     Dynamsoft.DWT.ProductKey = "LICENSE-KEY";
     ```
