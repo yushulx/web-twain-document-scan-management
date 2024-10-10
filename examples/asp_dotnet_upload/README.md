@@ -16,7 +16,7 @@ This is a sample project that guides developer to integrate [Dynamic Web TWAIN](
     });
     ```
 
-2. Request a [free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dwt) and then update the license key in `Views/Home/Index.cshtml`:
+2. Request a [free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and then update the license key in `Views/Home/Index.cshtml`:
 
     ```html
     Dynamsoft.DWT.ProductKey = "LICENSE-KEY";

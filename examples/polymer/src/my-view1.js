@@ -45,7 +45,7 @@ class MyView1 extends PolymerElement {
     if (Dynamsoft) {
       Dynamsoft.DWT.AutoLoad = true;
       Dynamsoft.DWT.UseLocalService = true;
-      // https://www.dynamsoft.com/customer/license/trialLicense?product=dwt
+      // https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
       Dynamsoft.DWT.ProductKey = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
       Dynamsoft.DWT.ResourcesPath = 'node_modules/dwt/dist/';
       Dynamsoft.DWT.CreateDWTObjectEx({ WebTwainId: 'Viewer' }, (obj) => {

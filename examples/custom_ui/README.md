@@ -9,7 +9,7 @@ npm install dwt
 ```
 
 ## Basic Usage
-1. Get a license from [Dynamsoft Licensing Portal](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt).
+1. Get a license from [Dynamsoft Licensing Portal](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform).
 2. Update the license key in `index.html`.
 
     ```js

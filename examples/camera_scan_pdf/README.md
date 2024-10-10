@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/70a51cea-aba6-402d-9007-aeabd8aae10c
 
 - [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/vs/) or [Visual Studio Code](https://code.visualstudio.com/)
-- [Mobile Web Capture License](https://www.dynamsoft.com/customer/license/trialLicense/)
+- [Mobile Web Capture License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
     
     ![Dynamsoft Mobile Web Capture SDK License](https://www.dynamsoft.com/codepool/img/2024/08/mobile-web-capture-license-request.png)
 

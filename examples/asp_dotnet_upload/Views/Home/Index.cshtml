@@ -7,11 +7,11 @@
         <button class="btn btn-primary" onclick="AcquireImage()">Scan</button>
         <br />
         <button class="btn btn-outline-secondary" onclick="Upload()">Upload</button>
-        <input type="radio" value="jpg" name="format"/>JPG
-        <input type="radio" value="pdf" name="format"/>PDF
-        <input type="radio" value="tif" name="format"/>TIFF
+        <input type="radio" value="jpg" name="format" />JPG
+        <input type="radio" value="pdf" name="format" />PDF
+        <input type="radio" value="tif" name="format" />TIFF
         <label for="filename-input">File Name: </label>
-        <input type="text" id="filename-input"/>
+        <input type="text" id="filename-input" />
     </div>
     <div id="dwt-container"></div>
 </div>
@@ -24,28 +24,28 @@
     var viewerWidth = 960, viewerHeight = 960;
     var containerName = 'dwt-container';
     Dynamsoft.DWT.ResourcesPath = 'lib/dwt';
-    Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; // https://www.dynamsoft.com/customer/license/trialLicense?product=dwt
+    Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; // https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
     function initDWT() {
-            Dynamsoft.DWT.UseLocalService = true;
-            Dynamsoft.DWT.AutoLoad = true;
-            Dynamsoft.DWT.Containers = [{ ContainerId: containerName, Width: viewerWidth, Height: viewerHeight }];
-            Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
-                DWObj = Dynamsoft.DWT.GetWebTwain(containerName);
-                if (DWObj) {
-                    DWObj.Width = viewerWidth;
-                    DWObj.Height = viewerHeight;
-                    DWObj.MouseShape = true;
-                    @* addThumbnailViewer(); *@
+        Dynamsoft.DWT.UseLocalService = true;
+        Dynamsoft.DWT.AutoLoad = true;
+        Dynamsoft.DWT.Containers = [{ ContainerId: containerName, Width: viewerWidth, Height: viewerHeight }];
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+            DWObj = Dynamsoft.DWT.GetWebTwain(containerName);
+            if (DWObj) {
+                DWObj.Width = viewerWidth;
+                DWObj.Height = viewerHeight;
+                DWObj.MouseShape = true;
+    @* addThumbnailViewer(); *@
                 }
-            });
-        }
-    initDWT(); 
+        });
+    }
+    initDWT();
     function AcquireImage() {
         if (DWObj) {
             if (DWObj.UseLocalService) {
                 DWObj.SelectSourceAsync().then(function () {
                     return DWObj.AcquireImageAsync({
-                        IfCloseSourceAfterAcquire: true 
+                        IfCloseSourceAfterAcquire: true
                     });
                 }).catch(function (exp) {
                     alert(exp.message);
@@ -92,7 +92,7 @@
                 uploadFileName,
                 () => { alert('success') },
                 (errCode, errStr, res) => {
-                    console.error(`${errCode}: ${errStr}. Server return: ${ res }`)
+                    console.error(`${errCode}: ${errStr}. Server return: ${res}`)
                 }
             )
         }

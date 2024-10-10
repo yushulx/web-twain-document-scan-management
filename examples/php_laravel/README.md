@@ -10,7 +10,7 @@ This sample demonstrates how to develop a web application for scanning and uploa
     composer global require laravel/installer
     ```
 
-- [Dynamic Web TWAIN Trial License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dwt)
+- [Dynamic Web TWAIN Trial License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## How to Run This Sample
 1. Enter the license key in `resources\views\dwt_upload.blade.php`:

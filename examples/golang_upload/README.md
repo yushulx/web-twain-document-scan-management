@@ -3,7 +3,7 @@ This sample demonstrates how to implement a simple web document scanning and upl
 
 ## Prerequisites
 - [Go](https://go.dev/dl/)
-- [Dynamic Web TWAIN License Key](https://www.dynamsoft.com/customer/license/trialLicense?product=dwt)
+- [Dynamic Web TWAIN License Key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## How to Run
 1. Replace `LICENSE-KEY` in `index.html` with your own license key.
