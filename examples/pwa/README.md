@@ -1,6 +1,8 @@
 # PWA Document Scanner
 This project demonstrates how to create a **PWA (Progressive Web App)** document scanner with Dynamsoft Document Viewer.
 
+https://github.com/user-attachments/assets/a3f6aa1d-ce3d-4737-9ad0-d3b11689edd9
+
 ## Prerequisites
 - Obtain a [Dynamsoft Capture Vision Trial License](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
