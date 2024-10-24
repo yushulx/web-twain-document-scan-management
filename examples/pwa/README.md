@@ -51,3 +51,5 @@ https://github.com/user-attachments/assets/a3f6aa1d-ce3d-4737-9ad0-d3b11689edd9
     python -m http.server
     ```
 
+## Blog
+[How to Build a PWA Document Scanner: Capture, Edit and Upload as PDF](https://www.dynamsoft.com/codepool/pwa-invoice-receipt-document-pdf-scanner.html)
