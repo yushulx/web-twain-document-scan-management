@@ -6,6 +6,7 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 
+app.use(express.static(path.join(__dirname, '../client')));
 // Enable CORS for all routes
 app.use(cors());
 
