@@ -1,4 +1,4 @@
-// @2023/04/25
+// @2024/08/28
 
 * Product: Dynamic Web TWAIN SDK v18.x
 * Summary: this Readme.txt is to help you understand the files under the Resources folder

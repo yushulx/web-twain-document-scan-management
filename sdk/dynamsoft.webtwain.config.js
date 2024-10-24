@@ -2,9 +2,9 @@
 // Dynamsoft JavaScript Library for Basic Initiation of Dynamic Web TWAIN
 // More info on Dynamic Web TWAIN: http://www.dynamsoft.com/Products/WebTWAIN_Overview.aspx
 //
-// Copyright 2023, Dynamsoft Corporation 
+// Copyright 2024, Dynamsoft Corporation 
 // Author: Dynamsoft Team
-// Version: 18.4.2
+// Version: 18.5.1
 //
 /// <reference path="dynamsoft.webtwain.initiate.js" />
 var Dynamsoft = Dynamsoft || { DWT: {} };
@@ -25,7 +25,7 @@ Dynamsoft.DWT.Containers = [{ WebTwainId: '', ContainerId: 'dwtcontrolContainer'
 /// If you need to use multiple keys on the same server, you can combine keys and write like this 
 /// Dynamsoft.DWT.ProductKey = 'key1;key2;key3';
 /// To get a free trial, please visit https://www.dynamsoft.com/customer/license/trialLicense?product=dwt&utm_source=installer.
-Dynamsoft.DWT.ProductKey = 't0114QAEAAJ7eKmBG2/cciWaP3yl8+VrsiVgd8g40VrhawB2qn1evC3qR0wzo3eZdhWykSUFjqexPsNSvzD4cku678FCK8Edbxi9Tmfa1TzkHDDJOl4IHh8xWa8pGjntupcb4qTJR+TBvdrQZKYaYVS7tuD/q';
+Dynamsoft.DWT.ProductKey = 't0115QAEAAGVfnkO3ZSK3QtzlZfRvaKxrzSLd60cZQ1EuVv2Sr4nGm6nl7MwBaywFFizETa2Jo7Mgux+cSAnXiClfWbig5DL7hvHzNKafFvhzwiDhLFLw4JTZW0z9kfOcW7EzpWtMUD7M6539LMk0WJQLzGZBaA==';
 
 ///
 //Dynamsoft.DWT.ResourcesPath = 'Resources';
@@ -124,7 +124,7 @@ Dynamsoft.DWT.IfConfineMaskWithinTheViewer = true;
 
     dialogText: {
         dlgRotateAnyAngle: ['Angle :', 'Interpolation:', 'Keep size', '  OK  ', 'Cancel'],
-        dlgChangeImageSize: ['New Height :', 'New Width :', 'Interpolation method:', '  OK  ', 'Cancel'],
+        dlgChangeImageSize: ['New Height :', 'New Width :', 'Interpolation:', '  OK  ', 'Cancel'],
         saveChangedImage: ['You have changed the image, do you want to keep the change(s)?', '  Yes  ', '  No  '],
         selectSource: ['Select Source:', 'Select', 'Cancel', 'There is no source available!']
     }
