@@ -8,7 +8,7 @@
   "dependencies": {
     "cookie-parser": "~1.4.4",
     "debug": "~4.3.4",
-    "dwt": "^18.4.2",
+    "dwt": "^18.5.1",
     "express": "^4.19.2",
     "http-errors": "~1.6.3",
     "jade": "^1.9.2",
