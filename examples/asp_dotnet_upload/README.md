@@ -2,7 +2,8 @@
 This is a sample project that guides developer to integrate [Dynamic Web TWAIN](https://www.dynamsoft.com/web-twain/overview/) into an ASP.NET Core MVC project. 
 
 ## Requirement
-- [Dynamic Web TWAIN v18.4.2](https://www.dynamsoft.com/web-twain/downloads/)
+- [Dynamic Web TWAIN v18.5.1](https://www.dynamsoft.com/web-twain/downloads/)
+- [Dynamic Web TWAIN License key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## Usage
 1. Configure the static files in `Startup.cs`:

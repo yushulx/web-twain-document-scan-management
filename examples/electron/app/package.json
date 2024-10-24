@@ -21,6 +21,6 @@
     "author": "yushulx",
     "homepage": "https://www.dynamsoft.com/web-twain/overview/",
     "dependencies": {
-        "dwt": "^18.4.2"
+        "dwt": "^18.5.1"
     }
 }
