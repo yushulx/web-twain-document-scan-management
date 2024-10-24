@@ -164,9 +164,7 @@
             reader.readAsDataURL(blob);
             reader.onloadend = async function () {
                 let base64data = reader.result;
-                // if (dotnetRef) {
-                //     dotnetRef.invokeMethodAsync('SavePdfFromBlob', base64data.split(',')[1])
-                // }
+
                 try {
                     const response = await uploadImage(base64data.split(',')[1]);
 
