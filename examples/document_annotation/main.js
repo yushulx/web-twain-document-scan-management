@@ -140,13 +140,18 @@ async function showViewer() {
 }
 
 async function download() {
-    const pdfSettings = {
-        saveAnnotation: "flatten",
-    };
+    try {
+        const pdfSettings = {
+            saveAnnotation: "flatten",
+        };
 
-    let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
+        let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
 
-    saveBlob(blob, `document_${Date.now()}.pdf`);
+        saveBlob(blob, `document_${Date.now()}.pdf`);
+    } catch (error) {
+        console.log(error);
+    }
+
 }
 
 
