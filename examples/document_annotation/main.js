@@ -30,6 +30,7 @@ function closePopup() {
 function returnResults() {
     const barcodeType = document.getElementById("barcodeType").value;
     const barcodeContent = document.getElementById("barcodeContent").value;
+    const applyToAllPages = document.getElementById("applyToAllPages").checked;
 
     if (!barcodeContent) {
         alert("Please enter barcode content.");
@@ -75,7 +76,14 @@ function returnResults() {
                         }
                     }
 
-                    const annot1 = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
+                    if (applyToAllPages) {
+                        for (let i = 0; i < docs[0].pages.length; i++) {
+                            await Dynamsoft.DDV.annotationManager.createAnnotation(docs[0].pages[i], "stamp", option)
+                        }
+                    } else {
+
+                        await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
+                    }
                 }
             }, 'image/png');
         } catch (e) {
