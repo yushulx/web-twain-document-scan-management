@@ -1,6 +1,89 @@
 let editViewer = null;
 let docManager = null;
 
+function handleKeyboardShortcut(event) {
+    // Check if 'Ctrl' and 'Q' are pressed together
+    if (event.ctrlKey && event.key.toLowerCase() === 'q') {
+        event.preventDefault(); // Prevent the default browser behavior
+        addQr();
+    }
+}
+
+window.addEventListener('keydown', handleKeyboardShortcut);
+
+function openPopup() {
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
+    }
+
+    document.getElementById("popupOverlay").style.display = "flex";
+}
+
+// Function to close the pop-up
+function closePopup() {
+    document.getElementById("popupOverlay").style.display = "none";
+}
+
+// Function to return results
+function returnResults() {
+    const barcodeType = document.getElementById("barcodeType").value;
+    const barcodeContent = document.getElementById("barcodeContent").value;
+
+    if (!barcodeContent) {
+        alert("Please enter barcode content.");
+        return;
+    }
+
+    // Close the pop-up
+    closePopup();
+
+    let docs = docManager.getAllDocuments();
+
+    let tempCanvas = document.createElement('canvas');
+    if (barcodeContent !== null) {
+        try {
+
+            bwipjs.toCanvas(tempCanvas, {
+                bcid: barcodeType,
+                text: barcodeContent,
+                scale: 3,
+                includetext: false,
+                // version: 5,
+                // eclevel: 'M',
+            });
+
+            // Convert the canvas to a data URL and then to a Blob
+            tempCanvas.toBlob(async (blob) => {
+                if (blob) {
+                    let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
+                    let pageData = await docs[0].getPageData(currentPageId);
+
+                    const option = {
+                        stamp: blob,
+                        x: pageData.mediaBox.width - 110,
+                        y: 10,
+                        width: 100,
+                        height: 100,
+                        opacity: 1.0,
+                        flags: {
+                            print: false,
+                            noView: false,
+                            readOnly: false,
+
+                        }
+                    }
+
+                    const annot1 = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
+                }
+            }, 'image/png');
+        } catch (e) {
+            console.log(e);
+        }
+    }
+}
+
 function toggleLoading(isLoading) {
     if (isLoading) {
         document.getElementById("loading-indicator").style.display = "flex";
@@ -32,6 +115,10 @@ function saveBlob(blob, fileName) {
     URL.revokeObjectURL(url);
 }
 
+function addQr() {
+    openPopup();
+}
+
 async function showViewer() {
     if (!docManager) return;
     let editContainer = document.getElementById("edit-viewer");
@@ -40,58 +127,7 @@ async function showViewer() {
         container: editContainer,
         uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
     });
-    editViewer.on("addQr", () => {
-        let docs = docManager.getAllDocuments();
-        if (docs.length == 0) {
-            alert("Please load a document first.");
-            return;
-        }
-
-        const userInput = prompt("Please enter a string:");
-
-        let tempCanvas = document.createElement('canvas');
-        if (userInput !== null) {
-            try {
-
-                bwipjs.toCanvas(tempCanvas, {
-                    bcid: 'qrcode',
-                    text: userInput,
-                    scale: 5,
-                    includetext: false,
-                    version: 5,
-                    eclevel: 'M',
-                });
-
-                // Convert the canvas to a data URL and then to a Blob
-                tempCanvas.toBlob(async (blob) => {
-                    if (blob) {
-                        let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
-                        let pageData = await docs[0].getPageData(currentPageId);
-
-                        const option = {
-                            stamp: blob,
-                            x: pageData.mediaBox.width - 110,
-                            y: 10,
-                            width: 100,
-                            height: 100,
-                            opacity: 1.0,
-                            flags: {
-                                print: false,
-                                noView: false,
-                                readOnly: false,
-
-                            }
-                        }
-
-                        const annot1 = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
-                    }
-                }, 'image/png');
-            } catch (e) {
-                console.log(e);
-            }
-        }
-
-    });
+    editViewer.on("addQr", addQr);
 }
 async function activate(license) {
     try {
@@ -116,7 +152,7 @@ function isMobile() {
 const qrButton = {
     type: Dynamsoft.DDV.Elements.Button,
     className: "material-icons icon-qr_code",
-    tooltip: "Add a QR code",
+    tooltip: "Add a QR code. Ctrl+Q",
     events: {
         click: "addQr",
     },

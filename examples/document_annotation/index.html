@@ -8,21 +8,11 @@
         content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DDV - HelloWorld</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.css">
-    <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.2"></script>
-    <style>
-        .icon-qr_code::before {
-            content: "qr_code";
-        }
-
-        .icon-qr_code {
-            display: flex;
-            font-size: 1.5em;
-        }
-    </style>
+    <link rel="stylesheet" href="main.css">
 </head>
 <style>
 
@@ -31,6 +21,36 @@
 <body>
     <div id="loading-indicator" class="loading-indicator">
         <div class="spinner"></div>
+    </div>
+
+    <!-- Overlay and Pop-up Structure -->
+    <div id="popupOverlay" class="overlay">
+        <div class="popup">
+            <div>
+                <label for="barcodeType">Barcode Type:</label>
+                <!-- Dropdown for Barcode Types -->
+                <select id="barcodeType">
+                    <option value="qrcode">QR Code</option>
+                    <option value="pdf417">PDF417</option>
+                    <option value="maxicode">MaxiCode</option>
+                    <option value="datamatrix">DataMatrix</option>
+                    <option value="ean13">EAN13</option>
+                    <option value="code128">CODE128</option>
+                    <option value="code39">CODE39</option>
+                </select>
+            </div>
+
+
+            <!-- Input field for barcode text content -->
+            <div>
+                <label for="barcodeContent">Barcode Text:</label>
+                <input type="text" id="barcodeContent" placeholder="Enter barcode content">
+            </div>
+
+            <!-- Buttons for return and cancel -->
+            <button class="return-btn" onclick="returnResults()">OK</button>
+            <button class="cancel-btn" onclick="closePopup()">Cancel</button>
+        </div>
     </div>
 
     <div class="container">
