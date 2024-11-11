@@ -136,7 +136,20 @@ async function showViewer() {
         uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
     });
     editViewer.on("addQr", addQr);
+    editViewer.on("download", download);
 }
+
+async function download() {
+    const pdfSettings = {
+        saveAnnotation: "flatten",
+    };
+
+    let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
+
+    saveBlob(blob, `document_${Date.now()}.pdf`);
+}
+
+
 async function activate(license) {
     try {
         Dynamsoft.DDV.Core.license = license;
@@ -210,8 +223,13 @@ const pcEditViewerUiConfig = {
                             className: "ddv-edit-viewer-pagination-desktop",
                         },
                         Dynamsoft.DDV.Elements.Load,
-                        Dynamsoft.DDV.Elements.Download,
-                        Dynamsoft.DDV.Elements.Print,
+                        {
+                            type: Dynamsoft.DDV.Elements.Button,
+                            className: "ddv-button ddv-button-download",
+                            events: {
+                                click: "download",
+                            }
+                        }
                     ],
                 },
             ],
@@ -238,7 +256,13 @@ const mobileEditViewerUiConfig = {
                 },
                 Dynamsoft.DDV.Elements.Pagination,
                 Dynamsoft.DDV.Elements.Load,
-                Dynamsoft.DDV.Elements.Download,
+                {
+                    type: Dynamsoft.DDV.Elements.Button,
+                    className: "ddv-button ddv-button-download",
+                    events: {
+                        click: "download",
+                    }
+                },
             ],
         },
         Dynamsoft.DDV.Elements.MainView,
