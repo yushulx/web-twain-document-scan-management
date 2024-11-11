@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DDV - HelloWorld</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.2"></script>
+    <style>
+        .icon-qr_code::before {
+            content: "qr_code";
+        }
+
+        .icon-qr_code {
+            display: flex;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<style>
+
+</style>
+
+<body>
+    <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <label>
+            Get a License key from <a
+                href="https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform"
+                target="_blank">here</a>
+        </label>
+        <input type="text"
+            placeholder="DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="
+            id="licensekey">
+        <button id="activateButton">Activate SDK</button>
+
+    </div>
+
+
+    <div class="document-viewer">
+        <div id="edit-viewer"></div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
