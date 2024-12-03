@@ -1,6 +1,34 @@
 let editViewer = null;
 let docManager = null;
 
+const savePDFButton = document.getElementById('savePDF');
+const cancelButton = document.getElementById('cancel');
+
+cancelButton.addEventListener('click', () => {
+    popup.style.display = 'none';
+});
+
+savePDFButton.addEventListener('click', async () => {
+    const fileName = document.getElementById('fileName').value;
+    const password = document.getElementById('password').value;
+    const annotationType = document.getElementById('annotationType').value;
+
+    try {
+        const pdfSettings = {
+            password: password,
+            saveAnnotation: annotationType,
+        };
+
+        let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
+
+        saveBlob(blob, fileName + `.pdf`);
+    } catch (error) {
+        console.log(error);
+    }
+
+    document.getElementById("popup").style.display = "none";
+});
+
 function handleKeyboardShortcut(event) {
     // Check if 'Ctrl' and 'Q' are pressed together
     if (event.ctrlKey && event.key.toLowerCase() === 'q') {
@@ -127,6 +155,22 @@ function addQr() {
     openPopup();
 }
 
+function flatten() {
+    if (!docManager) return;
+
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
+    }
+    let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
+    let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(currentPageId);
+
+    for (let i = 0; i < annotations.length; i++) {
+        annotations[i].flattened = true;
+    }
+}
+
 async function showViewer() {
     if (!docManager) return;
     let editContainer = document.getElementById("edit-viewer");
@@ -137,28 +181,18 @@ async function showViewer() {
     });
     editViewer.on("addQr", addQr);
     editViewer.on("download", download);
+    editViewer.on("flatten", flatten);
 }
 
 async function download() {
-    try {
-        const pdfSettings = {
-            saveAnnotation: "flatten",
-        };
-
-        let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
-
-        saveBlob(blob, `document_${Date.now()}.pdf`);
-    } catch (error) {
-        console.log(error);
-    }
-
+    document.getElementById("popup").style.display = "flex";
 }
 
 
 async function activate(license) {
     try {
         Dynamsoft.DDV.Core.license = license;
-        Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/engine";
+        Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/engine";
         await Dynamsoft.DDV.Core.init();
         Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
         docManager = Dynamsoft.DDV.documentManager;
@@ -181,6 +215,15 @@ const qrButton = {
     tooltip: "Add a QR code. Ctrl+Q",
     events: {
         click: "addQr",
+    },
+};
+
+const checkButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-check",
+    tooltip: "Apply Flattening",
+    events: {
+        click: "flatten",
     },
 };
 
@@ -218,6 +261,7 @@ const pcEditViewerUiConfig = {
                         Dynamsoft.DDV.Elements.Pan,
                         Dynamsoft.DDV.Elements.AnnotationSet,
                         qrButton,
+                        checkButton,
                     ],
                 },
                 {
@@ -283,6 +327,7 @@ const mobileEditViewerUiConfig = {
                 Dynamsoft.DDV.Elements.Delete,
                 Dynamsoft.DDV.Elements.AnnotationSet,
                 qrButton,
+                checkButton,
             ],
         },
     ],

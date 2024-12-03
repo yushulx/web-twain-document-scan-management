@@ -323,7 +323,28 @@ button {
     border-radius: 8px;
     width: 300px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    text-align: center;
+    text-align: left;
+}
+
+/* Form group styling */
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.form-group label {
+    width: 120px;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
 }
 
 /* Button styling */
@@ -350,6 +371,15 @@ button {
 }
 
 .icon-qr_code {
+    display: flex;
+    font-size: 1.5em;
+}
+
+.icon-check::before {
+    content: "check";
+}
+
+.icon-check {
     display: flex;
     font-size: 1.5em;
 }
