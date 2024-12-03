@@ -9,5 +9,6 @@ https://github.com/user-attachments/assets/16fce8b4-8d61-4824-b24d-bc78eb0bf3a5
 ## Online Demo
 [https://yushulx.me/web-document-annotation/](https://yushulx.me/web-twain-document-scan-management/examples/document_annotation/)
 
-
+## Blog
+[How to Insert Barcodes into a PDF Document with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-insert-barcode-into-pdf.html)
 

@@ -39,3 +39,6 @@ https://github.com/user-attachments/assets/70a51cea-aba6-402d-9007-aeabd8aae10c
     **Windows**
    
     <img src="https://www.dynamsoft.com/codepool/img/2024/08/document-pdf-scanner-windows.png" width="300" alt="document PDF scanner with .NET MAUI Blazor">
+
+## Blog
+[How to Create a Blazor Web App for Document PDF Viewing and Annotation](https://www.dynamsoft.com/codepool/blazor-document-pdf-annotation-viewer.html)
