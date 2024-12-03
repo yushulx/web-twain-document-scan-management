@@ -7,8 +7,8 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DDV - HelloWorld</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.css">
-    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.css">
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.2"></script>
     <link rel="stylesheet" href="main.css">
@@ -22,10 +22,47 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- Pop-up container -->
+    <div id="popup" class="overlay">
+        <div class="popup">
+            <h2>Save as PDF</h2>
+            <form id="pdfForm">
+                <!-- File Name input -->
+                <div class="form-group">
+                    <label for="fileName">File Name:</label>
+                    <input type="text" id="fileName" name="fileName" placeholder="Enter file name" required>
+                </div>
+
+                <!-- Password input -->
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password (optional)">
+                </div>
+
+                <!-- Annotation Type dropdown -->
+                <div class="form-group">
+                    <label for="annotationType">Annotation Type:</label>
+                    <select id="annotationType" name="annotationType">
+                        <option value="none">None</option>
+                        <option value="image">Image</option>
+                        <option value="annotation">Annotation</option>
+                        <option value="flatten">Flatten</option>
+                    </select>
+                </div>
+
+                <!-- Buttons for saving and canceling -->
+                <div class="popup-buttons">
+                    <button type="button" id="savePDF">Save PDF</button>
+                    <button type="button" id="cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Overlay and Pop-up Structure -->
     <div id="popupOverlay" class="overlay">
         <div class="popup">
-            <div>
+            <div class="form-group">
                 <label for="barcodeType">Barcode Type:</label>
                 <!-- Dropdown for Barcode Types -->
                 <select id="barcodeType">
@@ -41,7 +78,7 @@
 
 
             <!-- Input field for barcode text content -->
-            <div>
+            <div class="form-group">
                 <label for="barcodeContent">Barcode Text:</label>
                 <input type="text" id="barcodeContent" placeholder="Enter barcode content">
             </div>
