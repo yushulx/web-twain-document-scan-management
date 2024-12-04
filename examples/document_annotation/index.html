@@ -9,6 +9,7 @@
     <title>DDV - HelloWorld</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.css">
     <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader-bundle@10.4.2002/dist/dbr.bundle.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.2"></script>
     <link rel="stylesheet" href="main.css">
@@ -22,8 +23,8 @@
         <div class="spinner"></div>
     </div>
 
-    <!-- Pop-up container -->
-    <div id="popup" class="overlay">
+    <!-- Pop-up for saving PDF -->
+    <div id="save-pdf" class="overlay">
         <div class="popup">
             <h2>Save as PDF</h2>
             <form id="pdfForm">
@@ -53,14 +54,14 @@
                 <!-- Buttons for saving and canceling -->
                 <div class="popup-buttons">
                     <button type="button" id="savePDF">Save PDF</button>
-                    <button type="button" id="cancel">Cancel</button>
+                    <button type="button" id="cancelPDF">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Overlay and Pop-up Structure -->
-    <div id="popupOverlay" class="overlay">
+    <!-- Pop-up for generating 1D/2D barcodes -->
+    <div id="generate-barcode" class="overlay">
         <div class="popup">
             <div class="form-group">
                 <label for="barcodeType">Barcode Type:</label>
@@ -90,8 +91,8 @@
             </div>
 
             <!-- Buttons for return and cancel -->
-            <button class="return-btn" onclick="returnResults()">OK</button>
-            <button class="cancel-btn" onclick="closePopup()">Cancel</button>
+            <button class="button" id="generateBarcode">OK</button>
+            <button class="button" id="cancelBarcode">Cancel</button>
         </div>
     </div>
 
