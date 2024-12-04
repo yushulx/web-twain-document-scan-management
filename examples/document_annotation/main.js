@@ -103,6 +103,8 @@ cancelBarcodeButton.addEventListener('click', () => {
 generateBarcodeButton.addEventListener('click', async () => {
     const barcodeType = document.getElementById("barcodeType").value;
     const barcodeContent = document.getElementById("barcodeContent").value;
+    const x = Number(document.getElementById("x").value);
+    const y = Number(document.getElementById("y").value);
     const applyToAllPages = document.getElementById("applyToAllPages").checked;
 
     if (!barcodeContent) {
@@ -136,8 +138,8 @@ generateBarcodeButton.addEventListener('click', async () => {
 
                     const option = {
                         stamp: blob,
-                        x: pageData.mediaBox.width - 110,
-                        y: 10,
+                        x: x > pageData.mediaBox.width ? pageData.mediaBox.width - 110 : x,
+                        y: y > pageData.mediaBox.height ? pageData.mediaBox.height - 110 : y,
                         width: 100,
                         height: 100,
                         opacity: 1.0,
@@ -153,13 +155,11 @@ generateBarcodeButton.addEventListener('click', async () => {
                         for (let i = 0; i < docs[0].pages.length; i++) {
                             let barcodeAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(docs[0].pages[i], "stamp", option)
                             barcodeAnnotation['name'] = 'barcode';
-                            savedAnnotations.push(barcodeAnnotation);
                         }
                     } else {
 
                         let barcodeAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
                         barcodeAnnotation['name'] = 'barcode';
-                        savedAnnotations.push(barcodeAnnotation);
                     }
                 }
             }, 'image/png');
@@ -226,29 +226,35 @@ async function scanBarcode() {
         return;
     }
 
+    // Save barcode annotations for detection
     const settings = {
         quality: 100,
         saveAnnotation: false,
     };
 
-    for (annotation of savedAnnotations) {
-        if (annotation.name === 'barcode') {
-            annotation.flattened = true;
-        }
+    let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
+    let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(currentPageId);
+
+    for (let i = 0; i < annotations.length; i++) {
+        annotations[i].flattened = true;
     }
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
 
     const result = await cvRouter.capture(image, "ReadBarcodes_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
 
+    // Undo the flattened status for barcode annotations
+    for (let i = 0; i < annotations.length; i++) {
+        if (annotations[i].name === 'barcode') {
+            annotations[i].flattened = false;
+        }
+    }
 
     // clear annotations
     if (savedAnnotations.length > 0) {
         for (let i = 0; i < savedAnnotations.length; i++) {
             // https://www.dynamsoft.com/document-viewer/docs/api/class/annotationmanager.html#deleteannotations
 
-            if (savedAnnotations[i].name !== 'barcode') {
-                await Dynamsoft.DDV.annotationManager.deleteAnnotations([savedAnnotations[i].uid]);
-            }
+            await Dynamsoft.DDV.annotationManager.deleteAnnotations([savedAnnotations[i].uid]);
         }
 
         savedAnnotations = [];
@@ -258,7 +264,7 @@ async function scanBarcode() {
         if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE) {
             continue;
         }
-
+        console.log(JSON.stringify(item));
         let text = item.text;
         let points = item.location.points;
 
