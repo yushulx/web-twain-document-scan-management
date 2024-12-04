@@ -240,7 +240,7 @@ async function scanBarcode() {
     }
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
 
-    const result = await cvRouter.capture(image, "ReadBarcodes_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
+    const result = await cvRouter.capture(image, "ReadBarcodes_Balance"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
 
     // Undo the flattened status for barcode annotations
     for (let i = 0; i < annotations.length; i++) {
