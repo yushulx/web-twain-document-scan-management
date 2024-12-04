@@ -272,9 +272,12 @@ async function scanBarcode() {
         let pageData = await docs[0].getPageData(currentPageId);
 
         // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/texttypewriterannotationoptions.html
+        let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / pageData.display.width * pageData.mediaBox.width;
+        let textY = Math.min(points[0].y, points[1].y, points[2].y, points[3].y) / pageData.display.height * pageData.mediaBox.height;
+
         const textTypewriterOptions = {
-            x: points[0].x / pageData.display.width * pageData.mediaBox.width,
-            y: points[0].y / pageData.display.height * pageData.mediaBox.height,
+            x: textX < 0 ? 0 : textX,
+            y: textY - 15 < 0 ? 0 : textY - 15,
             textContents: [{ content: text, color: "rgb(255,0,0)" }],
             flags: {
                 print: false,
