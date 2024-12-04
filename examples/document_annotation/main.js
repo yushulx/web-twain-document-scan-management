@@ -1,11 +1,63 @@
 let editViewer = null;
 let docManager = null;
+let cvRouter = null;
+let savedAnnotations = [];
 
+// Button for activating the license
+document.getElementById('activateButton').addEventListener('click', async () => {
+    toggleLoading(true);
+    let license = document.getElementById('licensekey').value;
+    if (!license) {
+        license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+    }
+
+    await activate(license);
+    toggleLoading(false);
+    showViewer();
+});
+
+async function showViewer() {
+    if (!docManager) return;
+    let editContainer = document.getElementById("edit-viewer");
+    editContainer.parentNode.style.display = "block";
+    editViewer = new Dynamsoft.DDV.EditViewer({
+        container: editContainer,
+        uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
+    });
+    editViewer.on("addQr", addQr);
+    editViewer.on("download", download);
+    editViewer.on("flatten", flatten);
+    editViewer.on("scanBarcode", scanBarcode);
+}
+
+async function activate(license) {
+    try {
+        await Dynamsoft.License.LicenseManager.initLicense(license, true);
+        // await Dynamsoft.Core.CoreModule.loadWasm(["dbr"]);
+
+        // Initialize DCV
+        cvRouter = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+
+        // Initialize Dynamsoft Document Viewer
+        // Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/engine";
+        await Dynamsoft.DDV.Core.init();
+        Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
+        docManager = Dynamsoft.DDV.documentManager;
+
+
+    } catch (error) {
+        console.error(error);
+        toggleLoading(false);
+    }
+
+}
+
+// Button for saving PDF
 const savePDFButton = document.getElementById('savePDF');
-const cancelButton = document.getElementById('cancel');
+const cancelPDFButton = document.getElementById('cancelPDF');
 
-cancelButton.addEventListener('click', () => {
-    popup.style.display = 'none';
+cancelPDFButton.addEventListener('click', () => {
+    document.getElementById("save-pdf").style.display = "none";
 });
 
 savePDFButton.addEventListener('click', async () => {
@@ -26,36 +78,29 @@ savePDFButton.addEventListener('click', async () => {
         console.log(error);
     }
 
-    document.getElementById("popup").style.display = "none";
+    document.getElementById("save-pdf").style.display = "none";
 });
 
-function handleKeyboardShortcut(event) {
-    // Check if 'Ctrl' and 'Q' are pressed together
-    if (event.ctrlKey && event.key.toLowerCase() === 'q') {
-        event.preventDefault(); // Prevent the default browser behavior
-        addQr();
-    }
+function saveBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
-window.addEventListener('keydown', handleKeyboardShortcut);
+// Button for generating barcode
+const generateBarcodeButton = document.getElementById('generateBarcode');
+const cancelBarcodeButton = document.getElementById('cancelBarcode');
 
-function openPopup() {
-    let docs = docManager.getAllDocuments();
-    if (docs.length == 0) {
-        alert("Please load a document first.");
-        return;
-    }
+cancelBarcodeButton.addEventListener('click', () => {
+    document.getElementById("generate-barcode").style.display = "none";
+});
 
-    document.getElementById("popupOverlay").style.display = "flex";
-}
-
-// Function to close the pop-up
-function closePopup() {
-    document.getElementById("popupOverlay").style.display = "none";
-}
-
-// Function to return results
-function returnResults() {
+generateBarcodeButton.addEventListener('click', async () => {
     const barcodeType = document.getElementById("barcodeType").value;
     const barcodeContent = document.getElementById("barcodeContent").value;
     const applyToAllPages = document.getElementById("applyToAllPages").checked;
@@ -66,7 +111,7 @@ function returnResults() {
     }
 
     // Close the pop-up
-    closePopup();
+    document.getElementById("generate-barcode").style.display = "none";
 
     let docs = docManager.getAllDocuments();
 
@@ -106,11 +151,15 @@ function returnResults() {
 
                     if (applyToAllPages) {
                         for (let i = 0; i < docs[0].pages.length; i++) {
-                            await Dynamsoft.DDV.annotationManager.createAnnotation(docs[0].pages[i], "stamp", option)
+                            let barcodeAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(docs[0].pages[i], "stamp", option)
+                            barcodeAnnotation['name'] = 'barcode';
+                            savedAnnotations.push(barcodeAnnotation);
                         }
                     } else {
 
-                        await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
+                        let barcodeAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
+                        barcodeAnnotation['name'] = 'barcode';
+                        savedAnnotations.push(barcodeAnnotation);
                     }
                 }
             }, 'image/png');
@@ -118,8 +167,20 @@ function returnResults() {
             console.log(e);
         }
     }
+});
+
+// Keyboard shortcut
+function handleKeyboardShortcut(event) {
+    // Check if 'Ctrl' and 'Q' are pressed together
+    if (event.ctrlKey && event.key.toLowerCase() === 'q') {
+        event.preventDefault(); // Prevent the default browser behavior
+        addQr();
+    }
 }
 
+window.addEventListener('keydown', handleKeyboardShortcut);
+
+// Loading indicator
 function toggleLoading(isLoading) {
     if (isLoading) {
         document.getElementById("loading-indicator").style.display = "flex";
@@ -128,31 +189,16 @@ function toggleLoading(isLoading) {
     }
 }
 
-document.getElementById('activateButton').addEventListener('click', async () => {
-    toggleLoading(true);
-    let license = document.getElementById('licensekey').value;
-    if (!license) {
-        license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+
+// Event handlers
+function addQr() {
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
     }
 
-    await activate(license);
-    toggleLoading(false);
-    showViewer();
-});
-
-function saveBlob(blob, fileName) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function addQr() {
-    openPopup();
+    document.getElementById("generate-barcode").style.display = "flex";
 }
 
 function flatten() {
@@ -171,40 +217,100 @@ function flatten() {
     }
 }
 
-async function showViewer() {
-    if (!docManager) return;
-    let editContainer = document.getElementById("edit-viewer");
-    editContainer.parentNode.style.display = "block";
-    editViewer = new Dynamsoft.DDV.EditViewer({
-        container: editContainer,
-        uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
-    });
-    editViewer.on("addQr", addQr);
-    editViewer.on("download", download);
-    editViewer.on("flatten", flatten);
+
+
+async function scanBarcode() {
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
+    }
+
+    const settings = {
+        quality: 100,
+        saveAnnotation: false,
+    };
+
+    for (annotation of savedAnnotations) {
+        if (annotation.name === 'barcode') {
+            annotation.flattened = true;
+        }
+    }
+    const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
+
+    const result = await cvRouter.capture(image, "ReadBarcodes_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
+
+
+    // clear annotations
+    if (savedAnnotations.length > 0) {
+        for (let i = 0; i < savedAnnotations.length; i++) {
+            // https://www.dynamsoft.com/document-viewer/docs/api/class/annotationmanager.html#deleteannotations
+
+            if (savedAnnotations[i].name !== 'barcode') {
+                await Dynamsoft.DDV.annotationManager.deleteAnnotations([savedAnnotations[i].uid]);
+            }
+        }
+
+        savedAnnotations = [];
+    }
+
+    for (let item of result.items) {
+        if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE) {
+            continue;
+        }
+
+        let text = item.text;
+        let points = item.location.points;
+
+        let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
+        let pageData = await docs[0].getPageData(currentPageId);
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/texttypewriterannotationoptions.html
+        const textTypewriterOptions = {
+            x: points[0].x / pageData.display.width * pageData.mediaBox.width,
+            y: points[0].y / pageData.display.height * pageData.mediaBox.height,
+            textContents: [{ content: text, color: "rgb(255,0,0)" }],
+            flags: {
+                print: false,
+                noView: false,
+                readOnly: false,
+
+            }
+        }
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/class/annotationmanager.html#createAnnotation
+        let textTypewriter = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "textTypewriter", textTypewriterOptions)
+        savedAnnotations.push(textTypewriter);
+
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/polygonannotationoptions.html
+        const polygonOptions = {
+            points: points.map(p => {
+                return {
+                    x: p.x / pageData.display.width * pageData.mediaBox.width,
+                    y: p.y / pageData.display.height * pageData.mediaBox.height
+                }
+            }),
+            borderColor: "rgb(255,0,0)",
+            flags: {
+                print: false,
+                noView: false,
+                readOnly: false,
+
+            }
+        }
+
+        let polygon = Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "polygon", polygonOptions);
+        savedAnnotations.push(polygon);
+    }
 }
 
 async function download() {
-    document.getElementById("popup").style.display = "flex";
+    document.getElementById("save-pdf").style.display = "flex";
 }
 
 
-async function activate(license) {
-    try {
-        Dynamsoft.DDV.Core.license = license;
-        Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/engine";
-        await Dynamsoft.DDV.Core.init();
-        Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
-        docManager = Dynamsoft.DDV.documentManager;
-
-
-    } catch (error) {
-        console.error(error);
-        toggleLoading(false);
-    }
-
-}
-
+// Layout UI Config
 function isMobile() {
     return "ontouchstart" in document.documentElement;
 }
@@ -226,6 +332,15 @@ const checkButton = {
         click: "flatten",
     },
 };
+
+const scanButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-scan",
+    tooltip: "Detect barcodes from the current page",
+    events: {
+        click: "scanBarcode",
+    },
+}
 
 const pcEditViewerUiConfig = {
     type: Dynamsoft.DDV.Elements.Layout,
@@ -262,6 +377,7 @@ const pcEditViewerUiConfig = {
                         Dynamsoft.DDV.Elements.AnnotationSet,
                         qrButton,
                         checkButton,
+                        scanButton,
                     ],
                 },
                 {
@@ -328,6 +444,7 @@ const mobileEditViewerUiConfig = {
                 Dynamsoft.DDV.Elements.AnnotationSet,
                 qrButton,
                 checkButton,
+                scanButton,
             ],
         },
     ],

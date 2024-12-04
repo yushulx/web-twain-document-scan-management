@@ -383,3 +383,12 @@ button {
     display: flex;
     font-size: 1.5em;
 }
+
+.icon-scan::before {
+    content: "document_scanner";
+}
+
+.icon-scan {
+    display: flex;
+    font-size: 1.5em;
+}
