@@ -46,6 +46,7 @@ async function showViewer() {
     editViewer.on("flatten", flatten);
     editViewer.on("scanBarcode", scanBarcode);
     editViewer.on("loadDocument", loadDocument);
+    editViewer.on("clearAll", clearAnnotations);
 }
 
 async function activate(license) {
@@ -432,6 +433,15 @@ const scanButton = {
     },
 }
 
+const clearButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-clear",
+    tooltip: "Clear all annotations",
+    events: {
+        click: "clearAll",
+    },
+}
+
 const loadButton = {
     type: Dynamsoft.DDV.Elements.Button,
     className: "ddv-button ddv-load-image",
@@ -476,6 +486,7 @@ const pcEditViewerUiConfig = {
                         qrButton,
                         checkButton,
                         scanButton,
+                        clearButton,
                     ],
                 },
                 {
@@ -523,6 +534,7 @@ const mobileEditViewerUiConfig = {
                 qrButton,
                 checkButton,
                 scanButton,
+                clearButton,
             ],
         },
     ],
