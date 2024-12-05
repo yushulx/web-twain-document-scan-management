@@ -23,6 +23,23 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- Pop-up for inputing password -->
+    <div id="password-input" class="overlay">
+        <div class="popup">
+            <h2>Input PDF Password</h2>
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+                </div>
+                <div class="popup-buttons">
+                    <button type="button" id="submitPassword">Submit</button>
+                    <button type="button" id="cancelPassword">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Pop-up for saving PDF -->
     <div id="save-pdf" class="overlay">
         <div class="popup">
