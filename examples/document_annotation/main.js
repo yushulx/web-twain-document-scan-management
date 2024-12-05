@@ -347,10 +347,13 @@ function download() {
 
 async function load(blob, password) {
     try {
-        currentDoc = Dynamsoft.DDV.documentManager.createDocument({
-            name: Date.now().toString(),
-            author: "DDV",
-        });
+        if (!currentDoc) {
+            currentDoc = Dynamsoft.DDV.documentManager.createDocument({
+                name: Date.now().toString(),
+                author: "DDV",
+            });
+        }
+
         const source = {
             fileData: blob,
             password: password,
