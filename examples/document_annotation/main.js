@@ -2,6 +2,23 @@ let editViewer = null;
 let docManager = null;
 let cvRouter = null;
 let savedAnnotations = [];
+let currentDoc = null;
+let fileBlob = null;
+
+// Button for inputting the password
+const submitPasswordButton = document.getElementById('submitPassword');
+const cancelPasswordButton = document.getElementById('cancelPassword');
+
+cancelPasswordButton.addEventListener('click', () => {
+    document.getElementById("password-input").style.display = "none";
+}
+);
+
+submitPasswordButton.addEventListener('click', async () => {
+    const password = document.getElementById('password').value;
+    load(fileBlob, password);
+    document.getElementById("password-input").style.display = "none";
+});
 
 // Button for activating the license
 document.getElementById('activateButton').addEventListener('click', async () => {
@@ -28,6 +45,7 @@ async function showViewer() {
     editViewer.on("download", download);
     editViewer.on("flatten", flatten);
     editViewer.on("scanBarcode", scanBarcode);
+    editViewer.on("loadDocument", loadDocument);
 }
 
 async function activate(license) {
@@ -147,8 +165,8 @@ generateBarcodeButton.addEventListener('click', async () => {
             // Convert the canvas to a data URL and then to a Blob
             tempCanvas.toBlob(async (blob) => {
                 if (blob) {
-                    let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
-                    let pageData = await docs[0].getPageData(currentPageId);
+                    let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
+                    let pageData = await currentDoc.getPageData(currentPageId);
 
                     const option = {
                         stamp: blob,
@@ -166,8 +184,8 @@ generateBarcodeButton.addEventListener('click', async () => {
                     }
 
                     if (applyToAllPages) {
-                        for (let i = 0; i < docs[0].pages.length; i++) {
-                            let barcodeAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(docs[0].pages[i], "stamp", option)
+                        for (let i = 0; i < currentDoc.pages.length; i++) {
+                            let barcodeAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentDoc.pages[i], "stamp", option)
                             barcodeAnnotation['name'] = 'barcode';
                         }
                     } else {
@@ -223,7 +241,7 @@ function flatten() {
         alert("Please load a document first.");
         return;
     }
-    let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
+    let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
     let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(currentPageId);
 
     for (let i = 0; i < annotations.length; i++) {
@@ -246,7 +264,7 @@ async function scanBarcode() {
         saveAnnotation: false,
     };
 
-    let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
+    let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
     let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(currentPageId);
 
     for (let i = 0; i < annotations.length; i++) {
@@ -276,8 +294,8 @@ async function scanBarcode() {
         let text = item.text;
         let points = item.location.points;
 
-        let currentPageId = docs[0].pages[editViewer.getCurrentPageIndex()];
-        let pageData = await docs[0].getPageData(currentPageId);
+        let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
+        let pageData = await currentDoc.getPageData(currentPageId);
 
         // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/texttypewriterannotationoptions.html
         let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / pageData.display.width * pageData.mediaBox.width;
@@ -323,10 +341,58 @@ async function scanBarcode() {
     }
 }
 
-async function download() {
+function download() {
     document.getElementById("save-pdf").style.display = "flex";
 }
 
+async function load(blob, password) {
+    try {
+        currentDoc = Dynamsoft.DDV.documentManager.createDocument({
+            name: Date.now().toString(),
+            author: "DDV",
+        });
+        const source = {
+            fileData: blob,
+            password: password,
+        };
+        await currentDoc.loadSource([source]);
+        editViewer.openDocument(currentDoc);
+    } catch (error) {
+        console.error(error);
+
+        // PDF is encrypted
+        if (error.cause.code == -80202) {
+            document.getElementById("password-input").style.display = "flex";
+            // const password = prompt("Please enter the password.");
+            // if (password) {
+            //     load(blob, password);
+            // }
+        }
+    }
+}
+
+function loadDocument() {
+    let fileInput = document.createElement("input");
+    fileInput.type = "file";
+    // Accept jpg, png, tiff, bmp and pdf
+    fileInput.accept = ".jpg,.jpeg,.png,.tiff,.tif,.bmp,.pdf";
+    fileInput.onchange = async (e) => {
+        let file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async function (e) {
+            fileBlob = new Blob([e.target.result], { type: file.type });
+            load(fileBlob);
+        };
+
+        reader.readAsArrayBuffer(file);
+
+
+    };
+    fileInput.click();
+}
 
 // Layout UI Config
 function isMobile() {
@@ -360,6 +426,23 @@ const scanButton = {
     },
 }
 
+const loadButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "ddv-button ddv-load-image",
+    tooltip: "Load a document",
+    events: {
+        click: "loadDocument",
+    },
+}
+
+const downloadButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "ddv-button ddv-button-download",
+    events: {
+        click: "download",
+    }
+}
+
 const pcEditViewerUiConfig = {
     type: Dynamsoft.DDV.Elements.Layout,
     flexDirection: "column",
@@ -372,19 +455,10 @@ const pcEditViewerUiConfig = {
                 {
                     type: Dynamsoft.DDV.Elements.Layout,
                     children: [
-                        {
-                            type: Dynamsoft.DDV.Elements.Button,
-                            className: "ddv-button-back",
-                            events: {
-                                click: "backToPerspectiveViewer"
-                            }
-                        },
                         Dynamsoft.DDV.Elements.ThumbnailSwitch,
                         Dynamsoft.DDV.Elements.Zoom,
                         Dynamsoft.DDV.Elements.FitMode,
                         Dynamsoft.DDV.Elements.DisplayMode,
-                        Dynamsoft.DDV.Elements.RotateLeft,
-                        Dynamsoft.DDV.Elements.RotateRight,
                         Dynamsoft.DDV.Elements.Crop,
                         Dynamsoft.DDV.Elements.Filter,
                         Dynamsoft.DDV.Elements.Undo,
@@ -405,14 +479,8 @@ const pcEditViewerUiConfig = {
                             type: Dynamsoft.DDV.Elements.Pagination,
                             className: "ddv-edit-viewer-pagination-desktop",
                         },
-                        Dynamsoft.DDV.Elements.Load,
-                        {
-                            type: Dynamsoft.DDV.Elements.Button,
-                            className: "ddv-button ddv-button-download",
-                            events: {
-                                click: "download",
-                            }
-                        }
+                        loadButton,
+                        downloadButton,
                     ],
                 },
             ],
@@ -430,22 +498,9 @@ const mobileEditViewerUiConfig = {
             type: Dynamsoft.DDV.Elements.Layout,
             className: "ddv-edit-viewer-header-mobile",
             children: [
-                {
-                    type: Dynamsoft.DDV.Elements.Button,
-                    className: "ddv-button-back",
-                    events: {
-                        click: "backToPerspectiveViewer"
-                    }
-                },
                 Dynamsoft.DDV.Elements.Pagination,
-                Dynamsoft.DDV.Elements.Load,
-                {
-                    type: Dynamsoft.DDV.Elements.Button,
-                    className: "ddv-button ddv-button-download",
-                    events: {
-                        click: "download",
-                    }
-                },
+                loadButton,
+                downloadButton,
             ],
         },
         Dynamsoft.DDV.Elements.MainView,
@@ -454,7 +509,6 @@ const mobileEditViewerUiConfig = {
             className: "ddv-edit-viewer-footer-mobile",
             children: [
                 Dynamsoft.DDV.Elements.DisplayMode,
-                Dynamsoft.DDV.Elements.RotateLeft,
                 Dynamsoft.DDV.Elements.Crop,
                 Dynamsoft.DDV.Elements.Filter,
                 Dynamsoft.DDV.Elements.Undo,
