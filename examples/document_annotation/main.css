@@ -392,3 +392,12 @@ button {
     display: flex;
     font-size: 1.5em;
 }
+
+.icon-clear::before {
+    content: "clear_all";
+}
+
+.icon-clear {
+    display: flex;
+    font-size: 1.5em;
+}
