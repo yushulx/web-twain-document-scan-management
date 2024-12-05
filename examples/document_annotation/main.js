@@ -15,7 +15,7 @@ cancelPasswordButton.addEventListener('click', () => {
 );
 
 submitPasswordButton.addEventListener('click', async () => {
-    const password = document.getElementById('password').value;
+    const password = document.getElementById('pdfpassword').value;
     load(fileBlob, password);
     document.getElementById("password-input").style.display = "none";
 });
@@ -354,6 +354,9 @@ async function load(blob, password) {
         const source = {
             fileData: blob,
             password: password,
+            renderOptions: {
+                renderAnnotations: "loadAnnotations"
+            }
         };
         await currentDoc.loadSource([source]);
         editViewer.openDocument(currentDoc);
