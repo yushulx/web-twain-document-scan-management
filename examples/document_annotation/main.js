@@ -244,7 +244,7 @@ savePDFButton.addEventListener('click', async () => {
     const password = document.getElementById('password').value;
     const annotationType = document.getElementById('annotationType').value;
 
-    clearAnnotations();
+    // clearAnnotations();
 
     try {
         const pdfSettings = {
