@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.css">
     <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader-bundle@10.4.2002/dist/dbr.bundle.js"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.2"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="main.css">
 </head>
 <style>
@@ -21,6 +21,47 @@
 <body>
     <div id="loading-indicator" class="loading-indicator">
         <div class="spinner"></div>
+    </div>
+
+    <!-- Pop-up for signature -->
+    <div id="signature-input" class="overlay">
+        <div class="signature-container">
+            <h2>Create New Signature</h2>
+            <canvas id="signatureCanvas"></canvas>
+            <div class="form-group">
+                <span>Color Style:</span>
+                <div id="blue" class="color-button" style="background-color: blue;"></div>
+                <div id="red" class="color-button" style="background-color: red;"></div>
+                <div id="black" class="color-button" style="background-color: black;"></div>
+            </div>
+            <div class="form-group">
+                <span>Stroke:</span>
+                <input type="range" id="strokeSlider" min="1" max="10" value="3">
+            </div>
+
+            <!-- X -->
+            <div class="form-group">
+                <label for="signatureX">X:</label>
+                <input type="text" id="signatureX" name="signatureX" placeholder="0">
+            </div>
+
+            <!-- Y -->
+            <div class="form-group">
+                <label for="signatureY">Y:</label>
+                <input type="text" id="signatureY" name="signatureY" placeholder="0">
+            </div>
+
+            <div style="margin-top: 10px;">
+                <input type="checkbox" id="signatureAllPage"> Auto-generate signatures on all pages
+            </div>
+
+
+            <div class="popup-buttons">
+                <button id="signatureOK">OK</button>
+                <button id="signatureRedraw">Redraw</button>
+                <button id="signatureCancel">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- Pop-up for inputing password -->
