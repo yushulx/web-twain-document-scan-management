@@ -1,7 +1,6 @@
 let editViewer = null;
 let docManager = null;
 let cvRouter = null;
-let savedAnnotations = [];
 let currentDoc = null;
 let fileBlob = null;
 
@@ -126,13 +125,11 @@ signatureOKButton.addEventListener('click', async () => {
                     for (let i = 0; i < currentDoc.pages.length; i++) {
                         let signatureAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentDoc.pages[i], "stamp", option)
                         signatureAnnotation['name'] = 'signature';
-                        savedAnnotations.push(signatureAnnotation);
                     }
                 } else {
 
                     let signatureAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
                     signatureAnnotation['name'] = 'signature';
-                    savedAnnotations.push(signatureAnnotation);
                 }
 
             } catch (e) {
@@ -274,14 +271,22 @@ function saveBlob(blob, fileName) {
 }
 
 async function clearAnnotations() {
-    if (savedAnnotations.length > 0) {
-        for (let i = 0; i < savedAnnotations.length; i++) {
+    if (!currentDoc) {
+        alert("Please load a document first.");
+        return;
+    }
+
+    let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
+    let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(currentPageId);
+
+    if (annotations.length > 0) {
+        for (let i = 0; i < annotations.length; i++) {
             // https://www.dynamsoft.com/document-viewer/docs/api/class/annotationmanager.html#deleteannotations
 
-            await Dynamsoft.DDV.annotationManager.deleteAnnotations([savedAnnotations[i].uid]);
+            if (!annotations[i].flattened && annotations[i].name !== 'barcode') {
+                await Dynamsoft.DDV.annotationManager.deleteAnnotations([annotations[i].uid]);
+            }
         }
-
-        savedAnnotations = [];
     }
 }
 
@@ -429,7 +434,7 @@ async function scanBarcode() {
     let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(currentPageId);
 
     for (let i = 0; i < annotations.length; i++) {
-        if (annotations[i].name === 'barcode' || savedAnnotations.length == 0) {
+        if (annotations[i].name === 'barcode') {
             annotations[i].flattened = true;
         }
     }
@@ -476,7 +481,6 @@ async function scanBarcode() {
 
         // https://www.dynamsoft.com/document-viewer/docs/api/class/annotationmanager.html#createAnnotation
         let textTypewriter = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "textTypewriter", textTypewriterOptions)
-        savedAnnotations.push(textTypewriter);
         textTypewriter['name'] = 'overlay';
 
         // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/polygonannotationoptions.html
@@ -498,7 +502,6 @@ async function scanBarcode() {
 
         let polygon = Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "polygon", polygonOptions);
         polygon['name'] = 'overlay';
-        savedAnnotations.push(polygon);
     }
 }
 
