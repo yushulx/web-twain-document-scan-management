@@ -5,6 +5,165 @@ let savedAnnotations = [];
 let currentDoc = null;
 let fileBlob = null;
 
+// Button for drawing signature
+let canvas = document.getElementById("signatureCanvas");
+let ctx = canvas.getContext("2d");
+let isDrawing = false;
+let color = "black";  // Default color
+let strokeWidth = 3;  // Default stroke width
+let drawingHistory = []; // To store the drawing paths
+
+// Set canvas size
+canvas.width = 500;
+canvas.height = 300;
+
+// Start drawing
+canvas.addEventListener("mousedown", startDrawing);
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("mouseup", stopDrawing);
+canvas.addEventListener("mouseout", stopDrawing);
+
+// Change stroke color instantly
+document.getElementById("blue").addEventListener("click", () => {
+    color = "blue";
+    redrawCanvas();
+});
+
+document.getElementById("red").addEventListener("click", () => {
+    color = "red";
+    redrawCanvas();
+});
+
+document.getElementById("black").addEventListener("click", () => {
+    color = "black";
+    redrawCanvas();
+});
+
+// Change stroke width instantly
+document.getElementById("strokeSlider").addEventListener("input", (e) => {
+    strokeWidth = e.target.value;
+    redrawCanvas();
+});
+
+function startDrawing(event) {
+    isDrawing = true;
+    let currentPath = {
+        color: color,
+        strokeWidth: strokeWidth,
+        points: [{ x: event.offsetX, y: event.offsetY }]
+    };
+    drawingHistory.push(currentPath);
+}
+
+function draw(event) {
+    if (isDrawing) {
+        // Get the current path from history and add new points
+        let currentPath = drawingHistory[drawingHistory.length - 1];
+        currentPath.points.push({ x: event.offsetX, y: event.offsetY });
+        redrawCanvas();
+    }
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Redraw all the paths with the current stroke settings
+    drawingHistory.forEach(path => {
+        ctx.beginPath();
+        ctx.moveTo(path.points[0].x, path.points[0].y);
+        for (let i = 1; i < path.points.length; i++) {
+            ctx.lineTo(path.points[i].x, path.points[i].y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = strokeWidth;
+        ctx.stroke();
+    });
+}
+
+function clearCanvas() {
+    drawingHistory = [];
+    redrawCanvas();
+}
+
+
+const signatureOKButton = document.getElementById('signatureOK');
+const signatureRedrawButton = document.getElementById('signatureRedraw');
+const signatureCancelButton = document.getElementById('signatureCancel');
+
+signatureOKButton.addEventListener('click', async () => {
+    const applyToAllPages = document.getElementById("signatureAllPage").checked;
+
+    const x = Number(document.getElementById("signatureX").value);
+    const y = Number(document.getElementById("signatureY").value);
+
+    canvas.toBlob(async (blob) => {
+        if (blob) {
+            let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
+            let pageData = await currentDoc.getPageData(currentPageId);
+
+            const option = {
+                stamp: blob,
+                x: x > pageData.mediaBox.width - canvas.width ? pageData.mediaBox.width - canvas.width - 10 : x,
+                y: y > pageData.mediaBox.height - canvas.height ? pageData.mediaBox.height - canvas.height - 10 : y,
+                width: canvas.width,
+                height: canvas.height,
+                opacity: 1.0,
+                flags: {
+                    print: false,
+                    noView: false,
+                    readOnly: false,
+
+                }
+            }
+
+            try {
+
+                if (applyToAllPages) {
+                    for (let i = 0; i < currentDoc.pages.length; i++) {
+                        let signatureAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentDoc.pages[i], "stamp", option)
+                        signatureAnnotation['name'] = 'signature';
+                        savedAnnotations.push(signatureAnnotation);
+                    }
+                } else {
+
+                    let signatureAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "stamp", option)
+                    signatureAnnotation['name'] = 'signature';
+                    savedAnnotations.push(signatureAnnotation);
+                }
+
+            } catch (e) {
+                console.log(e);
+            }
+        }
+    }, 'image/png');
+
+    document.getElementById("signature-input").style.display = "none";
+});
+
+signatureRedrawButton.addEventListener('click', async () => {
+    drawingHistory = [];
+    redrawCanvas();
+});
+
+signatureCancelButton.addEventListener('click', async () => {
+    document.getElementById("signature-input").style.display = "none";
+});
+
+
+function sign() {
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
+    }
+
+    document.getElementById("signature-input").style.display = "flex";
+}
+
 // Button for inputting the password
 const submitPasswordButton = document.getElementById('submitPassword');
 const cancelPasswordButton = document.getElementById('cancelPassword');
@@ -47,6 +206,7 @@ async function showViewer() {
     editViewer.on("scanBarcode", scanBarcode);
     editViewer.on("loadDocument", loadDocument);
     editViewer.on("clearAll", clearAnnotations);
+    editViewer.on("sign", sign);
 }
 
 async function activate(license) {
@@ -171,10 +331,10 @@ generateBarcodeButton.addEventListener('click', async () => {
 
                     const option = {
                         stamp: blob,
-                        x: x > pageData.mediaBox.width ? pageData.mediaBox.width - 110 : x,
-                        y: y > pageData.mediaBox.height ? pageData.mediaBox.height - 110 : y,
-                        width: 100,
-                        height: 100,
+                        x: x > pageData.mediaBox.width - tempCanvas.width ? pageData.mediaBox.width - tempCanvas.width - 10 : x,
+                        y: y > pageData.mediaBox.height - tempCanvas.height ? pageData.mediaBox.height - tempCanvas.height - 10 : y,
+                        width: tempCanvas.width,
+                        height: tempCanvas.height,
                         opacity: 1.0,
                         flags: {
                             print: false,
@@ -454,11 +614,23 @@ const loadButton = {
 const downloadButton = {
     type: Dynamsoft.DDV.Elements.Button,
     className: "ddv-button ddv-button-download",
+    tooltip: "Save as PDF",
     events: {
         click: "download",
     }
 }
 
+const signatureButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-stylus",
+    tooltip: "Sign the document",
+    events: {
+        click: "sign",
+    }
+}
+
+
+// Layout
 const pcEditViewerUiConfig = {
     type: Dynamsoft.DDV.Elements.Layout,
     flexDirection: "column",
@@ -487,6 +659,7 @@ const pcEditViewerUiConfig = {
                         checkButton,
                         scanButton,
                         clearButton,
+                        signatureButton,
                     ],
                 },
                 {
@@ -535,6 +708,7 @@ const mobileEditViewerUiConfig = {
                 checkButton,
                 scanButton,
                 clearButton,
+                signatureButton,
             ],
         },
     ],
