@@ -367,7 +367,7 @@ button {
 }
 
 .icon-qr_code::before {
-    content: "qr_code";
+    content: "add";
 }
 
 .icon-qr_code {
@@ -385,7 +385,7 @@ button {
 }
 
 .icon-scan::before {
-    content: "document_scanner";
+    content: "qr_code";
 }
 
 .icon-scan {
@@ -407,6 +407,24 @@ button {
 }
 
 .icon-stylus {
+    display: flex;
+    font-size: 1.5em;
+}
+
+.icon-document_scanner::before {
+    content: "crop_free";
+}
+
+.icon-document_scanner {
+    display: flex;
+    font-size: 1.5em;
+}
+
+.icon-ocr::before {
+    content: "document_scanner";
+}
+
+.icon-ocr {
     display: flex;
     font-size: 1.5em;
 }
