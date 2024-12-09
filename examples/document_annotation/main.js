@@ -100,8 +100,10 @@ async function normalizeImage() {
             continue;
         }
 
-        let data = Dynamsoft.Core._getNorImageData(item.imageData)
-        let blob = await Dynamsoft.Core._toBlob("image/png", data);
+        // let data = Dynamsoft.Core._getNorImageData(item.imageData)
+        // let blob = await Dynamsoft.Core._toBlob("image/png", data);
+
+        let blob = await item.toBlob();
         // saveBlob(blob, "normalized.png");
         return blob;
     }
