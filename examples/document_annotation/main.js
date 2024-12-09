@@ -204,12 +204,14 @@ async function showViewer() {
     editViewer.on("loadDocument", loadDocument);
     editViewer.on("clearAll", clearAnnotations);
     editViewer.on("sign", sign);
+    editViewer.on("detectDocument", detectDocument);
+    editViewer.on("recognizeText", recognizeText);
 }
 
 async function activate(license) {
     try {
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
-        // await Dynamsoft.Core.CoreModule.loadWasm(["dbr"]);
+        await Dynamsoft.Core.CoreModule.loadWasm(["dbr", "ddn", "dlr"]);
 
         // Initialize DCV
         cvRouter = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
@@ -440,7 +442,7 @@ async function scanBarcode() {
     }
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
     // saveBlob(image, "temp.jpg");
-    const result = await cvRouter.capture(image, "ReadBarcodes_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
+    const result = await cvRouter.capture(image, "ReadBarcodes_ReadRateFirst"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
 
     // Undo the flattened status for barcode annotations
     for (let i = 0; i < annotations.length; i++) {
@@ -564,6 +566,123 @@ function loadDocument() {
     fileInput.click();
 }
 
+async function detectDocument() {
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
+    }
+
+    const settings = {
+        quality: 100,
+        saveAnnotation: false,
+    };
+
+    const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
+    const result = await cvRouter.capture(image, "DetectDocumentBoundaries_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
+
+    for (let item of result.items) {
+        // https://www.dynamsoft.com/capture-vision/docs/core/enums/core/captured-result-item-type.html
+        if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_DETECTED_QUAD) {
+            continue;
+        }
+        console.log(JSON.stringify(item));
+        let points = item.location.points;
+
+        let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
+        let pageData = await currentDoc.getPageData(currentPageId);
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/polygonannotationoptions.html
+        const polygonOptions = {
+            points: points.map(p => {
+                return {
+                    x: p.x / pageData.display.width * pageData.mediaBox.width,
+                    y: p.y / pageData.display.height * pageData.mediaBox.height
+                }
+            }),
+            borderColor: "rgb(0,0,255)",
+            flags: {
+                print: false,
+                noView: false,
+                readOnly: false,
+
+            }
+        }
+
+        let polygon = Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "polygon", polygonOptions);
+        polygon['name'] = 'overlay';
+    }
+}
+
+async function recognizeText() {
+    let docs = docManager.getAllDocuments();
+    if (docs.length == 0) {
+        alert("Please load a document first.");
+        return;
+    }
+
+    const settings = {
+        quality: 100,
+        saveAnnotation: false,
+    };
+
+    const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
+    const result = await cvRouter.capture(image, "RecognizeTextLines_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
+
+    for (let item of result.items) {
+        // https://www.dynamsoft.com/capture-vision/docs/core/enums/core/captured-result-item-type.html
+        if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_TEXT_LINE) {
+            continue;
+        }
+        console.log(JSON.stringify(item));
+        let text = item.text;
+        let points = item.location.points;
+
+        let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
+        let pageData = await currentDoc.getPageData(currentPageId);
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/texttypewriterannotationoptions.html
+        let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / pageData.display.width * pageData.mediaBox.width;
+        let textY = Math.min(points[0].y, points[1].y, points[2].y, points[3].y) / pageData.display.height * pageData.mediaBox.height;
+
+        const textTypewriterOptions = {
+            x: textX < 0 ? 0 : textX,
+            y: textY - 15 < 0 ? 0 : textY - 15,
+            textContents: [{ content: text, color: "rgb(0,255,0)" }],
+            flags: {
+                print: false,
+                noView: false,
+                readOnly: false,
+
+            }
+        }
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/class/annotationmanager.html#createAnnotation
+        let textTypewriter = await Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "textTypewriter", textTypewriterOptions)
+        textTypewriter['name'] = 'overlay';
+
+        // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/polygonannotationoptions.html
+        const polygonOptions = {
+            points: points.map(p => {
+                return {
+                    x: p.x / pageData.display.width * pageData.mediaBox.width,
+                    y: p.y / pageData.display.height * pageData.mediaBox.height
+                }
+            }),
+            borderColor: "rgb(0,255,0)",
+            flags: {
+                print: false,
+                noView: false,
+                readOnly: false,
+
+            }
+        }
+
+        let polygon = Dynamsoft.DDV.annotationManager.createAnnotation(currentPageId, "polygon", polygonOptions);
+        polygon['name'] = 'overlay';
+    }
+}
+
 // Layout UI Config
 function isMobile() {
     return "ontouchstart" in document.documentElement;
@@ -632,6 +751,26 @@ const signatureButton = {
     }
 }
 
+const documentButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-document_scanner",
+    tooltip: "Detect document",
+    events: {
+        click: "detectDocument",
+    }
+}
+
+
+const ocrButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-ocr",
+    tooltip: "Recognize text",
+    events: {
+        click: "recognizeText",
+    }
+}
+
+
 
 // Layout
 const pcEditViewerUiConfig = {
@@ -663,6 +802,8 @@ const pcEditViewerUiConfig = {
                         scanButton,
                         clearButton,
                         signatureButton,
+                        documentButton,
+                        ocrButton,
                     ],
                 },
                 {
@@ -712,6 +853,8 @@ const mobileEditViewerUiConfig = {
                 scanButton,
                 clearButton,
                 signatureButton,
+                documentButton,
+                ocrButton,
             ],
         },
     ],
