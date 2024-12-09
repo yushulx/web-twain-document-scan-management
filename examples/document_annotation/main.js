@@ -329,8 +329,9 @@ async function showViewer() {
     editContainer.parentNode.style.display = "block";
     editViewer = new Dynamsoft.DDV.EditViewer({
         container: editContainer,
-        uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig
+        uiConfig: isMobile() ? mobileEditViewerUiConfig : pcEditViewerUiConfig,
     });
+    editViewer.displayMode = "single";
     editViewer.on("addQr", addQr);
     editViewer.on("download", download);
     editViewer.on("flatten", flatten);
@@ -663,6 +664,7 @@ async function load(blob, password) {
         };
         await currentDoc.loadSource([source]);
         editViewer.openDocument(currentDoc);
+        editViewer.goToPage(editViewer.getPageCount() - 1);
     } catch (error) {
         console.error(error);
 
@@ -884,7 +886,6 @@ const pcEditViewerUiConfig = {
                         Dynamsoft.DDV.Elements.ThumbnailSwitch,
                         Dynamsoft.DDV.Elements.Zoom,
                         Dynamsoft.DDV.Elements.FitMode,
-                        Dynamsoft.DDV.Elements.DisplayMode,
                         Dynamsoft.DDV.Elements.Crop,
                         Dynamsoft.DDV.Elements.Filter,
                         Dynamsoft.DDV.Elements.Undo,
@@ -938,7 +939,6 @@ const mobileEditViewerUiConfig = {
             type: Dynamsoft.DDV.Elements.Layout,
             className: "ddv-edit-viewer-footer-mobile",
             children: [
-                Dynamsoft.DDV.Elements.DisplayMode,
                 Dynamsoft.DDV.Elements.Crop,
                 Dynamsoft.DDV.Elements.Filter,
                 Dynamsoft.DDV.Elements.Undo,
