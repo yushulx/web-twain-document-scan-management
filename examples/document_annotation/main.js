@@ -158,6 +158,17 @@ canvas.addEventListener("mousemove", draw);
 canvas.addEventListener("mouseup", stopDrawing);
 canvas.addEventListener("mouseout", stopDrawing);
 
+// Touch events
+canvas.addEventListener("touchstart", startDrawing);
+canvas.addEventListener("touchmove", draw);
+canvas.addEventListener("touchend", stopDrawing);
+canvas.addEventListener("touchcancel", stopDrawing);
+
+// Prevent default touch behavior to avoid scrolling
+canvas.addEventListener("touchstart", function (event) {
+    event.preventDefault();
+}, { passive: false });
+
 // Change stroke color instantly
 document.getElementById("blue").addEventListener("click", () => {
     color = "blue";
@@ -180,12 +191,28 @@ document.getElementById("strokeSlider").addEventListener("input", (e) => {
     redrawCanvas();
 });
 
+function getCoordinates(event) {
+    // Check if the event is a touch event
+    if (event.touches) {
+        // Get the touch position
+        const touch = event.touches[0];
+        return {
+            x: touch.clientX - canvas.getBoundingClientRect().left,
+            y: touch.clientY - canvas.getBoundingClientRect().top
+        };
+    } else {
+        // For mouse events
+        return { x: event.offsetX, y: event.offsetY };
+    }
+}
+
 function startDrawing(event) {
     isDrawing = true;
+    const { x, y } = getCoordinates(event);
     let currentPath = {
         color: color,
         strokeWidth: strokeWidth,
-        points: [{ x: event.offsetX, y: event.offsetY }]
+        points: [{ x: x, y: y }]
     };
     drawingHistory.push(currentPath);
 }
@@ -193,8 +220,9 @@ function startDrawing(event) {
 function draw(event) {
     if (isDrawing) {
         // Get the current path from history and add new points
+        const { x, y } = getCoordinates(event);
         let currentPath = drawingHistory[drawingHistory.length - 1];
-        currentPath.points.push({ x: event.offsetX, y: event.offsetY });
+        currentPath.points.push({ x: x, y: y });
         redrawCanvas();
     }
 }
