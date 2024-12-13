@@ -92,6 +92,7 @@ async function normalizeImage() {
     };
 
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
+    cvRouter.maxCvsSideLength = 9999;
     const result = await cvRouter.capture(image, "NormalizeDocument_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
 
     for (let item of result.items) {
