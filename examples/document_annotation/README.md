@@ -13,6 +13,11 @@ The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dyna
   https://github.com/user-attachments/assets/858e9664-23aa-4d25-841b-3c341797177e
 
 
+- Insert signatures into a document.
+
+  https://github.com/user-attachments/assets/81f978fa-ec18-4bd1-8e2e-f480cd40c1c4
+
+
 
 ## Prerequisites
 - Request a [trial license key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform).
