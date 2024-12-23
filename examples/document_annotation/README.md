@@ -30,5 +30,7 @@ The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dyna
 [https://yushulx.me/web-document-annotation/](https://yushulx.me/web-twain-document-scan-management/examples/document_annotation/)
 
 ## Blog
-[How to Insert Barcodes into a PDF Document with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-insert-barcode-into-pdf.html)
-
+- [How to Insert Barcodes into a PDF Document with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-insert-barcode-into-pdf.html)
+- [How to Read DataMatrix and Other 1D/2D Barcodes from PDF Files in HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-read-datamatrix-pdf.html)
+- [How to Insert Signatures into PDF Documents with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-pdf-document-signature.html)
+- [How to Detect and Save Documents to PDF with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-web-document-detect-crop-save.html)
