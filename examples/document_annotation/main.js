@@ -6,48 +6,110 @@ let fileBlob = null;
 let documentPoints = null;
 let host = "http://127.0.0.1:18622";
 let dropdown = null;
-let stream = null;
 
 // Button for camera
-const cameraPopup = document.getElementById("camera-popup");
-const video = document.getElementById("camera-preview");
-const captureBtn = document.getElementById("captureFrameBtn");
-const cancelBtn = document.getElementById("cancelCameraBtn");
+let stream = null;
+let capturedBlobs = [];
+let currentDeviceId = null;
 
-function showCameraPopup() {
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then((mediaStream) => {
-            stream = mediaStream;
-            video.srcObject = stream;
-            cameraPopup.style.display = "flex";
-        })
-        .catch((err) => {
-            console.error("Error accessing camera:", err);
-            alert("Unable to access camera.");
-        });
+const cameraSelect = document.getElementById("cameraSelect");
+const video = document.getElementById("camera-preview");
+const thumbnailContainer = document.getElementById("captured-thumbnails");
+const captureBtn = document.getElementById("captureFrameBtn");
+const insertBtn = document.getElementById("insertFramesBtn");
+const cancelBtn = document.getElementById("cancelCameraBtn");
+const cameraPopup = document.getElementById("camera-popup");
+
+async function listCameras() {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === "videoinput");
+
+    cameraSelect.innerHTML = "";
+    videoDevices.forEach((device, index) => {
+        const option = document.createElement("option");
+        option.value = device.deviceId;
+        option.text = device.label || `Camera ${index + 1}`;
+        cameraSelect.appendChild(option);
+    });
+
+    if (videoDevices.length > 0) {
+        currentDeviceId = videoDevices[0].deviceId;
+        cameraSelect.value = currentDeviceId;
+    }
 }
 
-function hideCameraPopup() {
-    cameraPopup.style.display = "none";
+async function startCamera(deviceId) {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
     }
-    video.srcObject = null;
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: deviceId } }
+        });
+        video.srcObject = stream;
+        currentDeviceId = deviceId;
+    } catch (err) {
+        console.error("Failed to start camera:", err);
+        alert("Unable to access selected camera.");
+    }
 }
 
-captureBtn.addEventListener("click", async () => {
+async function showCameraPopup() {
+    await listCameras();
+    await startCamera(currentDeviceId);
+    capturedBlobs = [];
+    thumbnailContainer.innerHTML = "";
+    cameraPopup.style.display = "flex";
+}
+
+function hideCameraPopup() {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
+    cameraPopup.style.display = "none";
+    capturedBlobs = [];
+    thumbnailContainer.innerHTML = "";
+}
+
+cameraSelect.addEventListener("change", () => {
+    const selectedId = cameraSelect.value;
+    if (selectedId !== currentDeviceId) {
+        startCamera(selectedId);
+    }
+});
+
+captureBtn.addEventListener("click", () => {
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    canvas.toBlob(async (blob) => {
+    canvas.toBlob((blob) => {
         if (blob) {
-            await load(blob);  // or insert as new page to currentDoc
-            hideCameraPopup();
+            capturedBlobs.push(blob);
+
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(blob);
+            img.style.width = "80px";
+            img.style.height = "60px";
+            img.style.objectFit = "cover";
+            img.style.border = "1px solid #ccc";
+            thumbnailContainer.appendChild(img);
         }
     }, "image/jpeg");
+});
+
+insertBtn.addEventListener("click", async () => {
+    if (!capturedBlobs.length) {
+        alert("Please capture at least one frame.");
+        return;
+    }
+
+    for (const blob of capturedBlobs) {
+        await load(blob);
+    }
+
+    hideCameraPopup();
 });
 
 cancelBtn.addEventListener("click", hideCameraPopup);
