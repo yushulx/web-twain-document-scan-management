@@ -1,5 +1,5 @@
-# Web Document Annotation
-The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dynamsoft.com/document-viewer/docs/introduction/index.html). You can use it to annotate PDF and image files in a web application.
+# Web Document Annotation 
+The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dynamsoft.com/document-viewer/docs/introduction/index.html) and [Dynamsoft Capture Vision](https://www.npmjs.com/package/dynamsoft-capture-vision-bundle). It supports annotating PDF and image files, detecting barcodes from documents, and correcting document images in a web application.
 
 ## Demo Video
 
@@ -17,6 +17,10 @@ The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dyna
 
   https://github.com/user-attachments/assets/81f978fa-ec18-4bd1-8e2e-f480cd40c1c4
 
+- Detect and correct documents.
+
+  https://github.com/user-attachments/assets/36f11da3-2371-46a5-9cb9-a7e46f3b61c7
+
 
 
 ## Prerequisites
@@ -26,5 +30,7 @@ The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dyna
 [https://yushulx.me/web-document-annotation/](https://yushulx.me/web-twain-document-scan-management/examples/document_annotation/)
 
 ## Blog
-[How to Insert Barcodes into a PDF Document with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-insert-barcode-into-pdf.html)
-
+- [How to Insert Barcodes into a PDF Document with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-insert-barcode-into-pdf.html)
+- [How to Read DataMatrix and Other 1D/2D Barcodes from PDF Files in HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-read-datamatrix-pdf.html)
+- [How to Insert Signatures into PDF Documents with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-javascript-pdf-document-signature.html)
+- [How to Detect and Save Documents to PDF with HTML5 and JavaScript](https://www.dynamsoft.com/codepool/html5-web-document-detect-crop-save.html)
