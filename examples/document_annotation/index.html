@@ -176,6 +176,33 @@
         </div>
     </div>
 
+    <!-- Pop-up for scanning documents -->
+    <div id="pop-scanner" class="overlay">
+        <div class="popup">
+            <div class="form-group">
+                <label for="sources">Scanner Source:</label>
+                <select id="sources">
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="ADF" checked="checked">Auto Feeder</label>
+                <select id="Resolution">
+                    <option value="100">100</option>
+                    <option value="150">150</option>
+                    <option value="200">200</option>
+                    <option value="300">300</option>
+                </select>
+            </div>
+
+
+            <!-- Buttons for return and cancel -->
+            <button class="button" id="acquireDocument">OK</button>
+            <button class="button" id="cancelCapture">Cancel</button>
+        </div>
+    </div>
+
     <div class="container">
         <label>
             Get a License key from <a
