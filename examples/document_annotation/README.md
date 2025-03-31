@@ -21,6 +21,10 @@ The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dyna
 
   https://github.com/user-attachments/assets/36f11da3-2371-46a5-9cb9-a7e46f3b61c7
 
+- Capture document data from file, camera and scanner.
+
+  https://github.com/user-attachments/assets/3117bba9-fb3c-447f-ac0d-c649c71f8733
+
 
 
 ## Prerequisites
