@@ -429,6 +429,15 @@ button {
     font-size: 1.5em;
 }
 
+.icon-scanner::before {
+    content: "scanner";
+}
+
+.icon-scanner {
+    display: flex;
+    font-size: 1.5em;
+}
+
 /* Signature */
 .color-button {
     width: 25px;

@@ -4,6 +4,7 @@ let cvRouter = null;
 let currentDoc = null;
 let fileBlob = null;
 let documentPoints = null;
+let host = "http://127.0.0.1:18622";
 
 // Button for detecting documents
 let detectDocumentButton = document.getElementById("detectDocument");
@@ -372,6 +373,7 @@ async function showViewer() {
     editViewer.on("sign", sign);
     editViewer.on("detectDocument", detectDocument);
     editViewer.on("recognizeText", recognizeText);
+    editViewer.on("popScanner", popScanner);
 }
 
 async function activate(license) {
@@ -457,6 +459,94 @@ async function clearAnnotations() {
         }
     }
 }
+
+// Button for scanning documents
+const acquireDocumentButton = document.getElementById('acquireDocument');
+const cancelCaptureButton = document.getElementById('cancelCapture');
+
+cancelCaptureButton.addEventListener('click', () => {
+    document.getElementById("pop-scanner").style.display = "none";
+});
+
+acquireDocumentButton.addEventListener('click', async () => {
+    document.getElementById("pop-scanner").style.display = "none";
+
+    // Create a scan job
+    let select = document.getElementById('sources');
+    let scanner = select.value;
+
+    if (scanner == null || scanner.length == 0) {
+        alert('Please select a scanner.');
+        return;
+    }
+
+    let license = document.getElementById('licensekey').value;
+    if (!license) {
+        license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+    }
+
+    let resolutionSelect = document.getElementById('Resolution');
+
+    let adfCheck = document.getElementById('ADF');
+
+
+    let parameters = {
+        license: license,
+        device: JSON.parse(scanner)['device'],
+    };
+
+    parameters.config = {
+        PixelType: 2,
+        Resolution: parseInt(resolutionSelect.value),
+        IfFeederEnabled: adfCheck.checked,
+    };
+
+
+    // REST endpoint to create a scan job
+    let url = host + '/api/device/scanners/jobs';
+
+    try {
+        let response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(parameters)
+        });
+
+        if (response.ok) {
+            let job = await response.json();
+            let jobId = job.jobuid;
+
+            // Get document data
+            let blobs = [];
+            let url = host + '/api/device/scanners/jobs/' + jobId + '/next-page';
+
+            while (true) {
+                try {
+
+                    let response = await fetch(url);
+
+                    if (response.status == 200) {
+                        const arrayBuffer = await response.arrayBuffer();
+                        const blob = new Blob([arrayBuffer], { type: response.type });
+                        load(blob, '');
+                    }
+                    else {
+                        break;
+                    }
+
+                } catch (error) {
+                    console.error('No more images.');
+                    break;
+                }
+            }
+        }
+
+    } catch (error) {
+        alert(error);
+    }
+});
 
 // Button for generating barcode
 const generateBarcodeButton = document.getElementById('generateBarcode');
@@ -743,6 +833,39 @@ async function detectDocument() {
     document.getElementById("document-detection").style.display = "flex";
 }
 
+async function popScanner() {
+    toggleLoading(true);
+
+    try {
+
+        let url = host + '/api/device/scanners';
+        let response = await fetch(url);
+
+        if (response.ok) {
+            let devices = await response.json();
+
+            let select = document.getElementById('sources');
+            select.innerHTML = '';
+
+            for (let i = 0; i < devices.length; i++) {
+                let device = devices[i];
+                let option = document.createElement("option");
+                option.text = device['name'];
+                option.value = JSON.stringify(device);
+                select.add(option);
+            };
+        }
+
+    } catch (error) {
+        alert(error);
+        return "";
+    }
+
+    toggleLoading(false);
+
+    document.getElementById("pop-scanner").style.display = "flex";
+}
+
 async function recognizeText() {
     let docs = docManager.getAllDocuments();
     if (docs.length == 0) {
@@ -899,6 +1022,14 @@ const ocrButton = {
     }
 }
 
+const scannerButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "material-icons icon-scanner",
+    tooltip: "Acquire documents from a scanner",
+    events: {
+        click: "popScanner",
+    }
+}
 
 
 // Layout
@@ -932,6 +1063,7 @@ const pcEditViewerUiConfig = {
                         signatureButton,
                         documentButton,
                         ocrButton,
+                        scannerButton,
                     ],
                 },
                 {
@@ -982,6 +1114,7 @@ const mobileEditViewerUiConfig = {
                 signatureButton,
                 documentButton,
                 ocrButton,
+                scannerButton,
             ],
         },
     ],
