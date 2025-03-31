@@ -5,6 +5,52 @@ let currentDoc = null;
 let fileBlob = null;
 let documentPoints = null;
 let host = "http://127.0.0.1:18622";
+let dropdown = null;
+let stream = null;
+
+// Button for camera
+const cameraPopup = document.getElementById("camera-popup");
+const video = document.getElementById("camera-preview");
+const captureBtn = document.getElementById("captureFrameBtn");
+const cancelBtn = document.getElementById("cancelCameraBtn");
+
+function showCameraPopup() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then((mediaStream) => {
+            stream = mediaStream;
+            video.srcObject = stream;
+            cameraPopup.style.display = "flex";
+        })
+        .catch((err) => {
+            console.error("Error accessing camera:", err);
+            alert("Unable to access camera.");
+        });
+}
+
+function hideCameraPopup() {
+    cameraPopup.style.display = "none";
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+    video.srcObject = null;
+}
+
+captureBtn.addEventListener("click", async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(async (blob) => {
+        if (blob) {
+            await load(blob);  // or insert as new page to currentDoc
+            hideCameraPopup();
+        }
+    }, "image/jpeg");
+});
+
+cancelBtn.addEventListener("click", hideCameraPopup);
 
 // Button for detecting documents
 let detectDocumentButton = document.getElementById("detectDocument");
@@ -338,7 +384,7 @@ cancelPasswordButton.addEventListener('click', () => {
 
 submitPasswordButton.addEventListener('click', async () => {
     const password = document.getElementById('pdfpassword').value;
-    load(fileBlob, password);
+    await load(fileBlob, password);
     document.getElementById("password-input").style.display = "none";
 });
 
@@ -374,6 +420,35 @@ async function showViewer() {
     editViewer.on("detectDocument", detectDocument);
     editViewer.on("recognizeText", recognizeText);
     editViewer.on("popScanner", popScanner);
+
+    // Load the dropdown menu
+    let button;
+    if (isMobile()) {
+        button = document.querySelector("#edit-viewer > div > div.ddv-layout.ddv-edit-viewer-footer-mobile > div.ddv-button.ddv-button.ddv-load-image")
+    }
+    else {
+        button = document.querySelector("#edit-viewer > div > div.ddv-layout.ddv-edit-viewer-header-desktop > div:nth-child(1) > div.ddv-button.ddv-button.ddv-load-image")
+    }
+
+    button.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        // Create dropdown if not exists
+        if (!dropdown) {
+            dropdown = createDropdownMenu();
+            dropdown.style.position = "absolute";
+        }
+
+        // Toggle visibility
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+
+        // Position the dropdown below the button
+        const rect = button.getBoundingClientRect();
+        dropdown.style.left = `${rect.left}px`;
+        dropdown.style.top = `${rect.bottom + 5}px`;
+    });
+
+
 }
 
 async function activate(license) {
@@ -530,7 +605,7 @@ acquireDocumentButton.addEventListener('click', async () => {
                     if (response.status == 200) {
                         const arrayBuffer = await response.arrayBuffer();
                         const blob = new Blob([arrayBuffer], { type: response.type });
-                        load(blob, '');
+                        await load(blob, '');
                     }
                     else {
                         break;
@@ -813,7 +888,7 @@ function loadDocument() {
 
         reader.onload = async function (e) {
             fileBlob = new Blob([e.target.result], { type: file.type });
-            load(fileBlob);
+            await load(fileBlob);
         };
 
         reader.readAsArrayBuffer(file);
@@ -1031,6 +1106,14 @@ const scannerButton = {
     }
 }
 
+let dropdownButton = {
+    type: Dynamsoft.DDV.Elements.Button,
+    className: "ddv-button ddv-load-image",
+    tooltip: "Sources: File, Camera, Scanner",
+    events: {
+        click: "toggleDropdown",
+    },
+};
 
 // Layout
 const pcEditViewerUiConfig = {
@@ -1063,7 +1146,8 @@ const pcEditViewerUiConfig = {
                         signatureButton,
                         documentButton,
                         ocrButton,
-                        scannerButton,
+                        // scannerButton,
+                        dropdownButton,
                     ],
                 },
                 {
@@ -1073,7 +1157,7 @@ const pcEditViewerUiConfig = {
                             type: Dynamsoft.DDV.Elements.Pagination,
                             className: "ddv-edit-viewer-pagination-desktop",
                         },
-                        loadButton,
+                        // loadButton,
                         downloadButton,
                     ],
                 },
@@ -1093,7 +1177,7 @@ const mobileEditViewerUiConfig = {
             className: "ddv-edit-viewer-header-mobile",
             children: [
                 Dynamsoft.DDV.Elements.Pagination,
-                loadButton,
+                // loadButton,
                 downloadButton,
             ],
         },
@@ -1114,8 +1198,44 @@ const mobileEditViewerUiConfig = {
                 signatureButton,
                 documentButton,
                 ocrButton,
-                scannerButton,
+                // scannerButton,
+                dropdownButton,
             ],
         },
     ],
 };
+
+function createDropdownMenu() {
+    const dropdown = document.createElement("div");
+    dropdown.classList.add("dropdown-menu");
+
+    dropdown.innerHTML = `
+      <button onclick="handleDropdownSelect(this)">File</button>
+      <button onclick="handleDropdownSelect(this)">Camera</button>
+      <button class="selected" onclick="handleDropdownSelect(this)">Scanner</button>
+    `;
+
+    document.body.appendChild(dropdown);
+    return dropdown;
+}
+
+window.handleDropdownSelect = function (btn) {
+    document.querySelectorAll(".dropdown-menu button").forEach(el => el.classList.remove("selected"));
+    btn.classList.add("selected");
+    console.log("Selected:", btn.textContent);
+    dropdown.style.display = "none";
+
+    if (btn.textContent === "File") {
+        loadDocument();
+    }
+    else if (btn.textContent === "Camera") {
+        showCameraPopup();
+    }
+    else if (btn.textContent === "Scanner") {
+        popScanner();
+    }
+};
+
+window.addEventListener("click", () => {
+    if (dropdown) dropdown.style.display = "none";
+});

@@ -203,6 +203,18 @@
         </div>
     </div>
 
+    <!-- Pop-up for camera preview -->
+    <div id="camera-popup" class="overlay">
+        <div class="popup">
+            <h2>Camera Capture</h2>
+            <video id="camera-preview" autoplay playsinline style="width: 100%; border: 1px solid #ccc;"></video>
+            <div class="popup-buttons" style="margin-top: 10px;">
+                <button id="captureFrameBtn">Capture</button>
+                <button id="cancelCameraBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <label>
             Get a License key from <a
