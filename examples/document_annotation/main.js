@@ -11,6 +11,102 @@ let dropdown = null;
 let stream = null;
 let capturedBlobs = [];
 let currentDeviceId = null;
+let parser;
+
+driverLicenseFields = [
+    { 'abbreviation': 'DAA', 'description': 'Full Name' },
+    { 'abbreviation': 'DAB', 'description': 'Last Name' },
+    { 'abbreviation': 'DAB', 'description': 'Family Name' },
+    { 'abbreviation': 'DAC', 'description': 'First Name' },
+    { 'abbreviation': 'DAC', 'description': 'Given Name' },
+    { 'abbreviation': 'DAD', 'description': 'Middle Name or Initial' },
+    { 'abbreviation': 'DAD', 'description': 'Middle Name' },
+    { 'abbreviation': 'DAE', 'description': 'Name Suffix' },
+    { 'abbreviation': 'DAF', 'description': 'Name Prefix' },
+    { 'abbreviation': 'DAG', 'description': 'Mailing Street Address1' },
+    { 'abbreviation': 'DAH', 'description': 'Mailing Street Address2' },
+    { 'abbreviation': 'DAI', 'description': 'Mailing City' },
+    { 'abbreviation': 'DAJ', 'description': 'Mailing Jurisdiction Code' },
+    { 'abbreviation': 'DAK', 'description': 'Mailing Postal Code' },
+    { 'abbreviation': 'DAL', 'description': 'Residence Street Address1' },
+    { 'abbreviation': 'DAM', 'description': 'Residence Street Address2' },
+    { 'abbreviation': 'DAN', 'description': 'Residence City' },
+    { 'abbreviation': 'DAO', 'description': 'Residence Jurisdiction Code' },
+    { 'abbreviation': 'DAP', 'description': 'Residence Postal Code' },
+    { 'abbreviation': 'DAQ', 'description': 'License or ID Number' },
+    { 'abbreviation': 'DAR', 'description': 'License Classification Code' },
+    { 'abbreviation': 'DAS', 'description': 'License Restriction Code' },
+    { 'abbreviation': 'DAT', 'description': 'License Endorsements Code' },
+    { 'abbreviation': 'DAU', 'description': 'Height in FT_IN' },
+    { 'abbreviation': 'DAV', 'description': 'Height in CM' },
+    { 'abbreviation': 'DAW', 'description': 'Weight in LBS' },
+    { 'abbreviation': 'DAX', 'description': 'Weight in KG' },
+    { 'abbreviation': 'DAY', 'description': 'Eye Color' },
+    { 'abbreviation': 'DAZ', 'description': 'Hair Color' },
+    { 'abbreviation': 'DBA', 'description': 'License Expiration Date' },
+    { 'abbreviation': 'DBB', 'description': 'Date of Birth' },
+    { 'abbreviation': 'DBC', 'description': 'Sex' },
+    { 'abbreviation': 'DBD', 'description': 'License or ID Document Issue Date' },
+    { 'abbreviation': 'DBE', 'description': 'Issue Timestamp' },
+    { 'abbreviation': 'DBF', 'description': 'Number of Duplicates' },
+    { 'abbreviation': 'DBG', 'description': 'Medical Indicator Codes' },
+    { 'abbreviation': 'DBH', 'description': 'Organ Donor' },
+    { 'abbreviation': 'DBI', 'description': 'Non-Resident Indicator' },
+    { 'abbreviation': 'DBJ', 'description': 'Unique Customer Identifier' },
+    { 'abbreviation': 'DBK', 'description': 'Social Security Number' },
+    { 'abbreviation': 'DBL', 'description': 'Date Of Birth' },
+    { 'abbreviation': 'DBM', 'description': 'Social Security Number' },
+    { 'abbreviation': 'DBN', 'description': 'Full Name' },
+    { 'abbreviation': 'DBO', 'description': 'Last Name' },
+    { 'abbreviation': 'DBO', 'description': 'Family Name' },
+    { 'abbreviation': 'DBP', 'description': 'First Name' },
+    { 'abbreviation': 'DBP', 'description': 'Given Name' },
+    { 'abbreviation': 'DBQ', 'description': 'Middle Name' },
+    { 'abbreviation': 'DBQ', 'description': 'Middle Name or Initial' },
+    { 'abbreviation': 'DBR', 'description': 'Suffix' },
+    { 'abbreviation': 'DBS', 'description': 'Prefix' },
+    { 'abbreviation': 'DCA', 'description': 'Virginia Specific Class' },
+    { 'abbreviation': 'DCB', 'description': 'Virginia Specific Restrictions' },
+    { 'abbreviation': 'DCD', 'description': 'Virginia Specific Endorsements' },
+    { 'abbreviation': 'DCE', 'description': 'Physical Description Weight Range' },
+    { 'abbreviation': 'DCF', 'description': 'Document Discriminator' },
+    { 'abbreviation': 'DCG', 'description': 'Country territory of issuance' },
+    { 'abbreviation': 'DCH', 'description': 'Federal Commercial Vehicle Codes' },
+    { 'abbreviation': 'DCI', 'description': 'Place of birth' },
+    { 'abbreviation': 'DCJ', 'description': 'Audit information' },
+    { 'abbreviation': 'DCK', 'description': 'Inventory Control Number' },
+    { 'abbreviation': 'DCL', 'description': 'Race Ethnicity' },
+    { 'abbreviation': 'DCM', 'description': 'Standard vehicle classification' },
+    { 'abbreviation': 'DCN', 'description': 'Standard endorsement code' },
+    { 'abbreviation': 'DCO', 'description': 'Standard restriction code' },
+    { 'abbreviation': 'DCP', 'description': 'Jurisdiction specific vehicle classification description' },
+    { 'abbreviation': 'DCQ', 'description': 'Jurisdiction-specific' },
+    { 'abbreviation': 'DCR', 'description': 'Jurisdiction specific restriction code description' },
+    { 'abbreviation': 'DCS', 'description': 'Family Name' },
+    { 'abbreviation': 'DCS', 'description': 'Last Name' },
+    { 'abbreviation': 'DCT', 'description': 'Given Name' },
+    { 'abbreviation': 'DCT', 'description': 'First Name' },
+    { 'abbreviation': 'DCU', 'description': 'Suffix' },
+    { 'abbreviation': 'DDA', 'description': 'Compliance Type' },
+    { 'abbreviation': 'DDB', 'description': 'Card Revision Date' },
+    { 'abbreviation': 'DDC', 'description': 'HazMat Endorsement Expiry Date' },
+    { 'abbreviation': 'DDD', 'description': 'Limited Duration Document Indicator' },
+    { 'abbreviation': 'DDE', 'description': 'Family Name Truncation' },
+    { 'abbreviation': 'DDF', 'description': 'First Names Truncation' },
+    { 'abbreviation': 'DDG', 'description': 'Middle Names Truncation' },
+    { 'abbreviation': 'DDH', 'description': 'Under 18 Until' },
+    { 'abbreviation': 'DDI', 'description': 'Under 19 Until' },
+    { 'abbreviation': 'DDJ', 'description': 'Under 21 Until' },
+    { 'abbreviation': 'DDK', 'description': 'Organ Donor Indicator' },
+    { 'abbreviation': 'DDL', 'description': 'Veteran Indicator' },
+    { 'abbreviation': 'PAA', 'description': 'Permit Classification Code' },
+    { 'abbreviation': 'PAB', 'description': 'Permit Expiration Date' },
+    { 'abbreviation': 'PAC', 'description': 'Permit Identifier' },
+    { 'abbreviation': 'PAD', 'description': 'Permit IssueDate' },
+    { 'abbreviation': 'PAE', 'description': 'Permit Restriction Code' },
+    { 'abbreviation': 'PAF', 'description': 'Permit Endorsement Code' },
+    { 'abbreviation': 'ZVA', 'description': 'Court Restriction Code' }
+];
 
 const cameraSelect = document.getElementById("cameraSelect");
 const video = document.getElementById("camera-preview");
@@ -519,8 +615,13 @@ async function activate(license) {
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
         await Dynamsoft.Core.CoreModule.loadWasm(["dbr", "ddn", "dlr"]);
 
+        Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
+        Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID_WITH_MAG_STRIPE");
+        Dynamsoft.DCP.CodeParserModule.loadSpec("SOUTH_AFRICA_DL");
+
         // Initialize DCV
         cvRouter = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+        parser = await Dynamsoft.DCP.CodeParser.createInstance();
 
         // Initialize Dynamsoft Document Viewer
         // Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/engine";
@@ -785,6 +886,12 @@ function toggleLoading(isLoading) {
 
 
 // Event handlers
+const confirmResult = document.getElementById('confirmResult');
+
+confirmResult.addEventListener('click', () => {
+    document.getElementById("confirm-result").style.display = "none";
+});
+
 function addQr() {
     let docs = docManager.getAllDocuments();
     if (docs.length == 0) {
@@ -812,6 +919,14 @@ function flatten() {
 }
 
 
+function getField(keyword, barcodeText) {
+    var k = barcodeText.search("\n" + keyword);
+    if (k == -1)
+        return false;
+    var m = barcodeText.indexOf("\n", k + 1);
+    var subtext = barcodeText.substring(k + 4, m);
+    return subtext;
+}
 
 async function scanBarcode() {
     let docs = docManager.getAllDocuments();
@@ -855,6 +970,26 @@ async function scanBarcode() {
         }
         // console.log(JSON.stringify(item));
         let text = item.text;
+        try {
+            let resultArea = document.getElementById("parse-result");
+            var aryTextToShow = [];
+            for (let i = 0; i < driverLicenseFields.length; i++) {
+                let item = driverLicenseFields[i];
+                let fieldValue = getField(item.abbreviation, text);
+                if (fieldValue !== false) {
+                    aryTextToShow.push(item.description + ": " + fieldValue);
+                    aryTextToShow.push("------------------------------");
+                }
+            }
+
+            if (aryTextToShow.length !== 0) {
+                resultArea.value = aryTextToShow.join('\n');
+                document.getElementById("confirm-result").style.display = "flex";
+            }
+        }
+        catch (e) {
+            console.log(e);
+        }
         let points = item.location.points;
 
         let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
@@ -1057,7 +1192,7 @@ async function recognizeText() {
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
     await cvRouter.initSettings("./full.json");
     const result = await cvRouter.capture(image, "ReadMRZ"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
-    let parser = await Dynamsoft.DCP.CodeParser.createInstance();
+
     let parseResults = '';
     for (let item of result.items) {
         // https://www.dynamsoft.com/capture-vision/docs/core/enums/core/captured-result-item-type.html
@@ -1067,6 +1202,14 @@ async function recognizeText() {
         // console.log(JSON.stringify(item));
         let text = item.text;
         parseResults = await parser.parse(item.text);
+        try {
+            let resultArea = document.getElementById("parse-result");
+            resultArea.value = JSON.stringify(extractMrzInfo(parseResults));
+            document.getElementById("confirm-result").style.display = "flex";
+        }
+        catch (e) {
+            console.log(e);
+        }
         let points = item.location.points;
 
         let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
