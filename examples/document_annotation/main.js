@@ -144,6 +144,7 @@ detectDocumentButton.addEventListener('click', async () => {
     };
 
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
+    await cvRouter.resetSettings();
     const result = await cvRouter.capture(image, "DetectDocumentBoundaries_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
 
     for (let item of result.items) {
@@ -834,6 +835,7 @@ async function scanBarcode() {
         }
     }
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
+    await cvRouter.resetSettings();
     // saveBlob(image, "temp.jpg");
     const result = await cvRouter.capture(image, "ReadBarcodes_ReadRateFirst"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
 
@@ -1003,6 +1005,43 @@ async function popScanner() {
     document.getElementById("pop-scanner").style.display = "flex";
 }
 
+function extractMrzInfo(result) {
+    const parseResultInfo = {};
+    let type = result.getFieldValue("documentCode");
+    parseResultInfo['Document Type'] = JSON.parse(result.jsonString).CodeType;
+    let nation = result.getFieldValue("issuingState");
+    parseResultInfo['Issuing State'] = nation;
+    let surName = result.getFieldValue("primaryIdentifier");
+    parseResultInfo['Surname'] = surName;
+    let givenName = result.getFieldValue("secondaryIdentifier");
+    parseResultInfo['Given Name'] = givenName;
+    let passportNumber = type === "P" ? result.getFieldValue("passportNumber") : result.getFieldValue("documentNumber");
+    parseResultInfo['Passport Number'] = passportNumber;
+    let nationality = result.getFieldValue("nationality");
+    parseResultInfo['Nationality'] = nationality;
+    let gender = result.getFieldValue("sex");
+    parseResultInfo["Gender"] = gender;
+    let birthYear = result.getFieldValue("birthYear");
+    let birthMonth = result.getFieldValue("birthMonth");
+    let birthDay = result.getFieldValue("birthDay");
+    if (parseInt(birthYear) > (new Date().getFullYear() % 100)) {
+        birthYear = "19" + birthYear;
+    } else {
+        birthYear = "20" + birthYear;
+    }
+    parseResultInfo['Date of Birth (YYYY-MM-DD)'] = birthYear + "-" + birthMonth + "-" + birthDay;
+    let expiryYear = result.getFieldValue("expiryYear");
+    let expiryMonth = result.getFieldValue("expiryMonth");
+    let expiryDay = result.getFieldValue("expiryDay");
+    if (parseInt(expiryYear) >= 60) {
+        expiryYear = "19" + expiryYear;
+    } else {
+        expiryYear = "20" + expiryYear;
+    }
+    parseResultInfo["Date of Expiry (YYYY-MM-DD)"] = expiryYear + "-" + expiryMonth + "-" + expiryDay;
+    return parseResultInfo;
+}
+
 async function recognizeText() {
     let docs = docManager.getAllDocuments();
     if (docs.length == 0) {
@@ -1016,8 +1055,10 @@ async function recognizeText() {
     };
 
     const image = await editViewer.currentDocument.saveToJpeg(editViewer.getCurrentPageIndex(), settings);
-    const result = await cvRouter.capture(image, "RecognizeTextLines_Default"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
-
+    await cvRouter.initSettings("./full.json");
+    const result = await cvRouter.capture(image, "ReadMRZ"); // https://www.dynamsoft.com/capture-vision/docs/web/programming/javascript/api-reference/capture-vision-router/preset-templates.html?product=dbr&lang=javascript
+    let parser = await Dynamsoft.DCP.CodeParser.createInstance();
+    let parseResults = '';
     for (let item of result.items) {
         // https://www.dynamsoft.com/capture-vision/docs/core/enums/core/captured-result-item-type.html
         if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_TEXT_LINE) {
@@ -1025,6 +1066,7 @@ async function recognizeText() {
         }
         // console.log(JSON.stringify(item));
         let text = item.text;
+        parseResults = await parser.parse(item.text);
         let points = item.location.points;
 
         let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
@@ -1037,7 +1079,7 @@ async function recognizeText() {
         const textTypewriterOptions = {
             x: textX < 0 ? 0 : textX,
             y: textY - 15 < 0 ? 0 : textY - 15,
-            textContents: [{ content: text, color: "rgb(0,255,0)" }],
+            textContents: [{ content: JSON.stringify(extractMrzInfo(parseResults)), color: "rgb(0,255,0)" }],
             flags: {
                 print: false,
                 noView: false,
@@ -1153,7 +1195,7 @@ const documentButton = {
 const ocrButton = {
     type: Dynamsoft.DDV.Elements.Button,
     className: "material-icons icon-ocr",
-    tooltip: "Recognize text",
+    tooltip: "Recognize MRZ text",
     events: {
         click: "recognizeText",
     }
