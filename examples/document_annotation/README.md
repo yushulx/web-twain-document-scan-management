@@ -2,6 +2,9 @@
 The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dynamsoft.com/document-viewer/docs/introduction/index.html) and [Dynamsoft Capture Vision](https://www.npmjs.com/package/dynamsoft-capture-vision-bundle). It supports annotating PDF and image files, detecting barcodes from documents, and correcting document images in a web application.
 
 ## Demo Video
+- Scan documents, read barcodes, and recognize MRZ.
+
+  https://github.com/user-attachments/assets/e7c2aa91-02fd-4e55-aa17-ce22ba44ac20
 
 - Generate PDF files with barcodes.
 
