@@ -17,8 +17,7 @@
 </div>
 
 <!-- DWT script here -->
-<script src="~/lib/dwt/dynamsoft.webtwain.initiate.js"></script>
-<script src="~/lib/dwt/dynamsoft.webtwain.config.js"></script>
+<script src="~/lib/dwt/dynamsoft.webtwain.min.js"></script>
 <script>
     var DWObj;
     var viewerWidth = 960, viewerHeight = 960;
@@ -35,7 +34,7 @@
                 DWObj.Width = viewerWidth;
                 DWObj.Height = viewerHeight;
                 DWObj.MouseShape = true;
-    @* addThumbnailViewer(); *@
+                @* addThumbnailViewer(); *@
                 }
         });
     }
