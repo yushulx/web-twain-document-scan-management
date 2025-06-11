@@ -117,20 +117,24 @@ const cancelBtn = document.getElementById("cancelCameraBtn");
 const cameraPopup = document.getElementById("camera-popup");
 
 async function listCameras() {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === "videoinput");
+    try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        cameraSelect.innerHTML = "";
+        videoDevices.forEach((device, index) => {
+            const option = document.createElement("option");
+            option.value = device.deviceId;
+            option.text = device.label || `Camera ${index + 1}`;
+            cameraSelect.appendChild(option);
+        });
 
-    cameraSelect.innerHTML = "";
-    videoDevices.forEach((device, index) => {
-        const option = document.createElement("option");
-        option.value = device.deviceId;
-        option.text = device.label || `Camera ${index + 1}`;
-        cameraSelect.appendChild(option);
-    });
-
-    if (videoDevices.length > 0) {
-        currentDeviceId = videoDevices[0].deviceId;
-        cameraSelect.value = currentDeviceId;
+        if (videoDevices.length > 0) {
+            currentDeviceId = videoDevices[0].deviceId;
+            cameraSelect.value = currentDeviceId;
+        }
+    } catch (err) {
+        console.error("Camera permission denied or error:", err);
     }
 }
 
