@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dynamsoft Document Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.css">
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/ddv.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-bundle@2.4.2200/dist/dcv.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.2"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+</head>
+<style>
+
+</style>
+
+<body>
+    <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Pop-up for document detection -->
+    <div id="document-detection" class="overlay">
+        <div class="document-container">
+            <h2>Document Detection</h2>
+
+            <div class="form-group">
+                <button id="detectDocument">Detect</button>
+                <button id="normalizeDocument">Normalize</button> <button id="cancelDocument">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pop-up for signature -->
+    <div id="signature-input" class="overlay">
+        <div class="signature-container">
+            <h2>Create New Signature</h2>
+            <canvas id="signatureCanvas"></canvas>
+            <div class="form-group">
+                <span>Color Style:</span>
+                <div id="blue" class="color-button" style="background-color: blue;"></div>
+                <div id="red" class="color-button" style="background-color: red;"></div>
+                <div id="black" class="color-button" style="background-color: black;"></div>
+            </div>
+            <div class="form-group">
+                <span>Stroke:</span>
+                <input type="range" id="strokeSlider" min="1" max="10" value="3">
+            </div>
+
+            <!-- X -->
+            <div class="form-group">
+                <label for="signatureX">X:</label>
+                <input type="text" id="signatureX" name="signatureX" placeholder="0">
+            </div>
+
+            <!-- Y -->
+            <div class="form-group">
+                <label for="signatureY">Y:</label>
+                <input type="text" id="signatureY" name="signatureY" placeholder="0">
+            </div>
+
+            <div style="margin-top: 10px;">
+                <input type="checkbox" id="signatureAllPage"> Auto-generate signatures on all pages
+            </div>
+
+
+            <div class="popup-buttons">
+                <button id="signatureOK">OK</button>
+                <button id="signatureRedraw">Redraw</button>
+                <button id="signatureCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pop-up for inputing password -->
+    <div id="password-input" class="overlay">
+        <div class="popup">
+            <h2>Input PDF Password</h2>
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="pdfpassword" name="pdfpassword" placeholder="Enter password" required>
+                </div>
+                <div class="popup-buttons">
+                    <button type="button" id="submitPassword">Submit</button>
+                    <button type="button" id="cancelPassword">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pop-up for saving PDF -->
+    <div id="save-pdf" class="overlay">
+        <div class="popup">
+            <h2>Save as PDF</h2>
+            <form id="pdfForm">
+                <!-- File Name input -->
+                <div class="form-group">
+                    <label for="fileName">File Name:</label>
+                    <input type="text" id="fileName" name="fileName" placeholder="Enter file name" required>
+                </div>
+
+                <!-- Password input -->
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password (optional)">
+                </div>
+
+                <!-- Annotation Type dropdown -->
+                <div class="form-group">
+                    <label for="annotationType">Annotation Type:</label>
+                    <select id="annotationType" name="annotationType">
+                        <option value="annotation">Annotation</option>
+                        <option value="flatten">Flatten</option>
+                        <option value="image">Image</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+
+                <!-- Buttons for saving and canceling -->
+                <div class="popup-buttons">
+                    <button type="button" id="savePDF">Save PDF</button>
+                    <button type="button" id="cancelPDF">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pop-up for generating 1D/2D barcodes -->
+    <div id="generate-barcode" class="overlay">
+        <div class="popup">
+            <div class="form-group">
+                <label for="barcodeType">Barcode Type:</label>
+                <!-- Dropdown for Barcode Types -->
+                <select id="barcodeType">
+                    <option value="qrcode">QR Code</option>
+                    <option value="pdf417">PDF417</option>
+                    <option value="maxicode">MaxiCode</option>
+                    <option value="datamatrix">DataMatrix</option>
+                    <option value="ean13">EAN13</option>
+                    <option value="code128">CODE128</option>
+                    <option value="code39">CODE39</option>
+                </select>
+            </div>
+
+
+            <!-- Input field for barcode text content -->
+            <div class="form-group">
+                <label for="barcodeContent">Barcode Text:</label>
+                <input type="text" id="barcodeContent" placeholder="Enter barcode content">
+            </div>
+
+            <!-- X -->
+            <div class="form-group">
+                <label for="x">X:</label>
+                <input type="text" id="x" name="x" placeholder="0">
+            </div>
+
+            <!-- Y -->
+            <div class="form-group">
+                <label for="y">Y:</label>
+                <input type="text" id="y" name="y" placeholder="0">
+            </div>
+
+            <div style="margin-top: 10px;">
+                <input type="checkbox" id="applyToAllPages"> Auto-generate barcodes on all pages
+            </div>
+
+            <!-- Buttons for return and cancel -->
+            <button class="button" id="generateBarcode">OK</button>
+            <button class="button" id="cancelBarcode">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Pop-up parsing results -->
+    <div id="confirm-result" class="overlay">
+        <div class="popup">
+            <div class="form-group">
+                <textarea id="parse-result" rows="200" cols="100"
+                    placeholder="Parsing result will be shown here..."></textarea>
+            </div>
+
+            <button class="button" id="confirmResult">OK</button>
+        </div>
+    </div>
+
+    <!-- Pop-up for scanning documents -->
+    <div id="pop-scanner" class="overlay">
+        <div class="popup">
+            <div class="form-group">
+                <label for="sources">Scanner Source:</label>
+                <select id="sources">
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="ADF" checked="checked">Auto Feeder</label>
+                <select id="Resolution">
+                    <option value="100">100</option>
+                    <option value="150">150</option>
+                    <option value="200">200</option>
+                    <option value="300">300</option>
+                </select>
+            </div>
+
+
+            <!-- Buttons for return and cancel -->
+            <button class="button" id="acquireDocument">OK</button>
+            <button class="button" id="cancelCapture">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Pop-up for camera preview and multi-capture -->
+    <div id="camera-popup" class="overlay">
+        <div class="popup">
+            <h2>Camera Capture</h2>
+
+            <div class="form-group">
+                <label for="cameraSelect">Select Camera:</label>
+                <select id="cameraSelect" style="width: 100%"></select>
+            </div>
+
+            <video id="camera-preview" autoplay playsinline style="width: 100%; border: 1px solid #ccc;"></video>
+
+            <div id="captured-thumbnails" style="margin: 10px 0; display: flex; gap: 10px; overflow-x: auto;"></div>
+
+            <div class="popup-buttons" style="margin-top: 10px;">
+                <button id="captureFrameBtn">Capture</button>
+                <button id="insertFramesBtn">Insert</button>
+                <button id="cancelCameraBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <label>
+            Get a License key from <a
+                href="https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform"
+                target="_blank">here</a>
+        </label>
+        <input type="text"
+            placeholder="DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="
+            id="licensekey">
+        <button id="activateButton">Activate SDK</button>
+
+    </div>
+
+
+    <div class="document-viewer">
+        <div id="edit-viewer"></div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
