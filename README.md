@@ -2,7 +2,7 @@
 A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](https://www.dynamsoft.com/web-twain/overview/) for document scanning, uploading, editing, and more.
 
 ## Prerequisites
-- [Dynamic Web TWAIN License key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
+- [30-day Trial License key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 - [HTTP Server](https://www.npmjs.com/package/http-server)
     
     ```bash
