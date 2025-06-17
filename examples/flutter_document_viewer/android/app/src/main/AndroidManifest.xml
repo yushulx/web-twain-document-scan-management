@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <application
+        android:networkSecurityConfig="@xml/network_security_config"
         android:label="flutter_document_viewer"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
