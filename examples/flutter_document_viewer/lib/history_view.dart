@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'utils.dart';
@@ -51,6 +52,15 @@ class _HistoryViewState extends State<HistoryView> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.info),
+            onPressed: () async {
+              if (selectedValue == -1) {
+                return;
+              }
+              await OpenFile.open(_results[selectedValue]);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () async {
