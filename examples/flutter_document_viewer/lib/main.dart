@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_document_viewer/history_view.dart';
+import 'package:flutter_document_viewer/home_view.dart';
 import 'package:flutter_document_viewer/utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -60,9 +62,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: ThemeData(appBarTheme: AppBarTheme(backgroundColor: Colors.blue)),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
@@ -77,13 +77,16 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   late final WebViewController _controller;
   final ImagePicker _picker = ImagePicker();
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(vsync: this, length: 2);
 
     if (Platform.isAndroid) {
       _controller =
@@ -154,11 +157,26 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+      // appBar: AppBar(
+      //   backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      //   title: Text(widget.title),
+      // ),
+      body: TabBarView(
+        controller: _tabController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          HomeView(title: 'Document Viewer', controller: _controller),
+          const HistoryView(title: 'History'),
+        ],
       ),
-      body: WebViewWidget(controller: _controller),
+      bottomNavigationBar: TabBar(
+        labelColor: Colors.blue,
+        controller: _tabController,
+        tabs: const [
+          Tab(icon: Icon(Icons.home), text: 'Home'),
+          Tab(icon: Icon(Icons.history_sharp), text: 'History'),
+        ],
+      ),
     );
   }
 }

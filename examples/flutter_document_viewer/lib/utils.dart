@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -18,7 +17,7 @@ Future<String> saveFile(Uint8List pdfBytes) async {
   return filePath;
 }
 
-Future<List<String>> getImages() async {
+Future<List<String>> getFiles() async {
   // Get the app directory
   final directory = await getApplicationDocumentsDirectory();
 
@@ -28,7 +27,7 @@ Future<List<String>> getImages() async {
   // Get the file paths
   List<String> filePaths = [];
   for (FileSystemEntity file in files) {
-    if (file.path.endsWith('.jpg')) {
+    if (file.path.endsWith('.pdf')) {
       filePaths.add(file.path);
     }
   }
@@ -48,4 +47,15 @@ String getImageName() {
   String imageName = 'image_$timestamp.pdf';
 
   return imageName;
+}
+
+Future<bool> deleteFile(String path) {
+  return File(path)
+      .delete()
+      .then((value) {
+        return true;
+      })
+      .catchError((error) {
+        return false;
+      });
 }
