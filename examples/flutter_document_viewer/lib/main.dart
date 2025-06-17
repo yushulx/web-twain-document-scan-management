@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_document_viewer/utils.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -89,6 +92,19 @@ class _MyHomePageState extends State<MyHomePage> {
             ..enableZoom(true)
             ..setBackgroundColor(Colors.transparent)
             ..setNavigationDelegate(NavigationDelegate())
+            ..addJavaScriptChannel(
+              'SaveFile',
+              onMessageReceived: (JavaScriptMessage message) async {
+                List<dynamic> byteList = jsonDecode(message.message);
+                Uint8List pdfBytes = Uint8List.fromList(byteList.cast<int>());
+
+                String filename = await saveFile(pdfBytes);
+                Fluttertoast.showToast(
+                  msg: "File saved as: $filename",
+                  toastLength: Toast.LENGTH_LONG,
+                );
+              },
+            )
             ..platform.setOnPlatformPermissionRequest((request) {
               debugPrint(
                 'Permission requested by web content: ${request.types}',

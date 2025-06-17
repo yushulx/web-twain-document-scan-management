@@ -663,13 +663,31 @@ savePDFButton.addEventListener('click', async () => {
 
         let blob = await editViewer.currentDocument.saveToPdf(pdfSettings);
 
-        saveBlob(blob, fileName + `.pdf`);
+        sendBlobToDart(blob, fileName + `.pdf`);
     } catch (error) {
         console.log(error);
     }
 
     document.getElementById("save-pdf").style.display = "none";
 });
+
+function sendBlobToDart(blob) {
+    const reader = new FileReader();
+
+    reader.onload = function () {
+        const arrayBuffer = reader.result;
+        const byteArray = new Uint8Array(arrayBuffer);
+
+        // Send to Dart
+        SaveFile.postMessage(JSON.stringify(Array.from(byteArray)));
+    };
+
+    reader.onerror = function (error) {
+        console.error("Error reading blob:", error);
+    };
+
+    reader.readAsArrayBuffer(blob);
+}
 
 function saveBlob(blob, fileName) {
     const url = URL.createObjectURL(blob);
