@@ -1,10 +1,52 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shelf_static/shelf_static.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:path/path.dart' as p;
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isAndroid) {
+    // Serve files from assets/web
+
+    final dir = await getTemporaryDirectory();
+    final path = p.join(dir.path, 'web');
+    // Create the target directory
+    final webDir = Directory(path)..createSync(recursive: true);
+
+    // List of files to copy
+    final files = ['index.html', 'full.json', 'main.css', 'main.js'];
+
+    for (var filename in files) {
+      final ByteData data = await rootBundle.load('assets/web/$filename');
+      final file = File(p.join(webDir.path, filename));
+      await file.writeAsBytes(data.buffer.asUint8List());
+    }
+
+    final handler = createStaticHandler(
+      webDir.path,
+      defaultDocument: 'index.html',
+      serveFilesOutsidePath: true,
+    );
+
+    // Start server on localhost:8080
+    try {
+      final server = await shelf_io.serve(handler, 'localhost', 8080);
+      print('Serving at http://${server.address.host}:${server.port}');
+    } catch (e) {
+      print('Failed to start server: $e');
+    }
+  }
+
   runApp(const MyApp());
 }
 
@@ -40,20 +82,39 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    _controller =
-        WebViewController()
-          ..setJavaScriptMode(JavaScriptMode.unrestricted)
-          ..enableZoom(true)
-          ..setBackgroundColor(Colors.transparent)
-          ..setNavigationDelegate(NavigationDelegate())
-          ..platform.setOnPlatformPermissionRequest((request) {
-            debugPrint('Permission requested by web content: ${request.types}');
-            request.grant(); // Automatically grant the requested permissions
-          })
-          // ..loadRequest(
-          //   Uri.parse('https://demo.dynamsoft.com/mobile-web-capture/'),
-          // );
-          ..loadFlutterAsset('assets/web/index.html');
+    if (Platform.isAndroid) {
+      _controller =
+          WebViewController()
+            ..setJavaScriptMode(JavaScriptMode.unrestricted)
+            ..enableZoom(true)
+            ..setBackgroundColor(Colors.transparent)
+            ..setNavigationDelegate(NavigationDelegate())
+            ..platform.setOnPlatformPermissionRequest((request) {
+              debugPrint(
+                'Permission requested by web content: ${request.types}',
+              );
+              request.grant(); // Automatically grant the requested permissions
+            })
+            // ..loadRequest(
+            //   Uri.parse('https://demo.dynamsoft.com/mobile-web-capture/'),
+            // );
+            // ..loadFlutterAsset('assets/web/index.html');
+            ..loadRequest(Uri.parse('http://localhost:8080/index.html'));
+    } else {
+      _controller =
+          WebViewController()
+            ..setJavaScriptMode(JavaScriptMode.unrestricted)
+            ..enableZoom(true)
+            ..setBackgroundColor(Colors.transparent)
+            ..setNavigationDelegate(NavigationDelegate())
+            ..platform.setOnPlatformPermissionRequest((request) {
+              debugPrint(
+                'Permission requested by web content: ${request.types}',
+              );
+              request.grant();
+            })
+            ..loadFlutterAsset('assets/web/index.html');
+    }
 
     if (_controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);

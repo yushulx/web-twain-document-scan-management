@@ -4,7 +4,7 @@ let cvRouter = null;
 let currentDoc = null;
 let fileBlob = null;
 let documentPoints = null;
-let host = "http://127.0.0.1:18622";
+let host = "http://192.168.8.72:18622";
 let dropdown = null;
 
 // Button for camera
@@ -129,7 +129,7 @@ async function listCameras() {
         });
 
         if (videoDevices.length > 0) {
-            currentDeviceId = videoDevices[0].deviceId;
+            currentDeviceId = videoDevices[videoDevices.length - 1].deviceId;
             cameraSelect.value = currentDeviceId;
         }
     } catch (err) {
