@@ -1,4 +1,4 @@
-# Web Document Annotation 
+# Web Document Viewer 
 The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dynamsoft.com/document-viewer/docs/introduction/index.html) and [Dynamsoft Capture Vision](https://www.npmjs.com/package/dynamsoft-capture-vision-bundle). It supports annotating PDF and image files, detecting barcodes from documents, and correcting document images in a web application.
 
 ## Demo Video
