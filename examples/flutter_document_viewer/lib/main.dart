@@ -126,6 +126,19 @@ class _MyHomePageState extends State<MyHomePage>
             ..enableZoom(true)
             ..setBackgroundColor(Colors.transparent)
             ..setNavigationDelegate(NavigationDelegate())
+            ..addJavaScriptChannel(
+              'SaveFile',
+              onMessageReceived: (JavaScriptMessage message) async {
+                List<dynamic> byteList = jsonDecode(message.message);
+                Uint8List pdfBytes = Uint8List.fromList(byteList.cast<int>());
+
+                String filename = await saveFile(pdfBytes);
+                Fluttertoast.showToast(
+                  msg: "File saved as: $filename",
+                  toastLength: Toast.LENGTH_LONG,
+                );
+              },
+            )
             ..platform.setOnPlatformPermissionRequest((request) {
               debugPrint(
                 'Permission requested by web content: ${request.types}',
