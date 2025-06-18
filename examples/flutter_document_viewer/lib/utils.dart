@@ -8,8 +8,8 @@ Future<String> saveFile(Uint8List pdfBytes) async {
   final directory = await getApplicationDocumentsDirectory();
 
   // Create the file path
-  String imageName = getImageName();
-  final filePath = '${directory.path}/$imageName';
+  String filename = getFileName();
+  final filePath = '${directory.path}/$filename';
 
   // Write the bytes to the file
   await File(filePath).writeAsBytes(pdfBytes);
@@ -35,7 +35,7 @@ Future<List<String>> getFiles() async {
   return filePaths;
 }
 
-String getImageName() {
+String getFileName() {
   // Get the current date and time.
   DateTime now = DateTime.now();
 
@@ -43,10 +43,10 @@ String getImageName() {
   String timestamp =
       '${now.year}${now.month}${now.day}_${now.hour}${now.minute}${now.second}';
 
-  // Create the image file name with the timestamp.
-  String imageName = 'image_$timestamp.pdf';
+  // Create the file name with the timestamp.
+  String name = '$timestamp.pdf';
 
-  return imageName;
+  return name;
 }
 
 Future<bool> deleteFile(String path) {
