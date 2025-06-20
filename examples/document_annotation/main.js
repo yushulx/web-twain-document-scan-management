@@ -307,7 +307,7 @@ async function normalizeImage() {
 
     for (let item of result.items) {
         // https://www.dynamsoft.com/capture-vision/docs/core/enums/core/captured-result-item-type.html
-        if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_NORMALIZED_IMAGE) {
+        if (item.type !== Dynamsoft.Core.EnumCapturedResultItemType.CRIT_ENHANCED_IMAGE) {
             continue;
         }
 
@@ -619,9 +619,17 @@ async function activate(license) {
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
         await Dynamsoft.Core.CoreModule.loadWasm(["dbr", "ddn", "dlr"]);
 
-        Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
-        Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID_WITH_MAG_STRIPE");
-        Dynamsoft.DCP.CodeParserModule.loadSpec("SOUTH_AFRICA_DL");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID_WITH_MAG_STRIPE");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("SOUTH_AFRICA_DL");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD1_ID");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_FRENCH_ID");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_ID");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_VISA");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD3_PASSPORT");
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD3_VISA");
+        await Dynamsoft.CVR.CaptureVisionRouter.appendModelBuffer("MRZCharRecognition");
+        await Dynamsoft.CVR.CaptureVisionRouter.appendModelBuffer("MRZTextLineRecognition");
 
         // Initialize DCV
         cvRouter = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
@@ -1136,6 +1144,7 @@ async function popScanner() {
 
     } catch (error) {
         alert(error);
+        toggleLoading(false);
         return "";
     }
 
