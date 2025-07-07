@@ -641,7 +641,19 @@ async function activate(license) {
         Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
         docManager = Dynamsoft.DDV.documentManager;
 
+        // Initialize Dynamic Web TWAIN
+        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
+        Dynamsoft.DWT.ProductKey = license;
 
+        Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {
+            dwtObject = obj;
+
+            dwtObject.Viewer.bind(document.createElement("div"));
+            dwtObject.Viewer.width = 640;
+            dwtObject.Viewer.height = 640;
+        }, (errorString) => {
+            console.log(errorString);
+        });
     } catch (error) {
         console.error(error);
         toggleLoading(false);
@@ -731,73 +743,108 @@ acquireDocumentButton.addEventListener('click', async () => {
         return;
     }
 
-    let license = document.getElementById('licensekey').value;
-    if (!license) {
-        license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
-    }
-
     let resolutionSelect = document.getElementById('Resolution');
 
     let adfCheck = document.getElementById('ADF');
 
+    if (!isDWT) {
+        let license = document.getElementById('licensekey').value;
+        if (!license) {
+            license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+        }
 
-    let parameters = {
-        license: license,
-        device: JSON.parse(scanner)['device'],
-    };
+        let parameters = {
+            license: license,
+            device: JSON.parse(scanner)['device'],
+        };
 
-    parameters.config = {
-        PixelType: 2,
-        Resolution: parseInt(resolutionSelect.value),
-        IfFeederEnabled: adfCheck.checked,
-    };
+        parameters.config = {
+            PixelType: 2,
+            Resolution: parseInt(resolutionSelect.value),
+            IfFeederEnabled: adfCheck.checked,
+        };
 
 
-    // REST endpoint to create a scan job
-    let url = host + '/api/device/scanners/jobs';
+        // REST endpoint to create a scan job
+        let url = host + '/api/device/scanners/jobs';
 
-    try {
-        let response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(parameters)
-        });
+        try {
+            let response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(parameters)
+            });
 
-        if (response.ok) {
-            let job = await response.json();
-            let jobId = job.jobuid;
+            if (response.ok) {
+                let job = await response.json();
+                let jobId = job.jobuid;
 
-            // Get document data
-            let blobs = [];
-            let url = host + '/api/device/scanners/jobs/' + jobId + '/next-page';
+                // Get document data
+                let blobs = [];
+                let url = host + '/api/device/scanners/jobs/' + jobId + '/next-page';
 
-            while (true) {
-                try {
+                while (true) {
+                    try {
 
-                    let response = await fetch(url);
+                        let response = await fetch(url);
 
-                    if (response.status == 200) {
-                        const arrayBuffer = await response.arrayBuffer();
-                        const blob = new Blob([arrayBuffer], { type: response.type });
-                        await load(blob, '');
-                    }
-                    else {
+                        if (response.status == 200) {
+                            const arrayBuffer = await response.arrayBuffer();
+                            const blob = new Blob([arrayBuffer], { type: response.type });
+                            await load(blob, '');
+                        }
+                        else {
+                            break;
+                        }
+
+                    } catch (error) {
+                        console.error('No more images.');
                         break;
                     }
-
-                } catch (error) {
-                    console.error('No more images.');
-                    break;
                 }
+            }
+
+        } catch (error) {
+            alert(error);
+        }
+    }
+    else {
+        dwtObject.IfShowUI = false;
+        await dwtObject.SelectDeviceAsync(sourceList[select.selectedIndex]);
+        await dwtObject.OpenSourceAsync();
+        await dwtObject.AcquireImageAsync({
+            IfFeederEnabled: adfCheck.checked,
+            PixelType: 2,
+            Resolution: parseInt(resolutionSelect.value),
+            IfDisableSourceAfterAcquire: true
+        });
+        await dwtObject.CloseSourceAsync();
+
+        for (let i = 0; i < dwtObject.HowManyImagesInBuffer; i++) {
+            let blob = await convertToBlobAsync(dwtObject, [i], Dynamsoft.DWT.EnumDWT_ImageType.IT_JPG);
+
+            if (blob) {
+                await load(blob, '');
             }
         }
 
-    } catch (error) {
-        alert(error);
+        dwtObject.RemoveAllImages();
     }
 });
+
+function convertToBlobAsync(dwtObject, indices, imageType) {
+    return new Promise((resolve, reject) => {
+        dwtObject.ConvertToBlob(indices, imageType, (result, indices, type) => {
+            console.log("Image converted to Blob successfully.");
+            resolve(result);
+        }, (errorCode, errorString) => {
+            console.error("Failed to convert image to Blob:", errorString);
+            reject(new Error(errorString));
+        });
+    });
+}
 
 // Button for generating barcode
 const generateBarcodeButton = document.getElementById('generateBarcode');
@@ -1153,6 +1200,39 @@ async function popScanner() {
     document.getElementById("pop-scanner").style.display = "flex";
 }
 
+// Dynamic Web TWAIN 
+var dwtObject = null;
+var sourceList = [];
+async function popDWTScanner() {
+    if (!dwtObject) {
+        alert("Dynamic Web TWAIN is not initialized.");
+        return;
+    }
+
+    toggleLoading(true);
+
+    try {
+        sourceList = await dwtObject.GetDevicesAsync();
+        let select = document.getElementById('sources');
+        select.innerHTML = '';
+
+        for (let i = 0; i < sourceList.length; i++) {
+            let device = sourceList[i];
+            let option = document.createElement("option");
+            option.text = device.displayName;
+            option.value = i.toString();
+            select.add(option);
+        };
+    } catch (error) {
+        alert(error);
+        toggleLoading(false);
+        return "";
+    }
+
+    toggleLoading(false);
+    document.getElementById("pop-scanner").style.display = "flex";
+}
+
 function extractMrzInfo(result) {
     const parseResultInfo = {};
     let type = result.getFieldValue("documentCode");
@@ -1472,17 +1552,18 @@ function createDropdownMenu() {
     dropdown.innerHTML = `
       <button onclick="handleDropdownSelect(this)">File</button>
       <button onclick="handleDropdownSelect(this)">Camera</button>
-      <button class="selected" onclick="handleDropdownSelect(this)">Scanner</button>
+      <button onclick="handleDropdownSelect(this)">Scanner (RESTful)</button>
+      <button class="selected" onclick="handleDropdownSelect(this)">Scanner (Dynamic Web TWAIN)</button>
     `;
 
     document.body.appendChild(dropdown);
     return dropdown;
 }
 
+let isDWT = false;
 window.handleDropdownSelect = function (btn) {
     document.querySelectorAll(".dropdown-menu button").forEach(el => el.classList.remove("selected"));
     btn.classList.add("selected");
-    console.log("Selected:", btn.textContent);
     dropdown.style.display = "none";
 
     if (btn.textContent === "File") {
@@ -1491,8 +1572,13 @@ window.handleDropdownSelect = function (btn) {
     else if (btn.textContent === "Camera") {
         showCameraPopup();
     }
-    else if (btn.textContent === "Scanner") {
+    else if (btn.textContent === "Scanner (RESTful)") {
+        isDWT = false;
         popScanner();
+    }
+    else if (btn.textContent === "Scanner (Dynamic Web TWAIN)") {
+        isDWT = true;
+        popDWTScanner();
     }
 };
 
