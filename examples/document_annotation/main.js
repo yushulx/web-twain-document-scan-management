@@ -577,41 +577,29 @@ async function showViewer() {
     editViewer.on("download", download);
     editViewer.on("flatten", flatten);
     editViewer.on("scanBarcode", scanBarcode);
-    editViewer.on("loadDocument", loadDocument);
+    editViewer.on("toggleDropdown", toggleDropdown);
     editViewer.on("clearAll", clearAnnotations);
     editViewer.on("sign", sign);
     editViewer.on("detectDocument", detectDocument);
     editViewer.on("recognizeText", recognizeText);
     editViewer.on("popScanner", popScanner);
+}
 
-    // Load the dropdown menu
-    let button;
-    if (isMobile()) {
-        button = document.querySelector("#edit-viewer > div > div.ddv-layout.ddv-edit-viewer-footer-mobile > div.ddv-button.ddv-button.ddv-load-image")
+function toggleDropdown(e) {
+    e[0].stopPropagation();
+    // Create dropdown if not exists
+    if (!dropdown) {
+        dropdown = createDropdownMenu();
+        dropdown.style.position = "absolute";
     }
-    else {
-        button = document.querySelector("#edit-viewer > div > div.ddv-layout.ddv-edit-viewer-header-desktop > div:nth-child(1) > div.ddv-button.ddv-button.ddv-load-image")
-    }
 
-    button.addEventListener("click", (event) => {
-        event.stopPropagation();
+    // Toggle visibility
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
 
-        // Create dropdown if not exists
-        if (!dropdown) {
-            dropdown = createDropdownMenu();
-            dropdown.style.position = "absolute";
-        }
-
-        // Toggle visibility
-        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-
-        // Position the dropdown below the button
-        const rect = button.getBoundingClientRect();
-        dropdown.style.left = `${rect.left}px`;
-        dropdown.style.top = `${rect.bottom + 5}px`;
-    });
-
-
+    // Position the dropdown below the button
+    // const rect = e[0].target.getBoundingClientRect();
+    // dropdown.style.left = `${rect.left}px`;
+    // dropdown.style.top = `${rect.bottom + 5}px`;
 }
 
 async function activate(license) {
@@ -655,7 +643,7 @@ async function activate(license) {
             console.log(errorString);
         });
     } catch (error) {
-        console.error(error);
+        alert(error);
         toggleLoading(false);
     }
 
@@ -1388,15 +1376,6 @@ const clearButton = {
     tooltip: "Clear all annotations",
     events: {
         click: "clearAll",
-    },
-}
-
-const loadButton = {
-    type: Dynamsoft.DDV.Elements.Button,
-    className: "ddv-button ddv-load-image",
-    tooltip: "Load a document",
-    events: {
-        click: "loadDocument",
     },
 }
 

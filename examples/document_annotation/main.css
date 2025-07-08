@@ -517,7 +517,7 @@ button {
     font-size: 20px;
 }
 
-.dropdown-menu {
+/* .dropdown-menu {
     display: none;
     position: absolute;
     top: 100%;
@@ -529,6 +529,43 @@ button {
     border-radius: 4px;
     overflow: hidden;
     margin-top: 5px;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-menu button {
+    color: white;
+    padding: 10px 16px;
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.dropdown-menu button:hover,
+.dropdown-menu .selected {
+    background-color: #444;
+} */
+
+.dropdown-menu {
+    display: none;
+    position: fixed;
+    /* change from absolute to fixed */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #222;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0;
+    /* remove margin-top that was for positioning below the button */
 }
 
 .dropdown-menu.show {
