@@ -6,7 +6,7 @@
 	<title>Hello World</title>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<script type="text/javascript" src="node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
+	<script type="text/javascript" src="https://unpkg.com/dwt/dist/dynamsoft.webtwain.min.js"></script>
 	<link href="css/index.css" rel="stylesheet" />
 </head>
 
@@ -66,7 +66,7 @@
 		var draggedImageBox = null;
 
 		Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjM0ODEwLU1qTTBPREV3TFZSeWFXRnNVSEp2YWciLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tbHRzLmR5bmFtc29mdC5jb20iLCJvcmdhbml6YXRpb25JRCI6IjIzNDgxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NsdHMuZHluYW1zb2Z0LmNvbSIsImNoZWNrQ29kZSI6LTQ1NDQzOTUwOH0";
-		Dynamsoft.DWT.ResourcesPath = 'node_modules/dwt/dist/';
+		Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
 
 		const imageboxWrapper = document.querySelector('.ds-imagebox-wrapper');
 
@@ -106,8 +106,6 @@
 				WebTwainId: 'mydwt-' + (new Date()).getTime()
 			}, function (obj) {
 				DWTObject = obj;
-				DWTObject.Viewer.acceptDrop = true;
-				DWTObject.Viewer.allowPageDragging = true;
 
 				DWTObject.RegisterEvent('OnPostTransferAsync', function (params) {
 					insertImage();
@@ -239,9 +237,9 @@
 			DWTObject.SelectImages(imageIndexes);
 			DWTObject.SaveSelectedImagesAsMultiPagePDF(
 				pdfName,
-				function () { console.log("OK"); },
+				function () { console.log("OK - SaveSelectedImagesAsMultiPagePDF"); },
 				function (errorCode, errorString) {
-					alert(errorString);
+					alert('SaveSelectedImagesAsMultiPagePDF error: ' + errorString);
 				});
 
 		}
