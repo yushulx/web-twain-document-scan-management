@@ -312,10 +312,10 @@
 				const statusIndicator = document.querySelector('.status-indicator');
 
 				if (isTrial) {
-					statusText.textContent = 'Trial License Active';
+					statusText.textContent = 'No Valid License';
 					statusIndicator.style.backgroundColor = '#f59e0b';
 				} else {
-					statusText.textContent = 'Full License Active';
+					statusText.textContent = 'License Valid';
 					statusIndicator.style.backgroundColor = '#10b981';
 				}
 			}
@@ -347,17 +347,20 @@
 
 			registerEvents() {
 				DWTObject.RegisterEvent('OnPostTransferAsync', () => {
-					ImageManager.insert();
-					imageCount++;
+					// ImageManager.insert();
+					// imageCount++;
 				});
 
 				DWTObject.RegisterEvent('OnPostLoad', () => {
-					ImageManager.insert();
-					imageCount++;
+					// ImageManager.insert();
+					// imageCount++;
 				});
 
-				DWTObject.RegisterEvent('OnBufferChanged', () => {
-					// Handle buffer changes if needed
+				DWTObject.RegisterEvent('OnBufferChanged', (bufferChangeInfo) => {
+					if (bufferChangeInfo['action'] === 'add') {
+						ImageManager.insert();
+						imageCount++;
+					}
 				});
 			},
 
