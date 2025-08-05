@@ -2,6 +2,8 @@
 
 A modern web-based document management application built with Dynamsoft Web TWAIN SDK that enables document scanning, image processing, and PDF creation with an intuitive drag-and-drop interface.
 
+https://github.com/user-attachments/assets/3b7eee85-50be-4a89-b8ac-385b5e22d22a
+
 ## 🌐 Online Demo
 https://yushulx.me/web-twain-document-scan-management/examples/split_merge_document/
 
