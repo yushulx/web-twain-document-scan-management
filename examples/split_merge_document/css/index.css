@@ -1,0 +1,245 @@
+button {
+  padding: 5px;
+  min-width: 80px;
+  min-height: 30px;
+  cursor: pointer;
+}
+
+.ds-hidden {
+  display: none;
+}
+
+.mt10 {
+  margin-top: 10px;
+}
+
+.ds-imagebox {
+  /*width: 100%;
+	border: 1px solid #CCC;
+	display: inline-block;
+	min-height: 150px;
+	flex-direction: column;*/
+  width: 700px;
+  border: 1px solid #CCC;
+  min-height: 150px;
+  display: flex;
+  flex-direction: row;
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+
+.ds-imagebox div {
+  padding: 7px 5px 7px 5px;
+  margin: 1px;
+  background-color: #cceeff;
+  display: inline-block;
+}
+
+.ds-image-wrapper {
+  cursor: pointer;
+}
+
+
+.ds-context-menu {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.ds-context-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ds-context-menu li {
+  padding: 8px 15px;
+  cursor: pointer;
+}
+
+.ds-context-menu li:hover {
+  background: #f0f0f0;
+}
+
+.container {
+  display: flex;
+  font-family: Arial, sans-serif;
+}
+
+.sidebar {
+  width: 260px;
+  background: #f0f0f8;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+}
+
+.shortcuts h3,
+.files h3 {
+  background: #2d2da8;
+  color: white;
+  padding: 5px;
+  margin: 0 0 10px;
+}
+
+.shortcuts button,
+.doc-buttons button {
+  display: block;
+  width: 100%;
+  margin-bottom: 5px;
+  padding: 5px;
+  color: #333;
+}
+
+.files ul {
+  list-style: none;
+  padding: 0;
+}
+
+.files li {
+  border-bottom: 1px solid #ddd;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.main {
+  flex: 1;
+  padding: 10px;
+}
+
+.doc {
+  margin-bottom: 30px;
+}
+
+.doc-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: flex;
+}
+
+.thumbnails {
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.thumbnails img {
+  width: 150px;
+  border: 2px solid #cceeff;
+  opacity: 1;
+}
+
+.thumbnails img:hover {
+  opacity: 0.8;
+}
+
+.doc-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  margin-left: 20px;
+}
+
+.doc-buttons button {
+  background: white;
+  color: blue;
+  border: 1px solid blue;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.doc-buttons button[disabled] {
+  color: gray;
+  border-color: lightgray;
+  cursor: not-allowed;
+}
+
+.ds-hidden {
+  display: none;
+}
+
+.mt10 {
+  margin-top: 10px;
+}
+
+.imagebox {
+  width: 100%;
+  /* border: 1px solid #CCC;*/
+  display: inline-block;
+  min-height: 150px;
+  flex-direction: column;
+}
+
+.imagebox div {
+  margin: 5px;
+  display: inline-block;
+}
+
+.ds-image-wrapper {
+  user-select: none;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+li span {
+  display: inline-block;
+}
+
+li input[type="checkbox"] {
+  margin-left: 10px;
+}
+
+.selectedImage {
+  border: 2px solid #fe8e14 !important;
+}
+
+/* Drag and Drop Styles */
+.ds-image-wrapper {
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ds-image-wrapper:active {
+  cursor: grabbing;
+}
+
+.ds-image-wrapper[draggable="true"] {
+  transition: opacity 0.2s ease;
+}
+
+.ds-image-wrapper:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+/* Prevent images from interfering with drag */
+.ds-image-wrapper img {
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+}
+
+.ds-imagebox.drag-over {
+  background-color: #e8f4fd;
+  border: 2px dashed #007acc;
+}
+
+/* Initially hidden elements */
+.initial-hidden {
+  display: none !important;
+}

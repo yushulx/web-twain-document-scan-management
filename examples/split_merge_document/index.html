@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Hello World</title>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script type="text/javascript" src="node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>
+	<link href="css/index.css" rel="stylesheet" />
+</head>
+
+<body>
+
+	<div class="container">
+		<div class="sidebar">
+			<button id="btnAcquireImage" onclick="AcquireImage();">Scan</button>
+			<button id="btnLoadImage" onclick="LoadImage();">Load</button>
+			<div class="files">
+				<h3>Files</h3>
+				<ul class="file-list">
+					<li data-group="group-1" class="initial-hidden">
+						<span>
+							<span class="title-name"></span><br>
+							<em><span class="page-number"></span></em>
+						</span>
+						<input type="checkbox" checked data-group="group-1">
+					</li>
+
+				</ul>
+			</div>
+		</div>
+
+		<div class="main">
+
+			<div class="ds-imagebox-wrapper">
+				<div id="imagebox-1" docID="1" class="doc initial-hidden" data-group="group-1">
+					<div class="doc-title"><span class="title-name"></span>
+						<div class="doc-buttons">
+							<button onclick="SaveFile(this);">SAVE FILE</button>
+							<button onclick="Delete(this);">DELETE</button>
+						</div>
+					</div>
+					<div class="ds-imagebox mt10 thumbnails" ondrop="handleDrop.call(this, event)"
+						ondragover="handleDragOver.call(this, event)" ondragenter="handleDragEnter.call(this, event)"
+						ondragleave="handleDragLeave.call(this, event)"></div>
+				</div>
+			</div>
+
+			<div style="width:580px; height:380px" class="h600">
+				<div id="dwtcontrolContainer" class="h600"></div>
+			</div>
+			<div class="ds-context-menu ds-hidden">
+				<ul>
+					<li id="liSplit">Split</li>
+					<li id="liDelete">Delete</li>
+					<li id="liMultiDelete">Multi Delete</li>
+				</ul>
+			</div>
+
+		</div>
+	</div>
+	<script type="text/javascript">
+		var DWTObject, thumbnailViewer, canvasContainer, buffer = {}, imageCount = 0, pdfName;
+		var draggedElement = null;
+		var draggedImageBox = null;
+
+		Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjM0ODEwLU1qTTBPREV3TFZSeWFXRnNVSEp2YWciLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tbHRzLmR5bmFtc29mdC5jb20iLCJvcmdhbml6YXRpb25JRCI6IjIzNDgxMCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NsdHMuZHluYW1zb2Z0LmNvbSIsImNoZWNrQ29kZSI6LTQ1NDQzOTUwOH0";
+		Dynamsoft.DWT.ResourcesPath = 'node_modules/dwt/dist/';
+
+		const imageboxWrapper = document.querySelector('.ds-imagebox-wrapper');
+
+		function generateScanFilename() {
+			const now = new Date();
+
+			const day = now.getDate().toString().padStart(2, '0');
+
+			const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+				'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+			const month = monthNames[now.getMonth()];
+
+			const year = now.getFullYear();
+
+			let hour = now.getHours();
+			const minute = now.getMinutes().toString().padStart(2, '0');
+			const second = now.getSeconds().toString().padStart(2, '0');
+
+			const isAM = hour < 12;
+			const period = isAM ? 'AM' : 'PM';
+
+			hour = hour % 12 || 12;
+			hour = hour.toString().padStart(2, '0');
+
+			const filename = `Scan - ${day} ${month} ${year} ${hour}_${minute}_${second} ${period}.pdf`;
+			return filename;
+		}
+
+		function CreateDWT() {
+			pdfName = generateScanFilename();
+			const titles = document.querySelectorAll('.title-name');
+			titles.forEach(function (el) {
+				el.innerText = pdfName;
+			});
+			imageCount = 0;
+			Dynamsoft.DWT.CreateDWTObjectEx({
+				WebTwainId: 'mydwt-' + (new Date()).getTime()
+			}, function (obj) {
+				DWTObject = obj;
+				DWTObject.Viewer.acceptDrop = true;
+				DWTObject.Viewer.allowPageDragging = true;
+
+				DWTObject.RegisterEvent('OnPostTransferAsync', function (params) {
+					insertImage();
+					imageCount++;
+				});
+
+				DWTObject.RegisterEvent('OnPostLoad', function (params) {
+					insertImage();
+					imageCount++;
+				});
+
+				DWTObject.RegisterEvent('OnBufferChanged',
+					function (bufferChangeInfo) {
+
+					});
+
+			}, function (err) {
+				console.error(err);
+			});
+		}
+
+		CreateDWT();
+
+		function UpdateAllPages() {
+			document.querySelectorAll('.file-list input[type="checkbox"]').forEach(checkbox => {
+				const group = checkbox.getAttribute('data-group');
+				ShowPages(group);
+			});
+		}
+
+		function ShowPages(group) {
+			const group1Item = document.querySelector(`li[data-group="${group}"]`);
+			if (group1Item) {
+				const group1PageNum = group1Item.querySelector('.page-number');
+				if (group1PageNum) {
+					const targetGroup = document.querySelector(`.doc[data-group="${group}"]`);
+
+					if (targetGroup) {
+						const images = targetGroup.querySelectorAll('.ds-dwt-image');
+						group1PageNum.textContent = images.length + " pages";
+					}
+				}
+			}
+		}
+
+		function AcquireImage() {
+			if (DWTObject) {
+				DWTObject.SelectSourceAsync().then(function () {
+					return DWTObject.AcquireImageAsync({
+						IfCloseSourceAfterAcquire: true // Scanner source will be closed automatically after the scan.
+					});
+				}).then(function () {
+					ShowPages("group-1");
+				}).catch(function (exp) {
+					console.error(exp.message);
+				});
+			}
+		}
+		function LoadImage() {
+			if (DWTObject) {
+				DWTObject.LoadImageEx('', -1, function () {
+					console.log('load ok');
+					ShowPages("group-1");
+				}, function (a, b, c) {
+					console.error([a, b, c, DWTObject.ErrorCause]);
+				});
+			}
+		}
+
+
+		function insertImage() {
+			if (DWTObject) {
+				const currentImageIndex = imageCount;
+				const currentImageUrl = DWTObject.GetImageURL(currentImageIndex);
+				const currentImageID = DWTObject.IndexToImageID(currentImageIndex);
+
+				const img = new Image();
+				img.className = "ds-dwt-image";
+				img.style.width = "150px";
+				img.setAttribute("imageID", currentImageID);
+				// Remove draggable from img - only wrapper should be draggable
+				img.src = currentImageUrl;
+				img.onload = function () {
+
+					const divImageWrapper = document.createElement('div');
+					divImageWrapper.className = "ds-image-wrapper";
+					divImageWrapper.setAttribute("draggable", "true");
+					divImageWrapper.append(img);
+
+					// Add drag event listeners to wrapper
+					divImageWrapper.addEventListener('dragstart', handleDragStart);
+					divImageWrapper.addEventListener('dragend', handleDragEnd);
+
+					// Add mouse event listeners to wrapper for selection and context menu
+					divImageWrapper.addEventListener('mousedown', OnImageMouseDown);
+
+					const divImageBox = document.getElementById('imagebox-1');
+
+					// Show the imagebox when first image is added (check if currently hidden)
+					if (divImageBox.classList.contains('initial-hidden')) {
+						divImageBox.classList.remove('initial-hidden');
+						// Also show the file list item
+						const fileListItem = document.querySelector('li[data-group="group-1"]');
+						if (fileListItem) {
+							fileListItem.classList.remove('initial-hidden');
+							fileListItem.style.display = 'flex';
+						}
+					}
+
+					divImageBox.lastElementChild.appendChild(divImageWrapper);
+				}
+
+				// Remove the mousedown listener from img since wrapper will handle it
+				// img.addEventListener('mousedown', OnImageMouseDown);
+			}
+		}
+
+		function SaveFile(button) {
+			console.log(button);
+			const docDiv = button.closest('.doc');
+			const imageTags = docDiv.querySelectorAll('img[imageid]');
+			const imageIndexes = Array.from(imageTags).map(img => {
+				const imageid = img.getAttribute('imageid');
+				return DWTObject.ImageIDToIndex(imageid);
+			});
+
+			console.log('imageindex:', imageIndexes);
+
+			DWTObject.SelectImages(imageIndexes);
+			DWTObject.SaveSelectedImagesAsMultiPagePDF(
+				pdfName,
+				function () { console.log("OK"); },
+				function (errorCode, errorString) {
+					alert(errorString);
+				});
+
+		}
+
+		function Delete(button) {
+			console.log(button);
+			const docDiv = button.closest('.doc');
+			DeleteDoc(docDiv);
+		}
+
+		function DeleteDoc(docDiv) {
+			const imageTags = docDiv.querySelectorAll('img[imageid]');
+			const imageIndexes = Array.from(imageTags).map(img => {
+				const imageid = img.getAttribute('imageid');
+				return DWTObject.ImageIDToIndex(imageid);
+			});
+
+			console.log('imageindex:', imageIndexes);
+
+
+			imageCount = imageCount - imageIndexes.length;
+			DWTObject.SelectImages(imageIndexes);
+			DWTObject.RemoveAllSelectedImages();
+
+			if (docDiv) {
+				const docId = docDiv.getAttribute('docid');
+
+				if (docId === '1') {
+					const wrappers = docDiv.querySelectorAll('.ds-image-wrapper');
+					wrappers.forEach(wrapper => wrapper.remove());
+
+					// Hide the imagebox if no images remain
+					const remainingImages = docDiv.querySelectorAll('.ds-dwt-image');
+					if (remainingImages.length === 0) {
+						docDiv.classList.add('initial-hidden');
+						// Also hide the file list item
+						const fileListItem = document.querySelector('li[data-group="group-1"]');
+						if (fileListItem) {
+							fileListItem.classList.add('initial-hidden');
+						}
+					}
+
+					/*const imageContainer = docElement.querySelector('.ds-imagebox');
+					if (imageContainer) {
+					  imageContainer.remove();
+					}*/
+				} else {
+					docDiv.remove();
+				}
+
+				//const wrappers = docDiv.querySelectorAll('.ds-image-wrapper');
+				//wrappers.forEach(wrapper => wrapper.remove());
+
+				const group = docDiv.getAttribute('data-group');
+				const group1Item = document.querySelector(`li[data-group="${group}"]`);
+				if (group1Item) {
+					if (group === 'group-1') {
+					} else {
+						group1Item.remove();
+					}
+					UpdateAllPages();
+				}
+				//ShowPages(group);
+			}
+		}
+
+		function PageUp() {
+			const imgbox = document.getElementById('imagebox-1');
+			imgbox.scrollBy(-633, 0);
+		}
+		function PageDown() {
+			const imgbox = document.getElementById('imagebox-1');
+			imgbox.scrollBy(633, 0);
+		}
+
+		function deleteOneImage(imageEl) {
+
+			console.log('deleteOneImage');
+			const imageID = imageEl.getAttribute("imageID");
+			const imageIndex = DWTObject.ImageIDToIndex(imageID);
+
+			DWTObject.RemoveImage(imageIndex);
+
+			const imageWrapperDiv = imageEl.parentNode;
+			const imageBoxDiv = imageWrapperDiv.parentNode;
+			imageWrapperDiv.parentNode.removeChild(imageWrapperDiv);
+
+			imageCount--;
+
+			// Check if this was the last image in the first document
+			const docDiv = imageBoxDiv.closest('.doc');
+			if (docDiv && docDiv.getAttribute('docid') === '1') {
+				const remainingImages = docDiv.querySelectorAll('.ds-dwt-image');
+				if (remainingImages.length === 0) {
+					docDiv.classList.add('initial-hidden');
+					// Also hide the file list item
+					const fileListItem = document.querySelector('li[data-group="group-1"]');
+					if (fileListItem) {
+						fileListItem.classList.add('initial-hidden');
+					}
+				}
+			}
+		}
+
+		function SplitImage(imageEl) {
+
+			console.log('SplitImage');
+			const imageID = imageEl.getAttribute("imageID");
+			const imageIndex = DWTObject.ImageIDToIndex(imageID);
+
+			const imageWrapperDiv = imageEl.parentNode;
+			const imageBoxDiv = imageWrapperDiv.parentNode;
+			console.log(imageBoxDiv.id);
+
+			const previousDivEl = imageWrapperDiv.previousSibling;
+			if (previousDivEl) {
+				createNextDocument(previousDivEl);
+			}
+
+		}
+
+		function createNextDocument(divImageWrapperEl) { // move images, after this image wrapper div, to new DIV
+
+			const currentDocumentEl = imageboxWrapper.lastElementChild;
+			let documentID = 1 + parseInt(currentDocumentEl.getAttribute("docID"));
+
+			const newDivGroup = document.createElement('div');
+			newDivGroup.id = 'imagebox-' + documentID;
+			newDivGroup.setAttribute('docID', documentID);
+			newDivGroup.setAttribute('data-group', 'group-' + documentID);
+			newDivGroup.className = "doc";
+			imageboxWrapper.appendChild(newDivGroup);
+
+
+			const newDivDocTitle = document.createElement('div');
+			newDivDocTitle.className = "doc-title";
+			// ...
+			const newSpanTitleName = document.createElement('span');
+			newSpanTitleName.className = "title-name";
+			newSpanTitleName.innerText = pdfName;
+			newDivDocTitle.appendChild(newSpanTitleName);
+
+			const newDivButtons = document.createElement('div');
+			newDivButtons.className = "doc-buttons";
+
+			const newButtonSaveDRAFT = document.createElement('button');
+			newDivButtons.className = "doc-buttons";
+
+			const saveFileBtn = document.createElement('button');
+			saveFileBtn.textContent = 'SAVE FILE';
+			saveFileBtn.onclick = function () {
+				SaveFile(this);
+			};
+			newDivButtons.appendChild(saveFileBtn);
+
+			const deleteFileBtn = document.createElement('button');
+			deleteFileBtn.textContent = 'DELETE';
+			deleteFileBtn.onclick = function () {
+				Delete(this);
+			};
+			newDivButtons.appendChild(deleteFileBtn);
+
+			newDivDocTitle.appendChild(newDivButtons);
+			newDivGroup.appendChild(newDivDocTitle);
+
+			const newDivImageBox = document.createElement('div');
+			newDivImageBox.className = "ds-imagebox mt10 thumbnails";
+			newDivImageBox.addEventListener('drop', function (e) { handleDrop.call(this, e); });
+			newDivImageBox.addEventListener('dragover', function (e) { handleDragOver.call(this, e); });
+			newDivImageBox.addEventListener('dragenter', function (e) { handleDragEnter.call(this, e); });
+			newDivImageBox.addEventListener('dragleave', function (e) { handleDragLeave.call(this, e); });
+			newDivGroup.appendChild(newDivImageBox);
+
+			while (divImageWrapperEl.nextElementSibling) {
+				const siblingWrapper = divImageWrapperEl.nextElementSibling;
+				// Ensure the moved wrapper has drag functionality
+				if (!siblingWrapper.hasAttribute('draggable')) {
+					siblingWrapper.setAttribute('draggable', 'true');
+					siblingWrapper.addEventListener('dragstart', handleDragStart);
+					siblingWrapper.addEventListener('dragend', handleDragEnd);
+				}
+				newDivImageBox.appendChild(siblingWrapper);
+			}
+
+			const ul = document.querySelector('ul.file-list');
+			const newLiGroup = document.createElement('li');
+			newLiGroup.setAttribute('data-group', 'group-' + documentID);
+			ul.appendChild(newLiGroup);
+
+			const newSpanGroup = document.createElement('span');
+			newLiGroup.appendChild(newSpanGroup);
+
+			const newSpanName = document.createElement('span');
+			newSpanName.innerText = pdfName;
+			newSpanGroup.appendChild(newSpanName);
+
+			const newbr = document.createElement('br');
+			newSpanGroup.appendChild(newbr);
+
+			const newem = document.createElement('em');
+			newSpanGroup.appendChild(newem);
+
+
+			const newSpanPageNumber = document.createElement('span');
+			const images = newDivGroup.querySelectorAll('.ds-dwt-image');
+			newSpanPageNumber.innerText = images.length + " pages";
+			newSpanPageNumber.className = "page-number";
+			newem.appendChild(newSpanPageNumber);
+
+			const newCheckbox = document.createElement('input');
+			newCheckbox.type = 'checkbox';
+			newCheckbox.checked = true;
+			newCheckbox.addEventListener('change', changeCheckboxValue);
+			newCheckbox.setAttribute('data-group', 'group-' + documentID);
+
+			newLiGroup.appendChild(newCheckbox);
+
+		}
+
+		document.addEventListener('contextmenu', function (e) {
+
+			e.preventDefault();
+			currentImgEl = null;
+
+			const menu = document.querySelector('.ds-context-menu');
+			if (menu) {
+				let targetElement = e.target;
+
+				// If clicked on wrapper, get the image inside
+				if (targetElement.classList.contains('ds-image-wrapper')) {
+					targetElement = targetElement.querySelector('img');
+				}
+
+				currentImgEl = targetElement;
+				if (currentImgEl && currentImgEl.tagName === 'IMG') {
+					menu.style.left = e.pageX + 'px';
+					menu.style.top = e.pageY + 'px';
+					menu.className = "ds-context-menu";
+					return;
+				} else {
+					menu.className = "ds-context-menu ds-hidden";
+				}
+			}
+
+			clearRightClickImageTag();
+		});
+
+		document.addEventListener('click', function () {
+
+			clearRightClickImageTag();
+
+			const menu = document.querySelector('.ds-context-menu');
+			if (menu) {
+				menu.className = "ds-context-menu ds-hidden";
+			}
+		});
+
+		const liSplit = document.getElementById('liSplit');
+		liSplit.addEventListener('click', function (e) {
+
+			clearRightClickImageTag();
+
+			if (currentImgEl) {
+				SplitImage(currentImgEl);
+			}
+
+			UpdateAllPages();
+		});
+
+		const liDelete = document.getElementById('liDelete');
+		liDelete.addEventListener('click', function (e) {
+
+			clearRightClickImageTag();
+
+			if (currentImgEl) {
+				deleteOneImage(currentImgEl);
+				currentImgEl = null;
+			}
+			UpdateAllPages();
+		});
+
+		const liMultiDelete = document.getElementById('liMultiDelete');
+		liMultiDelete.addEventListener('click', function (e) {
+
+			clearRightClickImageTag();
+
+			// query all selected images
+			const images = document.querySelectorAll("IMG.selectedImage");
+			let i;
+			for (i = 0; i < images.length; i++) {
+				let imgEl = images[i];
+				deleteOneImage(imgEl);
+			}
+
+			DeleteEmptyDoc();
+		});
+
+
+		function DeleteEmptyDoc() {
+			const imageWrappers = document.querySelectorAll('.ds-imagebox');
+			let i, tmpDocDiv, imageWrapper;
+			for (i = 0; i < imageWrappers.length; i++) {
+				imageWrapper = imageWrappers[i];
+				if (imageWrapper.childElementCount == 0) {
+					// delete this doc
+					tmpDocDiv = imageWrapper.closest('.doc');
+					DeleteDoc(tmpDocDiv);
+				}
+			}
+		}
+
+		function changeCheckboxValue() {
+			const group = this.getAttribute('data-group');
+
+			const targetGroup = document.querySelector(`.doc[data-group="${group}"]`);
+			if (this.checked) {
+				//targetGroup.classList.add('active');
+				//targetGroup.querySelectorAll('button').forEach(btn => btn.disabled = false);
+				targetGroup.style.display = "";
+			} else {
+				//targetGroup.classList.remove('active');
+				//targetGroup.querySelectorAll('button').forEach(btn => btn.disabled = true);
+				targetGroup.style.display = "none";
+			}
+		}
+
+
+
+		document.querySelectorAll('.file-list input[type="checkbox"]').forEach(checkbox => {
+			checkbox.addEventListener('change', changeCheckboxValue);
+		});
+
+
+		document.querySelectorAll('.file-list input[type="checkbox"]:checked').forEach(checkbox => {
+			const group = checkbox.getAttribute('data-group');
+			document.querySelector(`.doc[data-group="${group}"]`).classList.add('active');
+		});
+
+		function isNumber(value) {
+			return Object.prototype.toString.call(value) === '[object Number]';
+		}
+
+		let lastSelectedImage;
+		function SelectImage(e) {
+
+			let bCtrlKeyPressed = false, bShiftKeyPressed = false;
+			if (event.ctrlKey) {
+				bCtrlKeyPressed = true;
+			}
+			if (event.shiftKey) {
+				bShiftKeyPressed = true;
+			}
+
+			if (!bCtrlKeyPressed && !bShiftKeyPressed) {
+				UnSelectAllImages();
+			}
+			let previousLastSelected = lastSelectedImage;
+			lastSelectedImage = e.target;
+
+			if (bShiftKeyPressed) {
+				let strLastSelectedImageID, imageIndex1, strPreviousSelectedImageID, imageIndex2, i;
+
+				if (previousLastSelected) {
+					strPreviousSelectedImageID = previousLastSelected.getAttribute('imageid');
+					if (strPreviousSelectedImageID) {
+						imageIndex1 = DWTObject.ImageIDToIndex(strPreviousSelectedImageID);
+					}
+
+					strLastSelectedImageID = lastSelectedImage.getAttribute('imageid');
+					if (strLastSelectedImageID) {
+						imageIndex2 = DWTObject.ImageIDToIndex(strLastSelectedImageID);
+					}
+
+					if (isNumber(imageIndex1) && isNumber(imageIndex2)) {
+						if (imageIndex1 > imageIndex2) {
+							let tmp = imageIndex2;
+							imageIndex2 = imageIndex1;
+							imageIndex1 = tmp;
+						}
+
+						let tmpImageID, tmpImageEl;
+						for (i = imageIndex1 + 1; i < imageIndex2; i++) {
+							tmpImageID = DWTObject.IndexToImageID(i);
+							if (tmpImageID) {
+								// query image element
+								tmpImageEl = document.querySelector(`IMG[imageid="${tmpImageID}"]`);
+								if (tmpImageEl) {
+									tmpImageEl.classList.add('selectedImage');
+								}
+							}
+						}
+					}
+				}
+
+				lastSelectedImage.classList.add('selectedImage');
+			} else {
+				lastSelectedImage.classList.add('selectedImage');
+			}
+		}
+		function UnSelectAllImages() {
+			const images = document.querySelectorAll('IMG');
+			let i;
+			for (i = 0; i < images.length; i++) {
+				let imgEl = images[i];
+				imgEl.classList.remove('selectedImage');
+			}
+		}
+
+		let rightClickImage = null;
+		function OnImageMouseDown(e) {
+
+			// Allow dragging for wrapper elements, but handle selection and context menu
+			if (e.button === 2) {
+				// Right click - handle context menu
+				e.preventDefault();
+				clearRightClickImageTag();
+
+				// Find the image element (either the target or child)
+				let imgElement = e.target;
+				if (imgElement.classList.contains('ds-image-wrapper')) {
+					imgElement = imgElement.querySelector('img');
+				}
+
+				rightClickImage = imgElement;
+				if (rightClickImage && rightClickImage.tagName === 'IMG') {
+					rightClickImage.style.opacity = '0.4';
+					rightClickImage.parentNode.style.backgroundColor = '#F1F1F1';
+				} else {
+					rightClickImage = null;
+				}
+				return;
+			} else {
+				// Left click - handle selection
+				clearRightClickImageTag();
+
+				// Find the image element for selection
+				let imgElement = e.target;
+				if (imgElement.classList.contains('ds-image-wrapper')) {
+					imgElement = imgElement.querySelector('img');
+				}
+
+				if (imgElement && imgElement.tagName === 'IMG') {
+					// Create a fake event with the image as target for SelectImage function
+					const fakeEvent = {
+						target: imgElement,
+						ctrlKey: e.ctrlKey,
+						shiftKey: e.shiftKey
+					};
+					SelectImage(fakeEvent);
+				}
+			}
+		}
+
+		function clearRightClickImageTag() {
+			if (rightClickImage) {
+				rightClickImage.style.opacity = '';
+				rightClickImage.parentNode.style.backgroundColor = '';
+				rightClickImage = null;
+			}
+		}
+
+		// Drag and Drop Functions
+		function handleDragStart(e) {
+			draggedElement = this;
+			draggedImageBox = this.closest('.ds-imagebox');
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/html', this.outerHTML);
+			this.style.opacity = '0.5';
+		}
+
+		function handleDragEnd(e) {
+			this.style.opacity = '';
+			draggedElement = null;
+			draggedImageBox = null;
+
+			// Remove all drop indicators
+			document.querySelectorAll('.ds-imagebox').forEach(box => {
+				box.classList.remove('drag-over');
+			});
+		}
+
+		function handleDragOver(e) {
+			if (e.preventDefault) {
+				e.preventDefault();
+			}
+			e.dataTransfer.dropEffect = 'move';
+			return false;
+		}
+
+		function handleDragEnter(e) {
+			if (draggedElement && this && typeof this.classList !== 'undefined') {
+				this.classList.add('drag-over');
+			}
+		}
+
+		function handleDragLeave(e) {
+			// Only remove drag-over if we're really leaving the element
+			// Check if relatedTarget exists and if this element has the contains method
+			if (e.relatedTarget && this && typeof this.contains === 'function' && !this.contains(e.relatedTarget)) {
+				this.classList.remove('drag-over');
+			} else if (!e.relatedTarget) {
+				// If there's no relatedTarget, we're likely leaving the element
+				this.classList.remove('drag-over');
+			}
+		}
+
+		function handleDrop(e) {
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+
+			const targetImageBox = e.currentTarget;
+			targetImageBox.classList.remove('drag-over');
+
+			if (draggedElement && targetImageBox !== draggedImageBox) {
+				// Moving between different imageboxes
+				const rect = targetImageBox.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const children = Array.from(targetImageBox.children);
+				let insertIndex = children.length;
+
+				// Find the correct position to insert
+				for (let i = 0; i < children.length; i++) {
+					const child = children[i];
+					const childRect = child.getBoundingClientRect();
+					const childX = childRect.left - rect.left + childRect.width / 2;
+
+					if (x < childX) {
+						insertIndex = i;
+						break;
+					}
+				}
+
+				// Insert the dragged element
+				if (insertIndex >= children.length) {
+					targetImageBox.appendChild(draggedElement);
+				} else {
+					targetImageBox.insertBefore(draggedElement, children[insertIndex]);
+				}
+
+				// Update page counts
+				UpdateAllPages();
+			} else if (draggedElement && targetImageBox === draggedImageBox) {
+				// Reordering within the same imagebox
+				const rect = targetImageBox.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const children = Array.from(targetImageBox.children).filter(child => child !== draggedElement);
+				let insertIndex = children.length;
+
+				// Find the correct position to insert
+				for (let i = 0; i < children.length; i++) {
+					const child = children[i];
+					const childRect = child.getBoundingClientRect();
+					const childX = childRect.left - rect.left + childRect.width / 2;
+
+					if (x < childX) {
+						insertIndex = i;
+						break;
+					}
+				}
+
+				// Insert the dragged element
+				if (insertIndex >= children.length) {
+					targetImageBox.appendChild(draggedElement);
+				} else {
+					targetImageBox.insertBefore(draggedElement, children[insertIndex]);
+				}
+			}
+
+			return false;
+		}
+
+	</script>
+
+</body>
+
+</html>
