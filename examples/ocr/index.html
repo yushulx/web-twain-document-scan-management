@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR & PDF Web App</title>
+    <script src="https://unpkg.com/tesseract.js@5.0.2/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/utif2@4.1.0/UTIF.js"></script>
+    <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 OCR & PDF Web App</h1>
+
+        <div class="upload-area" id="uploadArea">
+            <p>📁 Click here or drag and drop an image or PDF to upload</p>
+            <p class="supported-formats">Supported formats: JPG, PNG, GIF, BMP, WEBP, TIFF (multi-page), PDF</p>
+            <input type="file" id="fileInput" accept="image/*,.pdf,.tiff,.tif">
+        </div>
+
+        <div class="language-select">
+            <label for="languageSelect">OCR Language:</label>
+            <select id="languageSelect">
+                <option value="eng">English</option>
+                <option value="chi_sim">Chinese (Simplified)</option>
+                <option value="chi_tra">Chinese (Traditional)</option>
+                <option value="spa">Spanish</option>
+                <option value="fra">French</option>
+                <option value="deu">German</option>
+                <option value="jpn">Japanese</option>
+                <option value="rus">Russian</option>
+            </select>
+        </div>
+
+        <div class="ocr-engine-select">
+            <label for="engineSelect">OCR Engine:</label>
+            <select id="engineSelect">
+                <option value="tesseract">Tesseract.js (Free, Client-side)</option>
+                <option value="ocr.space">OCR.space (High Accuracy, 25k/month free)</option>
+                <option value="google">Google Vision API (Highest Accuracy, requires API key)</option>
+                <option value="azure">Azure Computer Vision (High Accuracy, requires API key)</option>
+            </select>
+        </div>
+
+        <div class="api-config hidden" id="apiConfig">
+            <div class="api-key-input">
+                <label for="apiKeyInput">API Key:</label>
+                <input type="password" id="apiKeyInput" placeholder="Enter your API key">
+                <button class="btn btn-small" onclick="toggleApiKeyVisibility()">👁️</button>
+                <button class="btn btn-small" onclick="saveApiKey()">💾 Save</button>
+            </div>
+            <div class="api-help">
+                <small id="apiHelpText">API key help will appear here</small>
+            </div>
+        </div>
+
+        <div class="test-conversion">
+            <label class="checkbox-container">
+                <input type="checkbox" id="testConversionCheckbox">
+                <span class="checkmark"></span>
+                🧪 Test convert2searchable API (auto-convert to PDF on upload)
+            </label>
+        </div>
+
+        <div class="preview-container hidden" id="previewContainer">
+            <img id="previewImage" class="preview-image" alt="Preview">
+            <br>
+            <button class="btn" id="processBtn" onclick="processOCR()">🔍 Extract Text</button>
+        </div>
+
+        <div class="batch-controls hidden" id="batchControls">
+            <h3 id="batchTitle">📄 Document</h3>
+            <div class="controls-row">
+                <button class="btn btn-success" onclick="processAllPages()">🔍 OCR All Pages</button>
+                <button class="btn btn-warning" onclick="processCurrentPage()">🔍 OCR Current Page</button>
+                <button class="btn toggle-overlay" id="toggleOverlay" onclick="toggleTextOverlays()">👁️ Toggle Text
+                    Overlay</button>
+                <button class="btn" onclick="exportToPDF()">💾 Export as PDF</button>
+                <button class="btn" onclick="exportAllText()">📝 Export All Text</button>
+            </div>
+            <div class="controls-row">
+                <button class="btn btn-small" onclick="clearAllOCR()">🗑️ Clear All OCR</button>
+            </div>
+        </div>
+
+        <div class="current-page-container hidden" id="currentPageContainer">
+            <!-- Current page will be displayed here -->
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <p id="progressText">Processing...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="result-container hidden" id="resultContainer">
+            <h3>📝 Extracted Text:</h3>
+            <div class="result-text" id="resultText"></div>
+            <button class="btn" onclick="copyToClipboard()">📋 Copy Text</button>
+            <button class="btn" onclick="downloadText()">💾 Download as TXT</button>
+        </div>
+
+        <div id="errorContainer"></div>
+    </div>
+
+    <script src="ocr-lib.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
