@@ -2,6 +2,9 @@
 
 A powerful web-based OCR (Optical Character Recognition) application that converts images, TIFFs, and PDFs into searchable PDF documents. The project includes both a complete web application and a standalone OCR library for integration into other web projects.
 
+https://github.com/user-attachments/assets/6b8e0c5f-3238-4dfa-9454-de6e03b3061c
+
+
 ## 🌐 Online Demo
 https://yushulx.me/web-twain-document-scan-management/examples/ocr/
 
