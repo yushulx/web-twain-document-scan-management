@@ -12,6 +12,10 @@ https://yushulx.me/web-twain-document-scan-management/examples/ocr/
 - **Multiple OCR Engines**: Choose from Tesseract.js, OCR.space, Google Vision API, and Azure Computer Vision
 - **Language Support**: English, Chinese (Simplified/Traditional), Spanish, French, German, Japanese, Russian
 - **Interactive Interface**: Drag & drop file upload, real-time progress tracking, text overlay visualization
+- **Text Selection & Copy**: Click on text bounding boxes to select words, use Ctrl+C to copy selected text
+- **Multi-Selection**: Hold Shift or Ctrl to select multiple words, automatic text ordering and line detection
+- **Keyboard Shortcuts**: Ctrl+C to copy, Esc to clear selection, intuitive text selection workflow
+- **Three-Panel Layout**: Optimized horizontal layout with controls, page display, and text results
 - **Smart Processing**: Automatically filters out failed OCR pages from final output
 - **Export Options**: Download as searchable PDF or plain text
 
@@ -317,22 +321,6 @@ export default {
     }
 };
 </script>
-```
-
-## 🔧 Dependencies
-
-The OCR library requires these external libraries:
-
-- **Tesseract.js**: Client-side OCR engine
-- **PDF.js**: PDF parsing and rendering
-- **jsPDF**: PDF generation
-- **UTIF.js**: TIFF image processing
-
-All dependencies are loaded via CDN in the examples above, but you can also install them locally:
-
-```bash
-npm install tesseract.js jspdf
-# PDF.js and UTIF.js are typically loaded via CDN
 ```
 
 ## 🎯 Key Features
