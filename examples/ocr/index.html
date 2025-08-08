@@ -16,79 +16,160 @@
     <div class="container">
         <h1>🔍 OCR & PDF Web App</h1>
 
-        <div class="upload-area" id="uploadArea">
-            <p>📁 Click here or drag and drop an image or PDF to upload</p>
-            <p class="supported-formats">Supported formats: JPG, PNG, GIF, BMP, WEBP, TIFF (multi-page), PDF</p>
-            <input type="file" id="fileInput" accept="image/*,.pdf,.tiff,.tif">
-        </div>
+        <!-- Three-panel layout for file processing -->
+        <div class="three-panel-wrapper hidden" id="threePanelWrapper">
+            <!-- Left Panel: Upload and Controls -->
+            <div class="control-panel">
+                <div class="upload-section">
+                    <div class="upload-area-small" id="uploadAreaSmall">
+                        <p>📁 Upload Another File</p>
+                        <input type="file" id="fileInputSmall" accept="image/*,.pdf,.tiff,.tif">
+                    </div>
+                </div>
 
-        <div class="language-select">
-            <label for="languageSelect">OCR Language:</label>
-            <select id="languageSelect">
-                <option value="eng">English</option>
-                <option value="chi_sim">Chinese (Simplified)</option>
-                <option value="chi_tra">Chinese (Traditional)</option>
-                <option value="spa">Spanish</option>
-                <option value="fra">French</option>
-                <option value="deu">German</option>
-                <option value="jpn">Japanese</option>
-                <option value="rus">Russian</option>
-            </select>
-        </div>
+                <div class="ocr-settings">
+                    <h4>OCR Settings</h4>
+                    <div class="setting-group">
+                        <label for="languageSelectPanel">Language:</label>
+                        <select id="languageSelectPanel">
+                            <option value="eng">English</option>
+                            <option value="chi_sim">Chinese (Simplified)</option>
+                            <option value="chi_tra">Chinese (Traditional)</option>
+                            <option value="spa">Spanish</option>
+                            <option value="fra">French</option>
+                            <option value="deu">German</option>
+                            <option value="jpn">Japanese</option>
+                            <option value="rus">Russian</option>
+                        </select>
+                    </div>
 
-        <div class="ocr-engine-select">
-            <label for="engineSelect">OCR Engine:</label>
-            <select id="engineSelect">
-                <option value="tesseract">Tesseract.js (Free, Client-side)</option>
-                <option value="ocr.space">OCR.space (High Accuracy, 25k/month free)</option>
-                <option value="google">Google Vision API (Highest Accuracy, requires API key)</option>
-                <option value="azure">Azure Computer Vision (High Accuracy, requires API key)</option>
-            </select>
-        </div>
+                    <div class="setting-group">
+                        <label for="engineSelectPanel">Engine:</label>
+                        <select id="engineSelectPanel">
+                            <option value="tesseract">Tesseract.js (Free)</option>
+                            <option value="ocr.space">OCR.space (High Accuracy)</option>
+                            <option value="google">Google Vision API</option>
+                            <option value="azure">Azure Computer Vision</option>
+                        </select>
+                    </div>
 
-        <div class="api-config hidden" id="apiConfig">
-            <div class="api-key-input">
-                <label for="apiKeyInput">API Key:</label>
-                <input type="password" id="apiKeyInput" placeholder="Enter your API key">
-                <button class="btn btn-small" onclick="toggleApiKeyVisibility()">👁️</button>
-                <button class="btn btn-small" onclick="saveApiKey()">💾 Save</button>
+                    <div class="api-config-panel hidden" id="apiConfigPanel">
+                        <div class="api-key-input-panel">
+                            <label for="apiKeyInputPanel">API Key:</label>
+                            <input type="password" id="apiKeyInputPanel" placeholder="Enter API key">
+                            <div class="api-key-buttons">
+                                <button class="btn btn-small" onclick="toggleApiKeyVisibilityPanel()">👁️</button>
+                                <button class="btn btn-small" onclick="saveApiKeyPanel()">💾</button>
+                            </div>
+                        </div>
+                        <div class="api-help-panel">
+                            <small id="apiHelpTextPanel">API key help will appear here</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-selection-help">
+                    <h4>💡 Text Selection</h4>
+                    <ul class="help-list">
+                        <li>Click text boxes to select words</li>
+                        <li>Hold <kbd>Shift</kbd> or <kbd>Ctrl</kbd> to select multiple</li>
+                        <li>Press <kbd>Ctrl+C</kbd> to copy selected text</li>
+                        <li>Press <kbd>Esc</kbd> to clear selection</li>
+                    </ul>
+                </div>
+
+                <div class="batch-controls" id="batchControls">
+                    <h3 id="batchTitle">📄 Document</h3>
+                    <div class="controls-column">
+                        <button class="btn btn-success" onclick="processAllPages()">🔍 OCR All Pages</button>
+                        <button class="btn btn-warning" onclick="processCurrentPage()">🔍 OCR Current Page</button>
+                        <button class="btn toggle-overlay" id="toggleOverlay" onclick="toggleTextOverlays()">👁️ Toggle
+                            Text Overlay</button>
+                        <button class="btn" onclick="exportToPDF()">💾 Export as PDF</button>
+                        <button class="btn" onclick="exportAllText()">📝 Export All Text</button>
+                        <button class="btn" onclick="clearAllOCR()">🗑️ Clear All OCR</button>
+                    </div>
+                </div>
             </div>
-            <div class="api-help">
-                <small id="apiHelpText">API key help will appear here</small>
+
+            <!-- Middle Panel: Page Display -->
+            <div class="page-panel">
+                <div class="current-page-container" id="currentPageContainer">
+                    <!-- Current page will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Right Panel: Text Results -->
+            <div class="results-panel">
+                <div class="text-content-container">
+                    <h3>📝 Recognized Text</h3>
+                    <textarea id="pageTextArea" class="page-text-area" readonly
+                        placeholder="OCR text will appear here when processing is complete..."></textarea>
+                    <div class="text-controls">
+                        <button class="btn btn-small" onclick="copyPageText()">📋 Copy Text</button>
+                        <button class="btn btn-small" onclick="downloadPageText()">💾 Download Text</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="test-conversion">
-            <label class="checkbox-container">
-                <input type="checkbox" id="testConversionCheckbox">
-                <span class="checkmark"></span>
-                🧪 Test convert2searchable API (auto-convert to PDF on upload)
-            </label>
+        <!-- Initial setup area (shown before file upload) -->
+        <div class="initial-setup" id="initialSetup">
+            <div class="upload-area" id="uploadArea">
+                <p>📁 Click here or drag and drop an image or PDF to upload</p>
+                <p class="supported-formats">Supported formats: JPG, PNG, GIF, BMP, WEBP, TIFF (multi-page), PDF</p>
+                <input type="file" id="fileInput" accept="image/*,.pdf,.tiff,.tif">
+            </div>
+
+            <div class="language-select">
+                <label for="languageSelect">OCR Language:</label>
+                <select id="languageSelect">
+                    <option value="eng">English</option>
+                    <option value="chi_sim">Chinese (Simplified)</option>
+                    <option value="chi_tra">Chinese (Traditional)</option>
+                    <option value="spa">Spanish</option>
+                    <option value="fra">French</option>
+                    <option value="deu">German</option>
+                    <option value="jpn">Japanese</option>
+                    <option value="rus">Russian</option>
+                </select>
+            </div>
+
+            <div class="ocr-engine-select">
+                <label for="engineSelect">OCR Engine:</label>
+                <select id="engineSelect">
+                    <option value="tesseract">Tesseract.js (Free, Client-side)</option>
+                    <option value="ocr.space">OCR.space (High Accuracy, 25k/month free)</option>
+                    <option value="google">Google Vision API (Highest Accuracy, requires API key)</option>
+                    <option value="azure">Azure Computer Vision (High Accuracy, requires API key)</option>
+                </select>
+            </div>
+
+            <div class="api-config hidden" id="apiConfig">
+                <div class="api-key-input">
+                    <label for="apiKeyInput">API Key:</label>
+                    <input type="password" id="apiKeyInput" placeholder="Enter your API key">
+                    <button class="btn btn-small" onclick="toggleApiKeyVisibility()">👁️</button>
+                    <button class="btn btn-small" onclick="saveApiKey()">💾 Save</button>
+                </div>
+                <div class="api-help">
+                    <small id="apiHelpText">API key help will appear here</small>
+                </div>
+            </div>
+
+            <div class="test-conversion">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="testConversionCheckbox">
+                    <span class="checkmark"></span>
+                    🧪 Test convert2searchable API (auto-convert to PDF on upload)
+                </label>
+            </div>
         </div>
 
         <div class="preview-container hidden" id="previewContainer">
             <img id="previewImage" class="preview-image" alt="Preview">
             <br>
             <button class="btn" id="processBtn" onclick="processOCR()">🔍 Extract Text</button>
-        </div>
-
-        <div class="batch-controls hidden" id="batchControls">
-            <h3 id="batchTitle">📄 Document</h3>
-            <div class="controls-row">
-                <button class="btn btn-success" onclick="processAllPages()">🔍 OCR All Pages</button>
-                <button class="btn btn-warning" onclick="processCurrentPage()">🔍 OCR Current Page</button>
-                <button class="btn toggle-overlay" id="toggleOverlay" onclick="toggleTextOverlays()">👁️ Toggle Text
-                    Overlay</button>
-                <button class="btn" onclick="exportToPDF()">💾 Export as PDF</button>
-                <button class="btn" onclick="exportAllText()">📝 Export All Text</button>
-            </div>
-            <div class="controls-row">
-                <button class="btn btn-small" onclick="clearAllOCR()">🗑️ Clear All OCR</button>
-            </div>
-        </div>
-
-        <div class="current-page-container hidden" id="currentPageContainer">
-            <!-- Current page will be displayed here -->
         </div>
 
         <div class="progress-container" id="progressContainer">
