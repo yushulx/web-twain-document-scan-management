@@ -12,7 +12,9 @@ let currentPageIndex = 0;
 
 // DOM elements
 const fileInput = document.getElementById('fileInput');
+const fileInputSmall = document.getElementById('fileInputSmall');
 const uploadArea = document.getElementById('uploadArea');
+const uploadAreaSmall = document.getElementById('uploadAreaSmall');
 const previewContainer = document.getElementById('previewContainer');
 const progressContainer = document.getElementById('progressContainer');
 const progressFill = document.getElementById('progressFill');
@@ -21,29 +23,206 @@ const resultContainer = document.getElementById('resultContainer');
 const resultText = document.getElementById('resultText');
 const errorContainer = document.getElementById('errorContainer');
 const languageSelect = document.getElementById('languageSelect');
+const languageSelectPanel = document.getElementById('languageSelectPanel');
 const engineSelect = document.getElementById('engineSelect');
+const engineSelectPanel = document.getElementById('engineSelectPanel');
 const apiConfig = document.getElementById('apiConfig');
+const apiConfigPanel = document.getElementById('apiConfigPanel');
 const apiKeyInput = document.getElementById('apiKeyInput');
+const apiKeyInputPanel = document.getElementById('apiKeyInputPanel');
 const apiHelpText = document.getElementById('apiHelpText');
+const apiHelpTextPanel = document.getElementById('apiHelpTextPanel');
 const batchControls = document.getElementById('batchControls');
 const currentPageContainer = document.getElementById('currentPageContainer');
+const threePanelWrapper = document.getElementById('threePanelWrapper');
+const initialSetup = document.getElementById('initialSetup');
 const toggleOverlay = document.getElementById('toggleOverlay');
 const batchTitle = document.getElementById('batchTitle');
 const testConversionCheckbox = document.getElementById('testConversionCheckbox');
 
 // Click to upload
 uploadArea.addEventListener('click', () => fileInput.click());
+uploadAreaSmall.addEventListener('click', () => fileInputSmall.click());
 
 // File input change
 fileInput.addEventListener('change', handleFileSelect);
+fileInputSmall.addEventListener('change', handleFileSelect);
 
 // Engine selection change
 engineSelect.addEventListener('change', handleEngineChange);
+
+// Panel control event listeners
+if (languageSelectPanel) {
+    languageSelectPanel.addEventListener('change', handleLanguageChangePanel);
+}
+if (engineSelectPanel) {
+    engineSelectPanel.addEventListener('change', handleEngineChangePanel);
+}
+if (apiKeyInputPanel) {
+    apiKeyInputPanel.addEventListener('input', handleApiKeyChangePanel);
+}
+
+// Sync panel controls with original controls
+function syncPanelControls() {
+    if (languageSelectPanel && languageSelect) {
+        languageSelectPanel.value = languageSelect.value;
+    }
+    if (engineSelectPanel && engineSelect) {
+        engineSelectPanel.value = engineSelect.value;
+        // Update API config visibility for panel controls
+        updateApiConfigVisibilityPanel();
+    }
+    if (apiKeyInputPanel && apiKeyInput) {
+        apiKeyInputPanel.value = apiKeyInput.value;
+    }
+}
+
+// Handle language change in panel
+function handleLanguageChangePanel(e) {
+    if (languageSelect) {
+        languageSelect.value = e.target.value;
+    }
+}
+
+// Handle engine change in panel
+function handleEngineChangePanel(e) {
+    if (engineSelect) {
+        engineSelect.value = e.target.value;
+        // Update original API config visibility
+        updateApiConfigVisibility();
+    }
+    updateApiConfigVisibilityPanel();
+}
+
+// Handle API key change in panel
+function handleApiKeyChangePanel(e) {
+    if (apiKeyInput) {
+        apiKeyInput.value = e.target.value;
+    }
+}
+
+// Update API config visibility for panel controls
+function updateApiConfigVisibilityPanel() {
+    if (!engineSelectPanel || !apiConfigPanel) return;
+
+    const selectedEngine = engineSelectPanel.value;
+    const needsApiKey = ['ocrspace', 'googlevision', 'azure'].includes(selectedEngine);
+
+    if (needsApiKey) {
+        apiConfigPanel.style.display = 'block';
+        updateApiHelpTextPanel();
+    } else {
+        apiConfigPanel.style.display = 'none';
+    }
+}
+
+// Update API help text for panel controls
+function updateApiHelpTextPanel() {
+    if (!engineSelectPanel || !apiHelpTextPanel) return;
+
+    const selectedEngine = engineSelectPanel.value;
+    let helpText = '';
+
+    switch (selectedEngine) {
+        case 'ocrspace':
+            helpText = 'Get your free API key from <a href="https://ocr.space/ocrapi" target="_blank">OCR.space</a>';
+            break;
+        case 'googlevision':
+            helpText = 'Get your API key from <a href="https://cloud.google.com/vision/docs/setup" target="_blank">Google Cloud Vision</a>';
+            break;
+        case 'azure':
+            helpText = 'Get your API key from <a href="https://azure.microsoft.com/services/cognitive-services/computer-vision/" target="_blank">Azure Computer Vision</a>';
+            break;
+    }
+
+    apiHelpTextPanel.innerHTML = helpText;
+}
+
+// Toggle API key visibility for panel controls
+function toggleApiKeyVisibilityPanel() {
+    if (!apiKeyInputPanel) return;
+
+    const isPassword = apiKeyInputPanel.type === 'password';
+    apiKeyInputPanel.type = isPassword ? 'text' : 'password';
+
+    const button = apiKeyInputPanel.parentElement.querySelector('.toggle-visibility');
+    if (button) {
+        button.textContent = isPassword ? '👁️' : '🙈';
+        button.title = isPassword ? 'Hide API key' : 'Show API key';
+    }
+}
+
+// Save API key for panel controls
+function saveApiKeyPanel() {
+    if (!apiKeyInputPanel || !engineSelectPanel) return;
+
+    const apiKey = apiKeyInputPanel.value.trim();
+    const engine = engineSelectPanel.value;
+
+    if (apiKey) {
+        localStorage.setItem(`apiKey_${engine}`, apiKey);
+        showNotification('API key saved successfully!', 'success');
+    } else {
+        showNotification('Please enter an API key', 'error');
+    }
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    // Create notification element if it doesn't exist
+    let notification = document.getElementById('notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        document.body.appendChild(notification);
+    }
+
+    // Set message and style based on type
+    notification.textContent = message;
+    notification.className = type;
+
+    // Set background color based on type
+    switch (type) {
+        case 'success':
+            notification.style.backgroundColor = '#28a745';
+            break;
+        case 'error':
+            notification.style.backgroundColor = '#dc3545';
+            break;
+        case 'warning':
+            notification.style.backgroundColor = '#ffc107';
+            notification.style.color = '#212529';
+            break;
+        default:
+            notification.style.backgroundColor = '#17a2b8';
+    }
+
+    // Show notification
+    notification.style.opacity = '1';
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+    }, 3000);
+}
 
 // Load saved API key on page load
 window.addEventListener('load', () => {
     handleEngineChange();
     checkLibraryAvailability();
+    syncPanelControls();
 });
 
 function checkLibraryAvailability() {
@@ -55,24 +234,32 @@ function checkLibraryAvailability() {
     }
 }
 
-// Drag and drop
-uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('dragover');
-});
+// Drag and drop for both upload areas
+uploadArea.addEventListener('dragover', handleDragOver);
+uploadArea.addEventListener('dragleave', handleDragLeave);
+uploadArea.addEventListener('drop', handleDrop);
 
-uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('dragover');
-});
+uploadAreaSmall.addEventListener('dragover', handleDragOver);
+uploadAreaSmall.addEventListener('dragleave', handleDragLeave);
+uploadAreaSmall.addEventListener('drop', handleDrop);
 
-uploadArea.addEventListener('drop', (e) => {
+function handleDragOver(e) {
     e.preventDefault();
-    uploadArea.classList.remove('dragover');
+    e.currentTarget.classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('dragover');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
     const files = e.dataTransfer.files;
     if (files.length > 0) {
         handleFile(files[0]);
     }
-});
+}
 
 function handleFileSelect(e) {
     const file = e.target.files[0];
@@ -183,11 +370,16 @@ async function loadImage(file) {
         // Get original image dimensions
         const img = new Image();
         img.onload = () => {
-            // Reset containers - show pagination controls
+            // Reset containers - show three-panel layout
             previewContainer.classList.add('hidden');
-            batchControls.classList.remove('hidden');
-            currentPageContainer.classList.remove('hidden');
             resultContainer.classList.add('hidden');
+            initialSetup.classList.add('hidden');
+
+            // Show three-panel wrapper
+            threePanelWrapper.classList.remove('hidden');
+
+            // Sync panel controls when switching to three-panel view
+            syncPanelControls();
 
             // Update batch title for single image
             batchTitle.textContent = '🖼️ Image';
@@ -238,9 +430,14 @@ async function loadTIFF(file) {
 
         // Show appropriate controls with pagination
         previewContainer.classList.add('hidden');
-        batchControls.classList.remove('hidden');
-        currentPageContainer.classList.remove('hidden');
         resultContainer.classList.add('hidden');
+        initialSetup.classList.add('hidden');
+
+        // Show three-panel wrapper
+        threePanelWrapper.classList.remove('hidden');
+
+        // Sync panel controls when switching to three-panel view
+        syncPanelControls();
 
         if (pageCount > 1) {
             batchTitle.textContent = `📄 TIFF Document (${pageCount} pages)`;
@@ -311,9 +508,14 @@ async function loadTIFF(file) {
 
         // Show pagination controls
         previewContainer.classList.add('hidden');
-        batchControls.classList.remove('hidden');
-        currentPageContainer.classList.remove('hidden');
         resultContainer.classList.add('hidden');
+        initialSetup.classList.add('hidden');
+
+        // Show three-panel wrapper
+        threePanelWrapper.classList.remove('hidden');
+
+        // Sync panel controls when switching to three-panel view
+        syncPanelControls();
 
         // Update batch title for PDF
         batchTitle.textContent = `📄 PDF Document (${pdf.numPages} pages)`;
@@ -399,6 +601,9 @@ function displayCurrentPage() {
     if (currentPage.ocrResult && showTextOverlay) {
         createTextOverlay('current-page', currentPage.ocrResult);
     }
+
+    // Update text area with current page's OCR result
+    updatePageTextArea(currentPage);
 }
 
 function createPageContent(currentPage, pageTitle, buttonText) {
@@ -414,11 +619,6 @@ function createPageContent(currentPage, pageTitle, buttonText) {
             
             <div class="page-header">
                 <h4 class="page-title">${pageTitle}</h4>
-                <div class="page-controls">
-                    <button class="btn btn-small" onclick="processCurrentPage()">🔍 OCR This ${buttonText}</button>
-                    <button class="btn btn-small" onclick="copyCurrentPageText()">📋 Copy Text</button>
-                    <button class="btn btn-small" onclick="downloadCurrentPageText()">💾 Save Text</button>
-                </div>
             </div>
             <div class="page-status status-${currentPage.status}" id="current-page-status">
                 ${getStatusText(currentPage.status, currentPage.ocrResult)}
@@ -455,12 +655,6 @@ function updatePageContent(currentPage, pageTitle, buttonText) {
     const pageTitleEl = document.querySelector('.page-title');
     if (pageTitleEl) {
         pageTitleEl.textContent = pageTitle;
-    }
-
-    // Update OCR button text
-    const ocrButton = document.querySelector('.page-controls button[onclick="processCurrentPage()"]');
-    if (ocrButton) {
-        ocrButton.innerHTML = `🔍 OCR This ${buttonText}`;
     }
 
     // Update page status
@@ -586,8 +780,15 @@ function clearAllOCR() {
         page.status = 'pending';
     });
 
-    // Refresh the current page display
+    // Refresh the current page display and clear text area
     displayCurrentPage();
+
+    // Clear text area
+    const textArea = document.getElementById('pageTextArea');
+    if (textArea) {
+        textArea.value = '';
+        textArea.placeholder = 'OCR text will appear here when processing is complete...';
+    }
 }
 
 async function processPageOCR(pageId) {
@@ -622,12 +823,17 @@ async function processPageOCR(pageId) {
 
         if (ocrData.text.trim()) {
             updatePageStatus(pageId, 'completed', `✅ OCR Complete (${Math.round(ocrData.confidence)}% confidence)`);
-            // If this is the current page, update the display
+            // If this is the current page, update the display and text area
             if (page.id === pages[currentPageIndex].id) {
                 createTextOverlay('current-page', ocrData);
+                updatePageTextArea(page);
             }
         } else {
             updatePageStatus(pageId, 'error', '❌ No text detected');
+            // If this is the current page, update the text area
+            if (page.id === pages[currentPageIndex].id) {
+                updatePageTextArea(page);
+            }
         }
 
     } catch (error) {
@@ -926,6 +1132,93 @@ function updatePageStatus(pageId, status, message) {
     }
 }
 
+// Global variable to store selected text
+let selectedTextFromBox = '';
+let selectedTextBoxes = [];
+
+// Add keyboard event listener for Ctrl+C
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'c' && selectedTextFromBox) {
+        e.preventDefault();
+        copySelectedText();
+    }
+
+    // ESC to clear selection
+    if (e.key === 'Escape') {
+        clearTextSelection();
+    }
+});
+
+// Function to copy selected text
+function copySelectedText() {
+    if (!selectedTextFromBox) {
+        showError('No text selected. Click on a text box first.');
+        return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(selectedTextFromBox).then(() => {
+            showSuccess(`Copied "${selectedTextFromBox}" to clipboard!`);
+        }).catch(() => {
+            // Fallback for clipboard API failure
+            copyTextFallback(selectedTextFromBox);
+        });
+    } else {
+        // Fallback for older browsers
+        copyTextFallback(selectedTextFromBox);
+    }
+}
+
+// Function to clear text selection
+function clearTextSelection() {
+    document.querySelectorAll('.text-box').forEach(box => box.classList.remove('selected'));
+    selectedTextFromBox = '';
+    selectedTextBoxes = [];
+}
+
+// Function to update selected text from multiple boxes
+function updateSelectedText() {
+    if (selectedTextBoxes.length === 0) {
+        selectedTextFromBox = '';
+        return;
+    }
+
+    if (selectedTextBoxes.length === 1) {
+        selectedTextFromBox = selectedTextBoxes[0].text;
+        showSuccess(`Selected: "${selectedTextFromBox}" (Press Ctrl+C to copy)`);
+        return;
+    }
+
+    // Sort selected boxes by position (top to bottom, left to right)
+    const sortedBoxes = selectedTextBoxes.slice().sort((a, b) => {
+        const yDiff = a.bbox.y0 - b.bbox.y0;
+        if (Math.abs(yDiff) < 15) { // Same line threshold
+            return a.bbox.x0 - b.bbox.x0;
+        }
+        return yDiff;
+    });
+
+    // Combine text intelligently
+    let combinedText = '';
+    let lastY = -1;
+
+    sortedBoxes.forEach((box, index) => {
+        if (index > 0) {
+            // Check if this word is on a new line
+            if (Math.abs(box.bbox.y0 - lastY) > 15) {
+                combinedText += '\n';
+            } else {
+                combinedText += ' ';
+            }
+        }
+        combinedText += box.text;
+        lastY = box.bbox.y0;
+    });
+
+    selectedTextFromBox = combinedText;
+    showSuccess(`Selected ${selectedTextBoxes.length} words: "${combinedText}" (Press Ctrl+C to copy)`);
+}
+
 function createTextOverlay(overlayId, ocrData) {
     const overlay = document.getElementById(`${overlayId === 'current-page' ? 'current-page-overlay' : `overlay-${overlayId}`}`);
     if (!overlay) return;
@@ -964,8 +1257,11 @@ function createTextOverlay(overlayId, ocrData) {
         if (word.confidence > 30) { // Only show confident words
             const textBox = document.createElement('div');
             textBox.className = 'text-box';
-            // textBox.textContent = word.text;
-            textBox.title = `Confidence: ${Math.round(word.confidence)}%`;
+            textBox.title = `"${word.text}" - Confidence: ${Math.round(word.confidence)}% (Click to select, Ctrl+C to copy)`;
+
+            // Store the word text as a data attribute
+            textBox.dataset.wordText = word.text;
+            textBox.dataset.confidence = word.confidence;
 
             const bbox = word.bbox;
             textBox.style.left = (bbox.x0 * scaleX) + 'px';
@@ -974,9 +1270,54 @@ function createTextOverlay(overlayId, ocrData) {
             textBox.style.height = ((bbox.y1 - bbox.y0) * scaleY) + 'px';
             textBox.style.fontSize = Math.max(10, (bbox.y1 - bbox.y0) * scaleY * 0.8) + 'px';
 
-            textBox.addEventListener('click', () => {
-                document.querySelectorAll('.text-box').forEach(box => box.classList.remove('selected'));
-                textBox.classList.add('selected');
+            textBox.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (e.shiftKey || e.ctrlKey) {
+                    // Multi-selection mode
+                    const isSelected = textBox.classList.contains('selected');
+
+                    if (isSelected) {
+                        // Deselect this box
+                        textBox.classList.remove('selected');
+                        const boxIndex = selectedTextBoxes.findIndex(box => box.element === textBox);
+                        if (boxIndex > -1) {
+                            selectedTextBoxes.splice(boxIndex, 1);
+                        }
+                    } else {
+                        // Add to selection
+                        textBox.classList.add('selected');
+                        selectedTextBoxes.push({
+                            element: textBox,
+                            text: word.text,
+                            bbox: bbox,
+                            confidence: word.confidence
+                        });
+                    }
+
+                    // Update combined text
+                    updateSelectedText();
+                } else {
+                    // Single selection mode (clear others first)
+                    document.querySelectorAll('.text-box').forEach(box => box.classList.remove('selected'));
+                    selectedTextBoxes = [];
+
+                    // Select this text box
+                    textBox.classList.add('selected');
+                    selectedTextBoxes.push({
+                        element: textBox,
+                        text: word.text,
+                        bbox: bbox,
+                        confidence: word.confidence
+                    });
+
+                    // Store the selected text globally
+                    selectedTextFromBox = word.text;
+
+                    // Show feedback to user
+                    showSuccess(`Selected: "${word.text}" (Press Ctrl+C to copy, Shift+Click for multi-select)`);
+                }
             });
 
             overlay.appendChild(textBox);
@@ -1376,4 +1717,68 @@ async function testConvert2Searchable(file) {
         console.error('Test conversion error:', error);
         showError(`❌ Test conversion failed: ${error.message}`);
     }
+}
+
+// Text area functions for the right panel
+function updatePageTextArea(currentPage) {
+    const textArea = document.getElementById('pageTextArea');
+    if (!textArea) return;
+
+    if (currentPage.ocrResult && currentPage.ocrResult.text) {
+        textArea.value = currentPage.ocrResult.text;
+        textArea.placeholder = 'OCR text for current page';
+    } else {
+        textArea.value = '';
+        textArea.placeholder = currentPage.status === 'completed'
+            ? 'No text detected in this page'
+            : 'OCR text will appear here when processing is complete...';
+    }
+}
+
+function copyPageText() {
+    const textArea = document.getElementById('pageTextArea');
+    if (!textArea || !textArea.value.trim()) {
+        showError('No text available to copy');
+        return;
+    }
+
+    textArea.select();
+    navigator.clipboard.writeText(textArea.value).then(() => {
+        showSuccess('Page text copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy text:', err);
+        showError('Failed to copy text to clipboard');
+    });
+}
+
+function downloadPageText() {
+    const textArea = document.getElementById('pageTextArea');
+    if (!textArea || !textArea.value.trim()) {
+        showError('No text available to download');
+        return;
+    }
+
+    const currentPage = pages[currentPageIndex];
+    let filename = 'page-text.txt';
+
+    if (currentDocument.type === 'image') {
+        filename = 'image-text.txt';
+    } else if (currentDocument.type === 'tiff') {
+        filename = currentDocument.pageCount === 1 ? 'tiff-text.txt' : `tiff-page-${currentPage.id}-text.txt`;
+    } else {
+        filename = `page-${currentPage.id}-text.txt`;
+    }
+
+    const blob = new Blob([textArea.value], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+    showSuccess(`Text downloaded as: ${filename}`);
 }
