@@ -28,6 +28,9 @@ The project is implemented with [Dynamsoft Document Viewer SDK](https://www.dyna
 
   https://github.com/user-attachments/assets/3117bba9-fb3c-447f-ac0d-c649c71f8733
 
+- Search text
+
+  https://github.com/user-attachments/assets/c582f281-f743-4ba6-9f2d-c0a97959655c
 
 
 ## Prerequisites
