@@ -1467,6 +1467,7 @@ const pcEditViewerUiConfig = {
                         ocrButton,
                         // scannerButton,
                         dropdownButton,
+                        Dynamsoft.DDV.Elements.TextSearchPanelSwitch
                     ],
                 },
                 {
@@ -1482,7 +1483,14 @@ const pcEditViewerUiConfig = {
                 },
             ],
         },
-        Dynamsoft.DDV.Elements.MainView,
+        {
+            type: Dynamsoft.DDV.Elements.Layout,
+            flexDirection: "row",
+            children: [
+                Dynamsoft.DDV.Elements.MainView,
+                Dynamsoft.DDV.Elements.TextSearchPanel
+            ]
+        }
     ],
 };
 
@@ -1498,9 +1506,20 @@ const mobileEditViewerUiConfig = {
                 Dynamsoft.DDV.Elements.Pagination,
                 // loadButton,
                 downloadButton,
+                Dynamsoft.DDV.Elements.TextSearchPanelSwitch
             ],
         },
-        Dynamsoft.DDV.Elements.MainView,
+        {
+            type: Dynamsoft.DDV.Elements.Layout,
+            flexDirection: "column",
+            children: [
+                Dynamsoft.DDV.Elements.MainView,
+                {
+                    type: Dynamsoft.DDV.Elements.TextSearchPanel,
+                    className: "ddv-edit-viewer-search-mobile"
+                }
+            ]
+        },
         {
             type: Dynamsoft.DDV.Elements.Layout,
             className: "ddv-edit-viewer-footer-mobile",
