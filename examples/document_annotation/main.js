@@ -6,6 +6,7 @@ let fileBlob = null;
 let documentPoints = null;
 let host = "http://127.0.0.1:18622";
 let dropdown = null;
+const ocrLib = new OCRLibrary();
 
 // Button for camera
 let stream = null;
@@ -1097,8 +1098,22 @@ async function load(blob, password) {
             });
         }
 
+        let searchablePDF = blob;
+        // if (password == null || password === "") {
+        //     searchablePDF = await ocrLib.convert2searchable(
+        //         blob,
+        //         {
+        //             engine: 'ocr.space',
+        //             language: 'eng'
+        //         },
+        //         (message, percentage) => {
+        //             console.log(`${message} (${percentage}%)`);
+        //         }
+        //     );
+        // }
+
         const source = {
-            fileData: blob,
+            fileData: searchablePDF,
             password: password,
             renderOptions: {
                 renderAnnotations: "loadAnnotations"
