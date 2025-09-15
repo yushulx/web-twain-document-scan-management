@@ -21,6 +21,7 @@ https://yushulx.me/web-twain-document-scan-management/examples/split_merge_docum
 - **PDF Generation**: Create multi-page PDF documents from scanned images
 - **Drag & Drop Reordering**: Intuitive page reordering within and between documents
 - **Document Splitting**: Split documents at any page to create separate files
+- **Auto Split**: Automatically detect blank pages and split documents
 
 ### Advanced Features
 - **Multi-Selection**: Select multiple images with Ctrl+Click and Shift+Click
@@ -90,6 +91,13 @@ http://localhost:8000
 // Click "📁 Load Images" button
 // Select image files from your computer
 // Supported formats: JPEG, PNG, TIFF, BMP, PDF
+```
+
+#### Auto Split Documents
+```javascript
+// Click "🔄 Auto Split" button
+// Automatically detects blank pages and splits documents
+// Creates separate document groups at detected split points
 ```
 
 #### Reordering Pages

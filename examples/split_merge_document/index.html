@@ -76,6 +76,9 @@
 						<button class="action-btn" id="btnLoadImage" onclick="DWTManager.loadImage();">
 							📁 Load Images
 						</button>
+						<button class="action-btn" id="btnAutoSplit" onclick="DocumentSplitter.autoSplit();">
+							🔄 Auto Split
+						</button>
 					</div>
 				</div>
 
@@ -177,6 +180,11 @@
 			showNotification(message, type) {
 				const notification = document.createElement('div');
 				notification.className = `notification notification-${type}`;
+
+				let backgroundColor = '#ef4444'; // default error color
+				if (type === 'success') backgroundColor = '#10b981';
+				else if (type === 'info') backgroundColor = '#3b82f6';
+
 				notification.style.cssText = `
 					position: fixed;
 					top: 20px;
@@ -187,7 +195,7 @@
 					font-weight: 600;
 					z-index: 10000;
 					animation: slideIn 0.3s ease;
-					${type === 'success' ? 'background: #10b981;' : 'background: #ef4444;'}
+					background: ${backgroundColor};
 				`;
 				notification.textContent = message;
 
@@ -450,10 +458,8 @@
 				img.setAttribute("imageID", currentImageID);
 				img.src = currentImageUrl;
 
-				img.onload = () => {
-					const wrapper = this.createImageWrapper(img);
-					this.addToImageBox(wrapper);
-				};
+				const wrapper = this.createImageWrapper(img);
+				this.addToImageBox(wrapper);
 			},
 
 			createImageWrapper(img) {
@@ -730,6 +736,68 @@
 				if (newDocGroup) {
 					const images = newDocGroup.querySelectorAll('.ds-dwt-image');
 					pageNumber.textContent = `${images.length} pages`;
+				}
+			},
+
+			async autoSplit() {
+				if (!DWTObject || imageCount === 0) {
+					Utils.showNotification('No images to analyze for auto split', 'error');
+					return;
+				}
+
+				Utils.showNotification('Analyzing images for blank pages...', 'info');
+				let splitsPerformed = 0;
+				let blankPagesRemoved = 0;
+
+				// Get the imagebox container that holds the image wrappers
+				const imageBoxContainer = document.querySelector('#imagebox-1 .ds-imagebox');
+				if (!imageBoxContainer) {
+					Utils.showNotification('No images found to analyze', 'error');
+					return;
+				}
+
+				for (let i = imageCount - 1; i >= 0; i--) {
+					try {
+						let isBlank = await DWTObject.IsBlankImageAsync(i);
+						if (isBlank) {
+							// Find the corresponding image element in the DOM
+							const imageID = DWTObject.IndexToImageID(i);
+							const imgElement = document.querySelector(`img[imageid="${imageID}"]`);
+
+							if (imgElement) {
+								// Check if there are images before this blank page to split
+								const imageWrapper = imgElement.parentNode;
+								const previousWrapper = imageWrapper.previousElementSibling;
+
+								if (previousWrapper) {
+									// Split before the blank page (exclude blank page from new document)
+									this.splitImage(imgElement);
+									splitsPerformed++;
+									console.log(`Split performed before blank page (image index: ${i})`);
+								}
+
+								// Remove the blank page from the document
+								FileManager.deleteOneImage(imgElement);
+								blankPagesRemoved++;
+								console.log(`Blank page removed (image index: ${i})`);
+							}
+						}
+					} catch (error) {
+						console.error('Error analyzing image at index', i, ':', error);
+					}
+				}
+
+				// Clean up any empty documents created during the process
+				FileManager.deleteEmptyDocs();
+
+				if (splitsPerformed > 0 || blankPagesRemoved > 0) {
+					let message = 'Auto split completed! ';
+					if (splitsPerformed > 0) message += `${splitsPerformed} split(s) performed. `;
+					if (blankPagesRemoved > 0) message += `${blankPagesRemoved} blank page(s) removed.`;
+					Utils.showNotification(message, 'success');
+					PageManager.updateAll();
+				} else {
+					Utils.showNotification('No blank pages detected for splitting', 'info');
 				}
 			}
 		};
