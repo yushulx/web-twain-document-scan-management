@@ -1,6 +1,6 @@
 # Web Document Scanner
 
-A simple yet powerful web-based document scanning application built with the latest Dynamic Web TWAIN SDK v19.0. This application allows users to scan documents directly from their web browser using TWAIN-compatible scanners with enhanced performance and image quality features.
+A simple yet powerful web-based document scanning application built with the latest Dynamic Web TWAIN SDK v19.2.0. This application allows users to scan documents directly from their web browser using TWAIN-compatible scanners with enhanced performance and image quality features.
 
 ## 🌟 Features
 
@@ -10,18 +10,12 @@ A simple yet powerful web-based document scanning application built with the lat
 - ⚙️ **Configurable Settings**: Adjustable resolution (100-600 DPI) and pixel type
 - 💾 **Enhanced PDF Export**: Save scanned documents as PDF files with improved compression
 - 🗑️ **Image Management**: Remove selected images or clear all images
-- 📱 **Responsive Design**: Works on desktop and mobile devices
 - 🖼️ **Advanced Image Preview**: Real-time preview with enhanced viewer capabilities
-- 🔧 **Auto-Enhancement**: Automatic deskewing and border detection (v19.0 features)
 - 📄 **Better Image Quality**: Enhanced scanning algorithms for improved document quality
 - ⌨️ **Keyboard Shortcuts**: Ctrl+S to save, Delete to remove, Spacebar to scan
 - 🌐 **Network Awareness**: Offline/online status detection
 - 💾 **Enhanced PDF Export**: Save scanned documents as PDF files with improved compression
 - 🗑️ **Image Management**: Remove selected images or clear all images
-- 📱 **Responsive Design**: Works on desktop and mobile devices
-- 🖼️ **Advanced Image Preview**: Real-time preview with enhanced viewer capabilities
-- 🔧 **Auto-Enhancement**: Automatic deskewing and border detection (v19.0 features)
-- 📄 **Better Image Quality**: Enhanced scanning algorithms for improved document quality
 
 ## Setup Instructions
 

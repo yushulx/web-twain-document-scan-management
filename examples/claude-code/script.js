@@ -83,7 +83,7 @@ function setupEventListeners() {
     // Source selection
     document.getElementById('source-select').addEventListener('change', function () {
         if (DWObject && this.value !== '') {
-            DWObject.SelectSource(parseInt(this.value));
+            // DWObject.SelectSource(parseInt(this.value));
             updateStatus(`Scanner "${this.options[this.selectedIndex].text}" selected`, 'info');
         }
     });
@@ -176,7 +176,7 @@ function loadScannerSources() {
     // Select first source by default
     if (sourceCount > 0) {
         sourceSelect.selectedIndex = 1;
-        DWObject.SelectSource(0);
+        // DWObject.SelectSource(0);
         updateStatus(`Found ${sourceCount} scanner(s). Default scanner selected.`, 'success');
     }
 }
@@ -199,8 +199,8 @@ function scanDocument() {
     // Set scan parameters
     const pixelType = parseInt(document.getElementById('pixel-type').value);
     const resolution = parseInt(document.getElementById('resolution').value);
-    const autoDeskew = document.getElementById('auto-deskew').checked;
-    const autoBorder = document.getElementById('auto-border').checked;
+    // const autoDeskew = document.getElementById('auto-deskew').checked;
+    // const autoBorder = document.getElementById('auto-border').checked;
 
     DWObject.PixelType = pixelType;
     DWObject.Resolution = resolution;
@@ -209,8 +209,8 @@ function scanDocument() {
     DWObject.IfShowUI = false; // Set to true to show scanner UI
     DWObject.IfFeederEnabled = false;
     DWObject.IfDuplexEnabled = false;
-    DWObject.IfAutomaticDeskew = autoDeskew; // v19.0 feature
-    DWObject.IfAutomaticBorderDetection = autoBorder; // v19.0 feature
+    // DWObject.IfAutomaticDeskew = autoDeskew; // v19.0 feature
+    // DWObject.IfAutomaticBorderDetection = autoBorder; // v19.0 feature
 
     updateStatus('Preparing to scan with v19.0 enhancements...', 'warning');
 
@@ -378,9 +378,9 @@ function handleError(errorCode, errorString) {
 }
 
 // Global error handler for DWT
-Dynamsoft.DWT.RegisterEvent('OnWebTwainPostExecute', function () {
-    // This event is fired after each DWT operation
-});
+// Dynamsoft.DWT.RegisterEvent('OnWebTwainPostExecute', function () {
+//     // This event is fired after each DWT operation
+// });
 
 // Enhanced error handling for network issues
 window.addEventListener('online', function () {
