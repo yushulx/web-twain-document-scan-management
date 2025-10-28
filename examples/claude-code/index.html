@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Document Scanner</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/dwt@19.2.0/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 Web Document Scanner</h1>
+            <p>Scan documents directly from your web browser with Dynamic Web TWAIN v19.0</p>
+        </header>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label for="source-select">Scanner Source:</label>
+                    <select id="source-select">
+                        <option value="">Select a scanner...</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="pixel-type">Pixel Type:</label>
+                    <select id="pixel-type">
+                        <option value="0">Black & White</option>
+                        <option value="1">Gray</option>
+                        <option value="2" selected>Color</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="resolution">Resolution (DPI):</label>
+                    <select id="resolution">
+                        <option value="100">100</option>
+                        <option value="150">150</option>
+                        <option value="200" selected>200</option>
+                        <option value="300">300</option>
+                        <option value="600">600</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="auto-deskew" checked>
+                        Auto-Deskew (v19.0)
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="auto-border" checked>
+                        Auto-Border Detection (v19.0)
+                    </label>
+                </div>
+
+                <div class="buttons-group">
+                    <button id="scan-btn" class="btn btn-primary">🔍 Scan Document</button>
+                    <button id="load-btn" class="btn btn-secondary">📁 Load Image</button>
+                    <button id="save-btn" class="btn btn-success">💾 Save as PDF</button>
+                    <button id="remove-btn" class="btn btn-danger">🗑️ Remove Selected</button>
+                    <button id="remove-all-btn" class="btn btn-danger">🗑️ Remove All</button>
+                </div>
+            </div>
+
+            <div class="viewer-panel">
+                <div id="dwtcontrolContainer" class="dwt-container">
+                    <!-- Dynamic Web TWAIN viewer will be loaded here -->
+                    <div class="placeholder">
+                        <div class="placeholder-icon">📄</div>
+                        <div class="placeholder-text">Dynamic Web TWAIN v19.0 will load here</div>
+                        <div class="placeholder-subtext">Scan or load documents to get started</div>
+                    </div>
+                </div>
+
+                <div class="image-info">
+                    <span id="image-count">Images: 0</span>
+                    <span id="current-image">Current: -</span>
+                    <span id="dwt-version">DWT: Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div id="status-message" class="status-message">Ready to scan documents with Dynamic Web TWAIN v19.0</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
