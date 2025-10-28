@@ -4,6 +4,9 @@ A simple yet powerful web-based document scanning application built with the lat
 
 https://github.com/user-attachments/assets/ebe22c6b-03b2-443e-9cae-9854e29cd39d
 
+## Online Demo
+[https://yushulx.me/web-twain-document-scan-management/examples/claude-code/](https://yushulx.me/web-twain-document-scan-management/examples/claude-code/)
+
 ## 🌟 Features
 
 - 🔍 **Document Scanning**: Scan documents directly from TWAIN-compatible scanners
