@@ -215,6 +215,7 @@ function scanDocument() {
     updateStatus('Preparing to scan with v19.0 enhancements...', 'warning');
 
     // Use the improved AcquireImage method with enhanced callbacks
+    DWObject.SelectSourceByIndex(sourceSelect.selectedIndex - 1);
     DWObject.AcquireImage(
         {
             IfCloseSourceAfterAcquire: true,
