@@ -2,6 +2,11 @@
 
 A simple yet powerful web-based document scanning application built with the latest Dynamic Web TWAIN SDK v19.2.0. This application allows users to scan documents directly from their web browser using TWAIN-compatible scanners with enhanced performance and image quality features.
 
+https://github.com/user-attachments/assets/ebe22c6b-03b2-443e-9cae-9854e29cd39d
+
+## Online Demo
+[https://yushulx.me/web-twain-document-scan-management/examples/claude-code/](https://yushulx.me/web-twain-document-scan-management/examples/claude-code/)
+
 ## 🌟 Features
 
 - 🔍 **Document Scanning**: Scan documents directly from TWAIN-compatible scanners
