@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Scanning with Local Disk Storage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Scanning with Local Disk Storage</h1>
+                <p>The Local Storage feature automatically saves the scanned images from the control to your local disk
+                    (not browser storage), allowing you to restore the content of the previous session when you reopen
+                    the webpage. This is especially useful if your computer goes to sleep or shuts down unexpectedly
+                    during a large scan. To test this feature, enable Local Storage, close the page after scanning, and
+                    then reopen the page to see that content from the previous session gets restored.</p>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <aside class="sidebar">
+                <div class="control-group">
+                    <label class="control-label">Select Source:</label>
+                    <select id="source" class="form-select"></select>
+                </div>
+
+                <div class="control-group checkbox-group">
+                    <label for="chkAutoSaveToStorage" class="checkbox-label">
+                        <input type="checkbox" id="chkAutoSaveToStorage" onchange="checkBoxChanged_AutoSaveStorage();"
+                            checked>
+                        Auto-Save to Storage
+                    </label>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="AcquireImage();" class="btn btn-primary">Scan</button>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="DeleteSelected();" class="btn btn-danger">Delete Selected</button>
+                    <button onclick="DeleteAll();" class="btn btn-danger-outline">Delete All</button>
+                </div>
+
+                <div id="pageCounter" class="page-counter">Page: 0 / 0</div>
+            </aside>
+
+            <div class="viewer-container">
+                <div id="dwtcontrolContainer"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/dwt@latest/dist/dynamsoft.webtwain.min.js"></script>
+    <script type="text/javascript">
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '100%', Height: '100%' }];
+        Dynamsoft.DWT.ProductKey = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+        Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@latest/dist';
+        Dynamsoft.DWT.ServiceInstallerLocation = 'https://download2.dynamsoft.com/Demo/DWT/Resources/dist/';
+        Dynamsoft.DWT.AutoLoad = true;
+
+        var localStoreUid, storeName = 'DynamicWebTWAIN_LocalStorage', storeName_EnableAutoSaveStorage = 'DynamicWebTWAIN_EnableAutoSaveStorage';
+
+        (function () {
+            var chkAutoSaveToStorage = document.getElementById('chkAutoSaveToStorage');
+            var checked = localStorage[storeName_EnableAutoSaveStorage];
+            if (checked === "false") {
+                chkAutoSaveToStorage.checked = false;
+                localStoreUid = '';
+                delete localStorage[storeName];
+            } else {
+                chkAutoSaveToStorage.checked = true;
+                localStoreUid = localStorage[storeName];
+                localStorage[storeName_EnableAutoSaveStorage] = "true";
+            }
+        })();
+
+        var DWTObject, deviceList;
+        Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
+            DWTObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+            if (DWTObject) {
+                deviceList = [];
+                DWTObject.GetDevicesAsync().then(function (devices) {
+                    for (var i = 0; i < devices.length; i++) {
+                        document.getElementById('source').options.add(new Option(devices[i].displayName, i));
+                        deviceList.push(devices[i]);
+                    }
+
+                    if (isStorageEnabled()) {
+                        restoreStorage();
+                        DWTObject.RegisterEvent('OnBufferChanged', Dynamsoft_OnBufferChanged);
+                    }
+
+                    DWTObject.RegisterEvent('OnMouseClick', updatePageCounter);
+                    updatePageCounter();
+
+                }).catch(function (exp) {
+                    alert(exp.message);
+                });
+            }
+        });
+
+        function AcquireImage() {
+            if (DWTObject) {
+                var ddlSource = document.getElementById('source');
+                if (ddlSource.selectedIndex === -1) {
+                    alert("No source selected!");
+                    return;
+                }
+                DWTObject.SelectDeviceAsync(deviceList[ddlSource.selectedIndex]).then(function () {
+                    return DWTObject.AcquireImageAsync({
+                        IfShowUI: false,
+                        IfCloseSourceAfterAcquire: true
+                    });
+                }).catch(function (exp) {
+                    console.error(exp);
+                });
+            }
+        }
+
+        function DeleteSelected() {
+            if (DWTObject) {
+                DWTObject.RemoveImage(DWTObject.CurrentImageIndexInBuffer);
+                saveStorage();
+            }
+        }
+
+        function DeleteAll() {
+            if (DWTObject) {
+                DWTObject.RemoveAllImages();
+                saveStorage();
+            }
+        }
+
+        function Dynamsoft_OnBufferChanged(p1) {
+            if (isStorageEnabled() && p1) {
+                if (p1.action === 'shift' || p1.action === 'filter') return;
+                saveStorage();
+            }
+            updatePageCounter();
+        }
+
+        function updatePageCounter() {
+            if (DWTObject) {
+                var total = DWTObject.HowManyImagesInBuffer;
+                var current = total > 0 ? DWTObject.CurrentImageIndexInBuffer + 1 : 0;
+                document.getElementById('pageCounter').innerText = 'Page: ' + current + ' / ' + total;
+            }
+        }
+
+        function checkBoxChanged_AutoSaveStorage() {
+            if (isStorageEnabled()) {
+                localStorage[storeName_EnableAutoSaveStorage] = "true";
+                DWTObject.RegisterEvent('OnBufferChanged', Dynamsoft_OnBufferChanged);
+                saveStorage();
+            } else {
+                localStorage[storeName_EnableAutoSaveStorage] = "false";
+                removeStorage();
+            }
+        }
+
+        async function restoreStorage() {
+            return _saveOrRestoreStorage(false);
+        }
+
+        async function saveStorage() {
+            return _saveOrRestoreStorage(true);
+        }
+
+        function removeStorage() {
+            DWTObject.UnregisterEvent('OnBufferChanged', Dynamsoft_OnBufferChanged);
+            if (localStoreUid) {
+                var _localStoreUid = localStoreUid;
+                localStoreUid = '';
+                delete localStorage[storeName];
+                DWTObject.localStorageExist(_localStoreUid).then(function (ifExist) {
+                    if (ifExist) {
+                        DWTObject.removeLocalStorage({ uid: _localStoreUid });
+                    }
+                }).catch(function (err) { console.log(err); });
+            }
+        }
+
+        async function _saveOrRestoreStorage(bSave) {
+            if (!isStorageEnabled()) {
+                return;
+            }
+            try {
+                var ifExist = false;
+                if (localStoreUid) {
+                    ifExist = await DWTObject.localStorageExist(localStoreUid);
+                }
+
+                if (ifExist && localStoreUid) {
+                    if (bSave) {
+                        await DWTObject.saveToLocalStorage({ uid: localStoreUid });
+                    } else {
+                        await DWTObject.loadFromLocalStorage({ uid: localStoreUid });
+                    }
+                } else {
+                    localStoreUid = await DWTObject.createLocalStorage();
+                    localStorage[storeName] = localStoreUid;
+                    await DWTObject.saveToLocalStorage({ uid: localStoreUid });
+                }
+                updatePageCounter();
+            } catch (_ex2) {
+                console.log(_ex2);
+            }
+        }
+
+        function isStorageEnabled() {
+            var chkAutoSaveToStorage = document.getElementById('chkAutoSaveToStorage');
+            if (chkAutoSaveToStorage)
+                return chkAutoSaveToStorage.checked;
+            return false;
+        }
+    </script>
+</body>
+
+</html>
