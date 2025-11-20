@@ -41,3 +41,6 @@ https://github.com/user-attachments/assets/0e1220fa-33e9-4422-bf3b-fcb489c7845a
 3.  **Auto-Save**: The "Auto-Save to Storage" checkbox is checked by default. This ensures images are saved to disk immediately.
 4.  **Manage Images**: Click on an image to select it. Use **Delete Selected** to remove it, or **Delete All** to clear the session.
 5.  **Restore Session**: Close the browser tab and reopen it. Your previously scanned images will be automatically restored.
+
+## Blog
+[How to Scan Thousands of Document Pages in Browser Without Crashing](https://www.dynamsoft.com/codepool/scan-thousands-pages-browser-without-crashing.html)
