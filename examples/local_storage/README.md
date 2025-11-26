@@ -1,8 +1,10 @@
-# Scanning with Local Disk Storage
+# Document Scanning with Local Disk Storage
 
 This project demonstrates how to build a web-based document scanning application using [Dynamic Web TWAIN](https://www.dynamsoft.com/web-twain/overview/) that securely saves scanned images to the local hard disk.
 
 Unlike standard browser `localStorage` which has size limits and is cleared easily, this application uses the **Local Disk Storage** feature of the Dynamic Web TWAIN service. This ensures that scanned documents are persisted on the user's machine, allowing for crash recovery and handling large volumes of data without browser memory constraints.
+
+https://github.com/user-attachments/assets/0e1220fa-33e9-4422-bf3b-fcb489c7845a
 
 ## Features
 
@@ -39,3 +41,6 @@ Unlike standard browser `localStorage` which has size limits and is cleared easi
 3.  **Auto-Save**: The "Auto-Save to Storage" checkbox is checked by default. This ensures images are saved to disk immediately.
 4.  **Manage Images**: Click on an image to select it. Use **Delete Selected** to remove it, or **Delete All** to clear the session.
 5.  **Restore Session**: Close the browser tab and reopen it. Your previously scanned images will be automatically restored.
+
+## Blog
+[How to Scan Thousands of Document Pages in Browser Without Crashing](https://www.dynamsoft.com/codepool/scan-thousands-pages-browser-without-crashing.html)
