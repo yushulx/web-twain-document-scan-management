@@ -2,6 +2,8 @@
 
 A modern web application demonstrating the use of Dynamic Web TWAIN and its OCRKit addon for document scanning, processing, and text recognition.
 
+https://github.com/user-attachments/assets/e19f3847-35d4-4341-8cfc-5d4ac02a7a6d
+
 ## Features
 
 - **Document Scanning**: Scan documents directly from TWAIN, WIA, or ICA compatible devices
@@ -39,6 +41,8 @@ A modern web application demonstrating the use of Dynamic Web TWAIN and its OCRK
    ```
 
 4. Open your web browser and navigate to `http://localhost:8000`
+
+   <img width="800" alt="Dynamic Web TWAIN document OCR" src="https://github.com/user-attachments/assets/9c02b5b1-f8bb-4328-8671-67e9a2dec396" />
 
 ## Usage
 
