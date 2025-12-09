@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Web TWAIN - OCR Demo</title>
+    <script src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script src="Resources/dynamsoft.webtwain.config.js"></script>
+    <script src="Resources/addon/dynamsoft.webtwain.addon.ocrkit.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Dynamic Web TWAIN - OCR Demo</h1>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <aside class="sidebar">
+                <div class="control-group">
+                    <div class="control-label">Input</div>
+                    <div class="button-group">
+                        <button onclick="AcquireImage();" class="btn btn-primary">Scan</button>
+                        <button onclick="LoadImage();" class="btn btn-secondary">Load Image</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">Processing</div>
+                    <div class="button-group">
+                        <button onclick="correctOrientation();" class="btn btn-secondary">Correct Orientation</button>
+                        <button onclick="recognize();" class="btn btn-primary">Recognize Text</button>
+                    </div>
+                    <select id="language" class="form-select">
+                        <option value="en">English</option>
+                        <option value="fr">French</option>
+                        <option value="es">Spanish</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                    </select>
+                    <select id="processingTarget" class="form-select">
+                        <option value="current">Current Image</option>
+                        <option value="all">All Images</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">Output</div>
+                    <div class="button-group">
+                        <button onclick="saveAsPDF();" class="btn btn-primary">Save as PDF</button>
+                    </div>
+                    <select id="outputFormat" class="form-select">
+                        <option value="extralayer">With Extra Text Layer</option>
+                        <option value="plaintext">Plain Text</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">Management</div>
+                    <div class="button-group">
+                        <button onclick="removeSelectedImage();" class="btn btn-primary">Remove Selected Image</button>
+                        <button onclick="removeAllImages();" class="btn btn-primary">Remove All Images</button>
+                    </div>
+                </div>
+
+                <div class="status-info" id="pageCounter">Page: 0 / 0</div>
+            </aside>
+
+            <div class="viewer-container">
+                <div id="dwtcontrolContainer"></div>
+                <div id="result"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
