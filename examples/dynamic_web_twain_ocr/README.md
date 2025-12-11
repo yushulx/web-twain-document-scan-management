@@ -69,8 +69,10 @@ https://github.com/user-attachments/assets/e19f3847-35d4-4341-8cfc-5d4ac02a7a6d
    - Click "Remove Selected Image" to delete the currently selected image
    - Click "Remove All Images" to clear all images
 
-
 ## Dynamic Web TWAIN Resources
 
 - [Official Website](https://www.dynamsoft.com/web-twain/overview/)
 - [Documentation](https://www.dynamsoft.com/web-twain/docs/introduction/index.html)
+
+## Blog
+[Leveraging Dynamic Web TWAIN's New OCR API for Modern Document Management](https://www.dynamsoft.com/codepool/scan-ocr-document-save-pdf.html)
