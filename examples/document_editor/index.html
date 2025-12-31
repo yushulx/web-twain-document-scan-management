@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Viewer - Professional Edition</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+</head>
+
+<body>
+    <div id="app">
+        <header class="toolbar">
+            <div class="toolbar-left">
+                <button id="openFileBtn" class="btn" title="Open File (Ctrl+O)">📁 Open</button>
+                <button id="removeBtn" class="btn" title="Remove Current Document">❌ Remove</button>
+                <button id="clearAllBtn" class="btn" title="Remove All Documents">🗑️ Clear All</button>
+                <button id="saveBtn" class="btn" title="Save Current State (Ctrl+S)">💾 Save</button>
+                <button id="downloadBtn" class="btn" title="Download Document">⬇️ Download</button>
+                <button id="printBtn" class="btn" title="Print (Ctrl+P)">🖨️ Print</button>
+            </div>
+            <div class="toolbar-center">
+                <button id="prevPageBtn" class="btn btn-icon" title="Previous Page (←)">◀</button>
+                <span id="pageInfo">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
+                <button id="nextPageBtn" class="btn btn-icon" title="Next Page (→)">▶</button>
+            </div>
+            <div class="toolbar-right">
+                <button id="fullscreenBtn" class="btn btn-icon" title="Toggle Fullscreen">⛶</button>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <div class="sidebar">
+                <div class="sidebar-tab active" data-tab="thumbnails">📑 Thumbnails</div>
+                <div class="sidebar-content">
+                    <div id="thumbnails-container" class="tab-content active">
+                        <div id="thumbnails-list">
+                            <p class="text-muted">No document loaded</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viewer-container">
+                <div class="page-toolbar">
+                    <div class="toolbar-group">
+                        <button id="undoBtn" class="btn btn-icon" title="Undo (Ctrl+Z)">↶</button>
+                        <button id="redoBtn" class="btn btn-icon" title="Redo (Ctrl+Y)">↷</button>
+                    </div>
+                    <span class="toolbar-separator"></span>
+                    <div class="toolbar-group">
+                        <button id="zoomOutBtn" class="btn btn-icon" title="Zoom Out (Ctrl+-)">−</button>
+                        <span id="zoomLevel">100%</span>
+                        <button id="zoomInBtn" class="btn btn-icon" title="Zoom In (Ctrl++)">+</button>
+                    </div>
+                    <span class="toolbar-separator"></span>
+                    <div class="toolbar-group">
+                        <button id="fitPageBtn" class="btn btn-compact" title="Fit to Page (Ctrl+0)">Fit Page</button>
+                        <button id="fitWidthBtn" class="btn btn-compact" title="Fit to Width">Fit Width</button>
+                    </div>
+                    <span class="toolbar-separator"></span>
+                    <div class="toolbar-group">
+                        <button id="rotateLeftBtn" class="btn btn-icon" title="Rotate Left">⟲</button>
+                        <button id="rotateRightBtn" class="btn btn-icon" title="Rotate Right">⟳</button>
+                    </div>
+                    <span class="toolbar-separator"></span>
+                    <div class="toolbar-group">
+                        <button id="toggleToolsBtn" class="btn btn-icon" title="Toggle Annotation Tools">🛠️</button>
+                    </div>
+                </div>
+
+                <div class="annotation-toolbar-wrapper hidden" id="annotationToolbar">
+                    <div class="annotation-tools-horizontal">
+                        <div class="color-picker-container" id="colorPicker">
+                            <div class="color-option" data-color="#ff0000" title="Red"></div>
+                            <div class="color-option active" data-color="#0000ff" title="Blue"></div>
+                            <div class="color-option" data-color="#00ff00" title="Green"></div>
+                            <div class="color-option" data-color="#ffff00" title="Yellow"></div>
+                            <div class="color-option" data-color="#000000" title="Black"></div>
+                        </div>
+                        <span class="tool-separator"></span>
+                        <button id="selectTool" class="tool-btn active" data-tool="select" title="Select">👆</button>
+                        <button id="textTool" class="tool-btn" data-tool="text" title="Text">T</button>
+                        <button id="signatureTool" class="tool-btn" data-tool="signature" title="Signature">✍️</button>
+                        <button id="insertImageBtn" class="tool-btn" data-tool="image" title="Image">🖼️</button>
+                        <span class="tool-separator"></span>
+                        <button id="rectTool" class="tool-btn" data-tool="rect" title="Rectangle">▭</button>
+                        <button id="ellipseTool" class="tool-btn" data-tool="ellipse" title="Ellipse">○</button>
+                        <button id="lineTool" class="tool-btn" data-tool="line" title="Line">/</button>
+                        <button id="arrowTool" class="tool-btn" data-tool="arrow" title="Arrow">↗</button>
+                        <button id="penTool" class="tool-btn" data-tool="pen" title="Pen">✎</button>
+                        <button id="highlightTool" class="tool-btn" data-tool="highlight" title="Highlight">🖍️</button>
+                        <span class="tool-separator"></span>
+                        <button id="deleteTool" class="tool-btn" data-tool="delete" title="Delete">🗑️</button>
+                        <button id="clearAnnotationsBtn" class="tool-btn" title="Clear All">✕</button>
+                    </div>
+                </div>
+
+                <div id="document-container">
+                    <div id="no-document-placeholder">
+                        <div class="placeholder-icon">📄</div>
+                        <p>No document loaded</p>
+                        <p class="placeholder-hint">Click "Open" to load a PDF or image</p>
+                    </div>
+                    <canvas id="document-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff,.gif" multiple style="display: none;">
+    <input type="file" id="insertImageInput" accept="image/*" style="display: none;">
+
+    <!-- Text Annotation Modal -->
+    <div id="textModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Text Annotation</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('textModal').style.display='none'">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="textInput">Enter your text:</label>
+                <textarea id="textInput" rows="4" placeholder="Type your annotation text here..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="document.getElementById('textModal').style.display='none'">Cancel</button>
+                <button class="btn btn-primary" id="textModalOk">Add Text</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Modal -->
+    <div id="signatureModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Signature</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('signatureModal').style.display='none'">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="border: 1px solid #ccc; background: #fff;">
+                    <canvas id="signatureCanvas" width="400" height="200"></canvas>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn" id="clearSignatureBtn">Clear</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn"
+                    onclick="document.getElementById('signatureModal').style.display='none'">Cancel</button>
+                <button class="btn btn-primary" id="signatureModalOk">Insert Signature</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        }
+    </script>
+    <script src="app.js"></script>
+</body>
+
+</html>
