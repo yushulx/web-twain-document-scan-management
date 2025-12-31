@@ -368,6 +368,19 @@ class DocumentViewer {
         this.resizeStartX = 0;
         this.resizeStartY = 0;
         this.resizeStartWidth = 0;
+
+        // CSS-based zoom (GPU accelerated)
+        this.cssZoom = 1.0;
+
+        // Panning state (using CSS translate)
+        this.isPanning = false;
+        this.panStartX = 0;
+        this.panStartY = 0;
+        this.panOffsetX = 0;
+        this.panOffsetY = 0;
+        this.panStartOffsetX = 0;
+        this.panStartOffsetY = 0;
+
         this.resizeStartHeight = 0;
         this.selectedAnnotation = null;
         this.dragStartX = 0;
@@ -569,30 +582,86 @@ class DocumentViewer {
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
 
-        // Mouse wheel zoom (Ctrl+Wheel)
-        this.canvas.addEventListener('wheel', (e) => {
+        // Mouse wheel zoom (Ctrl+Wheel) - CSS transform-based zoom
+        const docContainer = document.getElementById('document-container');
+
+        const handleWheelZoom = (e) => {
             if (e.ctrlKey && this.currentPage) {
                 e.preventDefault();
-                this.saveStateToStack();
 
-                // Zoom in/out based on wheel direction
+                const canvas = this.canvas;
+
+                // Calculate zoom factor
                 const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-                this.performOperation('zoom', zoomFactor);
-            }
-        }, { passive: false });
 
-        // Drag and drop support
-        const docContainer = document.getElementById('document-container');
+                // Calculate new CSS zoom level
+                const newCssZoom = Math.max(0.1, Math.min(10, this.cssZoom * zoomFactor));
+
+                // Apply CSS transform for zoom (combine with pan offset)
+                this.cssZoom = newCssZoom;
+                canvas.style.transform = `scale(${this.cssZoom}) translate(${this.panOffsetX}px, ${this.panOffsetY}px)`;
+
+                // Update zoom level display (combine base scale with CSS zoom)
+                const effectiveZoom = this.currentPage.scale * this.cssZoom;
+                document.getElementById('zoomLevel').textContent = `${Math.round(effectiveZoom * 100)}%`;
+            }
+        };
+
+        this.canvas.addEventListener('wheel', handleWheelZoom, { passive: false });
+
+        // Panning with mouse drag (hand/grab cursor) - using CSS translate
+        // We need to handle this on the canvas directly to prevent annotation handlers from interfering
         if (docContainer) {
-            // Also handle wheel zoom on container
-            docContainer.addEventListener('wheel', (e) => {
-                if (e.ctrlKey && this.currentPage) {
+            const startPan = (e) => {
+                // Allow panning when zoomed in
+                if (this.currentPage && this.cssZoom > 1) {
+                    this.isPanning = true;
+                    this.panStartX = e.clientX;
+                    this.panStartY = e.clientY;
+                    this.panStartOffsetX = this.panOffsetX;
+                    this.panStartOffsetY = this.panOffsetY;
+                    this.canvas.classList.add('panning');
                     e.preventDefault();
-                    this.saveStateToStack();
-                    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-                    this.performOperation('zoom', zoomFactor);
+                    e.stopPropagation();
+                    return true;
                 }
-            }, { passive: false });
+                return false;
+            };
+
+            // Handle on canvas first (capture phase)
+            this.canvas.addEventListener('mousedown', (e) => {
+                startPan(e);
+            }, true); // Use capture phase to run before other handlers
+
+            docContainer.addEventListener('mousemove', (e) => {
+                if (this.isPanning) {
+                    // Calculate the movement, adjusted for zoom level
+                    const dx = (e.clientX - this.panStartX) / this.cssZoom;
+                    const dy = (e.clientY - this.panStartY) / this.cssZoom;
+                    this.panOffsetX = this.panStartOffsetX + dx;
+                    this.panOffsetY = this.panStartOffsetY + dy;
+
+                    // Apply combined transform
+                    this.canvas.style.transform = `scale(${this.cssZoom}) translate(${this.panOffsetX}px, ${this.panOffsetY}px)`;
+                }
+            });
+
+            docContainer.addEventListener('mouseup', () => {
+                if (this.isPanning) {
+                    this.isPanning = false;
+                    this.canvas.classList.remove('panning');
+                }
+            });
+
+            docContainer.addEventListener('mouseleave', () => {
+                if (this.isPanning) {
+                    this.isPanning = false;
+                    this.canvas.classList.remove('panning');
+                }
+            });
+
+            // Also handle wheel zoom on container
+            docContainer.addEventListener('wheel', handleWheelZoom, { passive: false });
 
             // Prevent default drag behavior
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -898,6 +967,7 @@ class DocumentViewer {
         if (op === 'rotate') {
             Operation.rotate(this.currentPage, arg);
         } else if (op === 'zoom') {
+            // Canvas-based zoom (re-rendering)
             Operation.zoom(this.currentPage, arg);
         }
 
@@ -923,6 +993,7 @@ class DocumentViewer {
         const scaleW = availableWidth / w;
         const scaleH = availableHeight / h;
         this.currentPage.scale = Math.min(scaleW, scaleH);
+
         this.renderCurrentView();
         document.getElementById('zoomLevel').textContent = `${Math.round(this.currentPage.scale * 100)}%`;
     }
@@ -940,6 +1011,7 @@ class DocumentViewer {
 
         const w = this.currentPage.originalImage.width;
         this.currentPage.scale = availableWidth / w;
+
         this.renderCurrentView();
         document.getElementById('zoomLevel').textContent = `${Math.round(this.currentPage.scale * 100)}%`;
     }
@@ -994,32 +1066,42 @@ class DocumentViewer {
         const radians = (page.rotation * Math.PI) / 180;
         const sin = Math.abs(Math.sin(radians));
         const cos = Math.abs(Math.cos(radians));
-        const w = page.originalImage.width * page.scale;
-        const h = page.originalImage.height * page.scale;
+        let w = page.originalImage.width * page.scale;
+        let h = page.originalImage.height * page.scale;
 
         // Calculate target canvas size
         let targetWidth = w * cos + h * sin;
         let targetHeight = w * sin + h * cos;
 
-        // Browser canvas size limits (conservative limit for compatibility)
+        // Browser canvas size limits - only applied during initial render
+        // CSS zoom handles further zooming without canvas size issues
         const MAX_CANVAS_SIZE = 16384;
-        const MAX_CANVAS_AREA = 268435456; // 16384 * 16384
+        const MAX_CANVAS_AREA = 268435456;
 
-        // Check if canvas exceeds limits
         if (targetWidth > MAX_CANVAS_SIZE || targetHeight > MAX_CANVAS_SIZE ||
             (targetWidth * targetHeight) > MAX_CANVAS_AREA) {
-            // Auto-scale down to fit within limits
+
             const scaleX = targetWidth > MAX_CANVAS_SIZE ? MAX_CANVAS_SIZE / targetWidth : 1;
             const scaleY = targetHeight > MAX_CANVAS_SIZE ? MAX_CANVAS_SIZE / targetHeight : 1;
             const areaScale = (targetWidth * targetHeight) > MAX_CANVAS_AREA ?
                 Math.sqrt(MAX_CANVAS_AREA / (targetWidth * targetHeight)) : 1;
 
-            const limitScale = Math.min(scaleX, scaleY, areaScale) * 0.95; // 95% for safety margin
-            targetWidth *= limitScale;
-            targetHeight *= limitScale;
+            const limitFactor = Math.min(scaleX, scaleY, areaScale) * 0.95;
 
-            console.warn(`Canvas size limited: Original ${Math.round(w * cos + h * sin)}x${Math.round(w * sin + h * cos)} reduced to ${Math.round(targetWidth)}x${Math.round(targetHeight)}`);
+            // Reduce page scale to fit in canvas
+            page.scale = page.scale * limitFactor;
+            console.log(`Large image auto-scaled to ${Math.round(page.scale * 100)}%`);
+
+            // Recalculate dimensions
+            w = page.originalImage.width * page.scale;
+            h = page.originalImage.height * page.scale;
+            targetWidth = w * cos + h * sin;
+            targetHeight = w * sin + h * cos;
         }
+
+        // Ensure minimum canvas size
+        targetWidth = Math.max(1, Math.round(targetWidth));
+        targetHeight = Math.max(1, Math.round(targetHeight));
 
         canvas.width = targetWidth;
         canvas.height = targetHeight;
@@ -1049,6 +1131,22 @@ class DocumentViewer {
         // Removed as per user request for standard positioning
     }
 
+    // Update container class based on whether content overflows (for proper centering vs scrolling)
+    updateContainerOverflow() {
+        const container = document.getElementById('document-container');
+        if (!container) return;
+
+        requestAnimationFrame(() => {
+            const hasOverflow = container.scrollWidth > container.clientWidth ||
+                container.scrollHeight > container.clientHeight;
+            if (hasOverflow) {
+                container.classList.add('overflow-scroll');
+            } else {
+                container.classList.remove('overflow-scroll');
+            }
+        });
+    }
+
     async renderCurrentView() {
         const page = this.currentPage;
         const placeholder = document.getElementById('no-document-placeholder');
@@ -1060,15 +1158,26 @@ class DocumentViewer {
         }
 
         if (placeholder) placeholder.style.display = 'none';
+
+        // Reset CSS zoom and pan offset when switching pages
+        this.cssZoom = 1;
+        this.panOffsetX = 0;
+        this.panOffsetY = 0;
+        this.canvas.style.transform = 'scale(1) translate(0px, 0px)';
+
         await this.renderPageToCanvas(page, this.canvas);
         this.canvas.classList.add('loaded');
 
         document.getElementById('currentPage').textContent = this.currentPageIndex + 1;
         document.getElementById('totalPages').textContent = this.pages.length;
+
+        // Update zoom level display
+        document.getElementById('zoomLevel').textContent = `${Math.round(page.scale * 100)}%`;
     }
 
     getMousePos(e) {
         const rect = this.canvas.getBoundingClientRect();
+        // Account for CSS zoom: rect already reflects the zoomed size
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
 
@@ -1132,6 +1241,10 @@ class DocumentViewer {
 
     handleMouseDown(e) {
         if (!this.currentPage) return;
+
+        // Don't handle annotation events if we're panning
+        if (this.isPanning) return;
+
         const pos = this.getMousePos(e);
 
         if (this.currentTool === 'select') {
