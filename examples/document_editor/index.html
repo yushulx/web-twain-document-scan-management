@@ -102,7 +102,9 @@
                     <div id="no-document-placeholder">
                         <div class="placeholder-icon">📄</div>
                         <p>No document loaded</p>
-                        <p class="placeholder-hint">Click "Open" to load a PDF or image</p>
+                        <p class="placeholder-hint">Click "Open" or drag & drop files here</p>
+                        <p class="placeholder-hint" style="font-size: 12px; margin-top: 8px;">Supports: PDF, Images
+                            (JPEG, PNG, BMP, GIF), Multi-page TIFF</p>
                     </div>
                     <canvas id="document-canvas"></canvas>
                 </div>
@@ -111,7 +113,8 @@
     </div>
 
     <!-- Hidden file inputs -->
-    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff,.gif" multiple style="display: none;">
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff,.tif,.gif" multiple
+        style="display: none;">
     <input type="file" id="insertImageInput" accept="image/*" style="display: none;">
 
     <!-- Text Annotation Modal -->
@@ -160,6 +163,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tiff.js@1.0.0/tiff.min.js"></script>
     <script>
         if (typeof pdfjsLib !== 'undefined') {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';

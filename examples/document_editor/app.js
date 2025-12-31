@@ -569,6 +569,81 @@ class DocumentViewer {
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
 
+        // Mouse wheel zoom (Ctrl+Wheel)
+        this.canvas.addEventListener('wheel', (e) => {
+            if (e.ctrlKey && this.currentPage) {
+                e.preventDefault();
+                this.saveStateToStack();
+
+                // Zoom in/out based on wheel direction
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                this.performOperation('zoom', zoomFactor);
+            }
+        }, { passive: false });
+
+        // Drag and drop support
+        const docContainer = document.getElementById('document-container');
+        if (docContainer) {
+            // Also handle wheel zoom on container
+            docContainer.addEventListener('wheel', (e) => {
+                if (e.ctrlKey && this.currentPage) {
+                    e.preventDefault();
+                    this.saveStateToStack();
+                    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                    this.performOperation('zoom', zoomFactor);
+                }
+            }, { passive: false });
+
+            // Prevent default drag behavior
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                docContainer.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            // Visual feedback
+            ['dragenter', 'dragover'].forEach(eventName => {
+                docContainer.addEventListener(eventName, () => {
+                    docContainer.style.outline = '3px dashed rgba(255, 255, 255, 0.8)';
+                    docContainer.style.outlineOffset = '-10px';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                docContainer.addEventListener(eventName, () => {
+                    docContainer.style.outline = '';
+                    docContainer.style.outlineOffset = '';
+                }, false);
+            });
+
+            // Handle dropped files
+            docContainer.addEventListener('drop', async (e) => {
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) {
+                    for (const file of files) {
+                        const ext = file.name.toLowerCase();
+                        if (file.type === 'application/pdf') {
+                            await this.loadPdf(file);
+                        } else if (ext.endsWith('.tif') || ext.endsWith('.tiff')) {
+                            await this.loadTIFF(file);
+                        } else if (file.type.startsWith('image/') || ext.match(/\.(jpg|jpeg|png|bmp|gif)$/)) {
+                            await this.loadImage(file);
+                        } else {
+                            console.warn('Unsupported file type:', file.name);
+                        }
+                    }
+
+                    if (this.pages.length > 0) {
+                        this.currentPageIndex = this.pages.length - 1;
+                        this.renderCurrentView();
+                        this.renderThumbnails();
+                        this.updatePageInfo();
+                    }
+                }
+            }, false);
+        }
+
         // Color Picker
         document.querySelectorAll('.color-option').forEach(opt => {
             opt.addEventListener('click', (e) => {
@@ -665,8 +740,12 @@ class DocumentViewer {
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
+            const ext = file.name.toLowerCase();
+
             if (file.type === 'application/pdf') {
                 await this.loadPdf(file);
+            } else if (ext.endsWith('.tif') || ext.endsWith('.tiff')) {
+                await this.loadTIFF(file);
             } else if (file.type.startsWith('image/')) {
                 await this.loadImage(file);
             }
@@ -676,6 +755,55 @@ class DocumentViewer {
         this.renderCurrentView();
         this.renderThumbnails();
         this.updatePageInfo();
+    }
+
+    async loadTIFF(file) {
+        if (typeof Tiff === 'undefined') {
+            alert('TIFF library not loaded. Please refresh the page and try again.');
+            return;
+        }
+
+        const reader = new FileReader();
+        return new Promise((resolve) => {
+            reader.onload = async (e) => {
+                try {
+                    const buffer = e.target.result;
+                    const tiff = new Tiff({ buffer });
+                    const pageCount = tiff.countDirectory();
+
+                    console.log(`Loading TIFF: ${file.name} with ${pageCount} page(s)`);
+
+                    for (let i = 0; i < pageCount; i++) {
+                        tiff.setDirectory(i);
+                        const canvas = tiff.toCanvas();
+                        const dataURL = canvas.toDataURL('image/png');
+
+                        const pageName = pageCount > 1 ? `${file.name} (Page ${i + 1})` : file.name;
+                        const page = new Page('image', dataURL, pageName);
+
+                        await page.load();
+
+                        // Auto-scale very large images to prevent canvas size issues
+                        const MAX_INITIAL_DIMENSION = 8000;
+                        const maxDim = Math.max(page.originalImage.width, page.originalImage.height);
+                        if (maxDim > MAX_INITIAL_DIMENSION) {
+                            page.scale = MAX_INITIAL_DIMENSION / maxDim;
+                            console.log(`Large TIFF page auto-scaled: ${page.originalImage.width}x${page.originalImage.height} at ${Math.round(page.scale * 100)}%`);
+                        }
+
+                        this.pages.push(page);
+                        if (this.currentPageIndex === -1) this.currentPageIndex = 0;
+                    }
+
+                    resolve();
+                } catch (error) {
+                    console.error('Error loading TIFF:', error);
+                    alert('Failed to load TIFF file: ' + error.message);
+                    resolve();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
     }
 
     async loadPdf(file) {
@@ -747,6 +875,14 @@ class DocumentViewer {
             reader.onload = (e) => {
                 const page = new Page('image', e.target.result, file.name);
                 page.load().then(() => {
+                    // Auto-scale very large images to prevent canvas size issues
+                    const MAX_INITIAL_DIMENSION = 8000;
+                    const maxDim = Math.max(page.originalImage.width, page.originalImage.height);
+                    if (maxDim > MAX_INITIAL_DIMENSION) {
+                        page.scale = MAX_INITIAL_DIMENSION / maxDim;
+                        console.log(`Large image auto-scaled: ${page.originalImage.width}x${page.originalImage.height} at ${Math.round(page.scale * 100)}%`);
+                    }
+
                     this.pages.push(page);
                     if (this.currentPageIndex === -1) this.currentPageIndex = 0;
                     resolve();
@@ -861,8 +997,32 @@ class DocumentViewer {
         const w = page.originalImage.width * page.scale;
         const h = page.originalImage.height * page.scale;
 
-        canvas.width = w * cos + h * sin;
-        canvas.height = w * sin + h * cos;
+        // Calculate target canvas size
+        let targetWidth = w * cos + h * sin;
+        let targetHeight = w * sin + h * cos;
+
+        // Browser canvas size limits (conservative limit for compatibility)
+        const MAX_CANVAS_SIZE = 16384;
+        const MAX_CANVAS_AREA = 268435456; // 16384 * 16384
+
+        // Check if canvas exceeds limits
+        if (targetWidth > MAX_CANVAS_SIZE || targetHeight > MAX_CANVAS_SIZE ||
+            (targetWidth * targetHeight) > MAX_CANVAS_AREA) {
+            // Auto-scale down to fit within limits
+            const scaleX = targetWidth > MAX_CANVAS_SIZE ? MAX_CANVAS_SIZE / targetWidth : 1;
+            const scaleY = targetHeight > MAX_CANVAS_SIZE ? MAX_CANVAS_SIZE / targetHeight : 1;
+            const areaScale = (targetWidth * targetHeight) > MAX_CANVAS_AREA ?
+                Math.sqrt(MAX_CANVAS_AREA / (targetWidth * targetHeight)) : 1;
+
+            const limitScale = Math.min(scaleX, scaleY, areaScale) * 0.95; // 95% for safety margin
+            targetWidth *= limitScale;
+            targetHeight *= limitScale;
+
+            console.warn(`Canvas size limited: Original ${Math.round(w * cos + h * sin)}x${Math.round(w * sin + h * cos)} reduced to ${Math.round(targetWidth)}x${Math.round(targetHeight)}`);
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
 
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
