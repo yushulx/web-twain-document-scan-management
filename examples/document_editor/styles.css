@@ -279,7 +279,9 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     background-color: white;
     border-radius: 4px;
-    transition: box-shadow 0.3s ease;
+    will-change: transform;
+    transform-origin: center center;
+    cursor: grab;
 }
 
 #document-canvas:not(.loaded) {
@@ -288,6 +290,10 @@ body {
 
 #document-canvas.loaded {
     display: block;
+}
+
+#document-canvas.panning {
+    cursor: grabbing;
 }
 
 #document-canvas:hover {
