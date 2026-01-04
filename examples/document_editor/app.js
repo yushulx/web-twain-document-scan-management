@@ -390,6 +390,12 @@ class DocumentViewer {
         this.undoStack = [];
         this.redoStack = [];
 
+        // Search state
+        this.searchResults = [];
+        this.currentSearchIndex = -1;
+        this.pdfDocuments = []; // Store PDF documents for text search
+        this.pageTextContent = new Map(); // Cache text content per page
+
         this.init();
     }
 
@@ -486,11 +492,17 @@ class DocumentViewer {
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         if (fullscreenBtn) fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
 
+        // Search functionality
+        this.setupSearch();
+
         const saveBtn = document.getElementById('saveBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const removeBtn = document.getElementById('removeBtn');
 
-        if (saveBtn) saveBtn.addEventListener('click', () => this.saveDocument());
+        if (saveBtn) saveBtn.addEventListener('click', async () => {
+            await this.saveDocument();
+            alert('Document state saved successfully!');
+        });
         if (clearAllBtn) clearAllBtn.addEventListener('click', () => { this.saveStateToStack(); this.clearAll(); });
         if (removeBtn) removeBtn.addEventListener('click', () => { this.saveStateToStack(); this.removePage(); });
 
@@ -800,6 +812,278 @@ class DocumentViewer {
         }
     }
 
+    setupSearch() {
+        const searchBtn = document.getElementById('searchBtn');
+        const searchBar = document.getElementById('searchBar');
+        const searchInput = document.getElementById('searchInput');
+        const searchPrevBtn = document.getElementById('searchPrevBtn');
+        const searchNextBtn = document.getElementById('searchNextBtn');
+        const searchCloseBtn = document.getElementById('searchCloseBtn');
+        const searchResultsSpan = document.getElementById('searchResults');
+
+        if (searchBtn && searchBar) {
+            searchBtn.addEventListener('click', () => {
+                searchBar.classList.toggle('hidden');
+                if (!searchBar.classList.contains('hidden')) {
+                    searchInput?.focus();
+                }
+            });
+        }
+
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.performSearch(searchInput.value);
+                }, 300);
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (e.shiftKey) {
+                        this.navigateSearch(-1);
+                    } else {
+                        this.navigateSearch(1);
+                    }
+                } else if (e.key === 'Escape') {
+                    searchBar?.classList.add('hidden');
+                    this.clearSearchHighlights();
+                }
+            });
+        }
+
+        if (searchPrevBtn) {
+            searchPrevBtn.addEventListener('click', () => this.navigateSearch(-1));
+        }
+
+        if (searchNextBtn) {
+            searchNextBtn.addEventListener('click', () => this.navigateSearch(1));
+        }
+
+        if (searchCloseBtn) {
+            searchCloseBtn.addEventListener('click', () => {
+                searchBar?.classList.add('hidden');
+                this.clearSearchHighlights();
+            });
+        }
+
+        // Ctrl+F shortcut
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchBar?.classList.remove('hidden');
+                searchInput?.focus();
+            }
+        });
+    }
+
+    async performSearch(query) {
+        const searchResultsSpan = document.getElementById('searchResults');
+        this.searchResults = [];
+        this.currentSearchIndex = -1;
+
+        if (!query || query.length < 2) {
+            if (searchResultsSpan) searchResultsSpan.textContent = '0/0';
+            this.clearSearchHighlights();
+            return;
+        }
+
+        const lowerQuery = query.toLowerCase();
+
+        // Search through all pages that have text content cached
+        for (let i = 0; i < this.pages.length; i++) {
+            const page = this.pages[i];
+            if (page.textContent) {
+                const text = page.textContent.text.toLowerCase();
+                let startIndex = 0;
+                while ((startIndex = text.indexOf(lowerQuery, startIndex)) !== -1) {
+                    // Find the text item that contains this match
+                    let charCount = 0;
+                    for (const item of page.textContent.items) {
+                        const itemText = item.str.toLowerCase();
+                        if (charCount + itemText.length > startIndex) {
+                            const localStart = startIndex - charCount;
+                            if (localStart >= 0 && localStart < itemText.length) {
+                                this.searchResults.push({
+                                    pageIndex: i,
+                                    item: item,
+                                    query: query,
+                                    transform: item.transform
+                                });
+                            }
+                            break;
+                        }
+                        charCount += itemText.length + 1; // +1 for space between items
+                    }
+                    startIndex += lowerQuery.length;
+                }
+            }
+        }
+
+        if (searchResultsSpan) {
+            searchResultsSpan.textContent = this.searchResults.length > 0
+                ? `0/${this.searchResults.length}`
+                : '0/0';
+        }
+
+        if (this.searchResults.length > 0) {
+            this.navigateSearch(1);
+        } else {
+            this.clearSearchHighlights();
+        }
+    }
+
+    navigateSearch(direction) {
+        if (this.searchResults.length === 0) return;
+
+        this.currentSearchIndex += direction;
+        if (this.currentSearchIndex >= this.searchResults.length) {
+            this.currentSearchIndex = 0;
+        } else if (this.currentSearchIndex < 0) {
+            this.currentSearchIndex = this.searchResults.length - 1;
+        }
+
+        const result = this.searchResults[this.currentSearchIndex];
+        const searchResultsSpan = document.getElementById('searchResults');
+
+        if (searchResultsSpan) {
+            searchResultsSpan.textContent = `${this.currentSearchIndex + 1}/${this.searchResults.length}`;
+        }
+
+        // Navigate to the page containing the result
+        if (result.pageIndex !== this.currentPageIndex) {
+            this.currentPageIndex = result.pageIndex;
+            this.renderCurrentView();
+            this.renderThumbnails();
+            this.updatePageInfo();
+        }
+
+        this.highlightSearchResult(result);
+    }
+
+    highlightSearchResult(result) {
+        // Highlight ALL occurrences on the current page, with the current result emphasized
+        this.highlightAllOnCurrentPage(result);
+    }
+
+    highlightAllOnCurrentPage(currentResult) {
+        this.clearSearchHighlights();
+
+        const highlightsLayer = document.getElementById('search-highlights-layer');
+        if (!highlightsLayer) return;
+
+        const page = this.pages[this.currentPageIndex];
+        if (!page || !page.originalImage) return;
+
+        // Get all search results on the current page
+        const pageResults = this.searchResults.filter(r => r.pageIndex === this.currentPageIndex);
+        if (pageResults.length === 0) return;
+
+        const PDF_RENDER_SCALE = 1.5;
+        const pdfPageHeight = page.originalImage.height / PDF_RENDER_SCALE;
+
+        // Canvas dimensions (the actual rendered size)
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+
+        console.log('=== Highlighting', pageResults.length, 'results on page', this.currentPageIndex + 1, '===');
+        console.log('Canvas size:', canvasWidth, 'x', canvasHeight);
+        console.log('Original image size:', page.originalImage.width, 'x', page.originalImage.height);
+        console.log('PDF page height:', pdfPageHeight);
+        console.log('Page scale:', page.scale);
+
+        let currentHighlightElement = null;
+
+        pageResults.forEach((result, idx) => {
+            const transform = result.item.transform;
+            if (!transform) return;
+
+            // PDF coordinates
+            const pdfX = transform[4];
+            const pdfY = transform[5]; // Baseline Y
+            const fontSize = Math.abs(transform[3]);
+            const pdfWidth = result.item.width || fontSize * result.item.str.length * 0.6;
+
+            // Convert to canvas pixel coordinates
+            // The image was rendered at PDF_RENDER_SCALE, then displayed at page.scale
+            // Canvas pixel = PDF coord * PDF_RENDER_SCALE * page.scale
+            const totalScale = PDF_RENDER_SCALE * page.scale;
+
+            const canvasX = pdfX * totalScale;
+            // Y flip: PDF origin is bottom-left, canvas origin is top-left
+            const canvasBaselineY = (pdfPageHeight - pdfY) * totalScale;
+            // Text extends above baseline
+            const canvasTop = canvasBaselineY - fontSize * totalScale;
+            const canvasTextWidth = pdfWidth * totalScale;
+            const canvasTextHeight = fontSize * totalScale;
+
+            // Convert canvas coordinates to percentage of canvas size for responsive positioning
+            const leftPercent = (canvasX / canvasWidth) * 100;
+            const topPercent = (canvasTop / canvasHeight) * 100;
+            const widthPercent = (canvasTextWidth / canvasWidth) * 100;
+            const heightPercent = (canvasTextHeight / canvasHeight) * 100;
+
+            console.log(`Result ${idx}: "${result.item.str.substring(0, 30)}..." - PDF(${pdfX.toFixed(1)}, ${pdfY.toFixed(1)}) -> Canvas(${canvasX.toFixed(1)}, ${canvasTop.toFixed(1)}) -> ${leftPercent.toFixed(1)}%, ${topPercent.toFixed(1)}%`);
+
+            // Create highlight element
+            const highlight = document.createElement('div');
+            const isCurrent = currentResult && result.item === currentResult.item;
+            highlight.className = isCurrent ? 'search-highlight current' : 'search-highlight';
+
+            highlight.style.position = 'absolute';
+            highlight.style.left = leftPercent + '%';
+            highlight.style.top = topPercent + '%';
+            highlight.style.width = widthPercent + '%';
+            highlight.style.height = heightPercent + '%';
+
+            highlightsLayer.appendChild(highlight);
+
+            if (isCurrent) {
+                currentHighlightElement = highlight;
+            }
+        });
+
+        // Scroll the current highlight into view
+        if (currentHighlightElement) {
+            const container = document.getElementById('document-container');
+            if (container) {
+                const highlightRect = currentHighlightElement.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                const isVisible = (
+                    highlightRect.top >= containerRect.top &&
+                    highlightRect.bottom <= containerRect.bottom &&
+                    highlightRect.left >= containerRect.left &&
+                    highlightRect.right <= containerRect.right
+                );
+
+                if (!isVisible) {
+                    const targetScrollTop = container.scrollTop + (highlightRect.top - containerRect.top) - containerRect.height / 2 + highlightRect.height / 2;
+                    const targetScrollLeft = container.scrollLeft + (highlightRect.left - containerRect.left) - containerRect.width / 2 + highlightRect.width / 2;
+
+                    container.scrollTo({
+                        top: Math.max(0, targetScrollTop),
+                        left: Math.max(0, targetScrollLeft),
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }
+    }
+
+    clearSearchHighlights() {
+        const highlightsLayer = document.getElementById('search-highlights-layer');
+        if (highlightsLayer) {
+            highlightsLayer.innerHTML = '';
+        }
+        // Also clear old-style highlights from container (backwards compatibility)
+        const container = document.getElementById('document-container');
+        if (container) {
+            container.querySelectorAll('.search-highlight').forEach(el => el.remove());
+        }
+    }
+
     async handleFileUpload(e) {
         const files = e.target.files;
         if (!files.length) return;
@@ -819,11 +1103,15 @@ class DocumentViewer {
                 await this.loadImage(file);
             }
         }
-        // Select the latest added page
-        this.currentPageIndex = this.pages.length - 1;
-        this.renderCurrentView();
-        this.renderThumbnails();
-        this.updatePageInfo();
+
+        // If we have pages but no current page selected (e.g. after loading multiple files)
+        if (this.currentPageIndex === -1 && this.pages.length > 0) {
+            this.currentPageIndex = 0;
+            this.renderCurrentView();
+            this.renderThumbnails();
+            this.updatePageInfo();
+            this.fitPage();
+        }
     }
 
     async loadTIFF(file) {
@@ -859,7 +1147,25 @@ class DocumentViewer {
                         }
 
                         this.pages.push(page);
-                        if (this.currentPageIndex === -1) this.currentPageIndex = 0;
+
+                        // If this is the first page, set it as current and render immediately
+                        if (this.pages.length === 1) {
+                            this.currentPageIndex = 0;
+                            this.renderCurrentView();
+                            this.updatePageInfo();
+                            this.fitPage();
+                        }
+
+                        // Append thumbnail for this page
+                        this.appendThumbnail(this.pages.length - 1);
+                    }
+
+                    // If we already had pages before loading this TIFF, update view to show the first new page
+                    if (this.currentPageIndex === -1 && this.pages.length > 0) {
+                        this.currentPageIndex = 0;
+                        this.renderCurrentView();
+                        this.updatePageInfo();
+                        this.fitPage();
                     }
 
                     resolve();
@@ -902,6 +1208,17 @@ class DocumentViewer {
             const page = new Page('image', imageData, `${file.name} - Page ${i}`);
             await page.load();
 
+            // Extract text content for search functionality
+            try {
+                const textContent = await pdfPage.getTextContent();
+                page.textContent = {
+                    items: textContent.items,
+                    text: textContent.items.map(item => item.str).join(' ')
+                };
+            } catch (err) {
+                // Could not extract text content
+            }
+
             // Extract PDF annotations and convert to our annotation format
             try {
                 const pdfAnnotations = await pdfPage.getAnnotations();
@@ -918,8 +1235,26 @@ class DocumentViewer {
             }
 
             this.pages.push(page);
+
+            // If this is the first page, set it as current and render immediately
+            if (this.pages.length === 1) {
+                this.currentPageIndex = 0;
+                this.renderCurrentView();
+                this.updatePageInfo();
+                this.fitPage();
+            }
+
+            // Append thumbnail for this page
+            this.appendThumbnail(this.pages.length - 1);
         }
-        if (this.currentPageIndex === -1) this.currentPageIndex = 0;
+
+        // If we already had pages before loading this PDF, update view to show the first new page
+        if (this.currentPageIndex === -1 && this.pages.length > 0) {
+            this.currentPageIndex = 0;
+            this.renderCurrentView();
+            this.updatePageInfo();
+            this.fitPage();
+        }
     }
 
     // Convert PDF.js annotation to our annotation format
@@ -1186,6 +1521,18 @@ class DocumentViewer {
                     }
 
                     this.pages.push(page);
+
+                    // If this is the first page, set it as current and render immediately
+                    if (this.pages.length === 1) {
+                        this.currentPageIndex = 0;
+                        this.renderCurrentView();
+                        this.updatePageInfo();
+                        this.fitPage();
+                    }
+
+                    // Append thumbnail for this page
+                    this.appendThumbnail(this.pages.length - 1);
+
                     if (this.currentPageIndex === -1) this.currentPageIndex = 0;
                     resolve();
                 });
@@ -1210,7 +1557,7 @@ class DocumentViewer {
 
     fitPage() {
         if (!this.currentPage) return;
-        const container = this.canvas.parentElement;
+        const container = document.getElementById('document-container');
         if (!container) return;
 
         const rect = container.getBoundingClientRect();
@@ -1233,7 +1580,7 @@ class DocumentViewer {
 
     fitWidth() {
         if (!this.currentPage) return;
-        const container = this.canvas.parentElement;
+        const container = document.getElementById('document-container');
         if (!container) return;
 
         const rect = container.getBoundingClientRect();
@@ -1380,10 +1727,12 @@ class DocumentViewer {
     async renderCurrentView() {
         const page = this.currentPage;
         const placeholder = document.getElementById('no-document-placeholder');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
 
         if (!page) {
-            this.canvas.classList.remove('loaded');
+            if (canvasWrapper) canvasWrapper.classList.remove('loaded');
             if (placeholder) placeholder.style.display = 'block';
+            this.clearSearchHighlights();
             return;
         }
 
@@ -1396,13 +1745,24 @@ class DocumentViewer {
         this.canvas.style.transform = 'scale(1) translate(0px, 0px)';
 
         await this.renderPageToCanvas(page, this.canvas);
-        this.canvas.classList.add('loaded');
+        if (canvasWrapper) canvasWrapper.classList.add('loaded');
 
         document.getElementById('currentPage').textContent = this.currentPageIndex + 1;
         document.getElementById('totalPages').textContent = this.pages.length;
 
         // Update zoom level display
         document.getElementById('zoomLevel').textContent = `${Math.round(page.scale * 100)}%`;
+
+        // Refresh search highlights for the current page
+        if (this.searchResults && this.searchResults.length > 0) {
+            const currentResult = this.searchResults[this.currentSearchIndex];
+            if (currentResult && currentResult.pageIndex === this.currentPageIndex) {
+                this.highlightAllOnCurrentPage(currentResult);
+            } else {
+                // Just show all highlights on this page without a "current" one
+                this.highlightAllOnCurrentPage(null);
+            }
+        }
     }
 
     getMousePos(e) {
@@ -2127,54 +2487,157 @@ class DocumentViewer {
         };
     }
 
-    renderThumbnails() {
+    appendThumbnail(index) {
         const container = document.getElementById('thumbnails-list');
         if (!container) return;
 
-        container.innerHTML = '';
+        // Remove "No document loaded" placeholder if it exists
+        if (this.pages.length === 1 && container.querySelector('.text-muted')) {
+            container.innerHTML = '';
+        }
+
+        // For large documents, defer to virtual scrolling
+        if (this.pages.length > 50) {
+            // Reset virtual scroll state to force re-render
+            this.virtualScrollState = null;
+            // Debounce the virtual scroll update
+            if (this.appendThumbnailTimer) clearTimeout(this.appendThumbnailTimer);
+            this.appendThumbnailTimer = setTimeout(() => this.renderThumbnails(), 100);
+            return;
+        }
+
+        const page = this.pages[index];
+        const div = this.createThumbnailElement(page, index);
+        container.appendChild(div);
+    }
+
+    renderThumbnails() {
+        const container = document.getElementById('thumbnails-list');
+        if (!container) return;
 
         if (this.pages.length === 0) {
             container.innerHTML = '<p class="text-muted">No document loaded</p>';
             return;
         }
 
+        // For large documents, use virtual scrolling
+        if (this.pages.length > 50) {
+            this.setupVirtualThumbnails(container);
+            return;
+        }
+
+        // For small documents, render all thumbnails
+        container.innerHTML = '';
         this.pages.forEach((page, index) => {
-            const div = document.createElement('div');
-            div.className = `thumbnail ${index === this.currentPageIndex ? 'active' : ''}`;
-
-            // All pages are images - create thumbnail preview
-            const imgContainer = document.createElement('div');
-            imgContainer.style.width = '100%';
-            imgContainer.style.height = '120px';
-            imgContainer.style.display = 'flex';
-            imgContainer.style.justifyContent = 'center';
-            imgContainer.style.alignItems = 'center';
-            imgContainer.style.overflow = 'hidden';
-
-            const img = document.createElement('img');
-            img.src = page.data;
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '100%';
-            img.style.objectFit = 'contain';
-            img.style.borderRadius = '4px';
-            imgContainer.appendChild(img);
-            div.appendChild(imgContainer);
-
-            // Add page label
-            const label = document.createElement('div');
-            label.style.textAlign = 'center';
-            label.style.marginTop = '8px';
-            label.style.fontSize = '12px';
-            label.style.color = '#5f6368';
-            label.textContent = page.name || `Page ${index + 1}`;
-            div.appendChild(label);
-
-            div.onclick = () => {
-                this.currentPageIndex = index;
-                this.renderCurrentView();
-                this.renderThumbnails();
-            };
+            const div = this.createThumbnailElement(page, index);
             container.appendChild(div);
+        });
+    }
+
+    setupVirtualThumbnails(container) {
+        const ITEM_HEIGHT = 160; // thumbnail height + margin + label
+        const BUFFER = 5; // extra items to render above/below viewport
+
+        // Initialize virtual scroll state if not exists
+        if (!this.virtualScrollState) {
+            this.virtualScrollState = {
+                renderedRange: { start: -1, end: -1 }
+            };
+        }
+
+        // Get the scrollable parent
+        const scrollParent = container.closest('.sidebar-content');
+        if (!scrollParent) return;
+
+        // Set container height to hold all items
+        const totalHeight = this.pages.length * ITEM_HEIGHT;
+        container.style.height = totalHeight + 'px';
+        container.style.position = 'relative';
+
+        // Calculate visible range
+        const scrollTop = scrollParent.scrollTop;
+        const viewportHeight = scrollParent.clientHeight;
+
+        const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER);
+        const endIndex = Math.min(this.pages.length - 1, Math.ceil((scrollTop + viewportHeight) / ITEM_HEIGHT) + BUFFER);
+
+        // Check if we need to re-render
+        const state = this.virtualScrollState;
+        const needsRerender = state.renderedRange.start !== startIndex ||
+            state.renderedRange.end !== endIndex ||
+            container.children.length === 0;
+
+        if (!needsRerender) {
+            // Just update active state
+            container.querySelectorAll('.thumbnail').forEach(el => {
+                const idx = parseInt(el.dataset.index);
+                el.classList.toggle('active', idx === this.currentPageIndex);
+            });
+            return;
+        }
+
+        // Clear and re-render visible items
+        container.innerHTML = '';
+        state.renderedRange = { start: startIndex, end: endIndex };
+
+        for (let i = startIndex; i <= endIndex; i++) {
+            const page = this.pages[i];
+            const div = this.createThumbnailElement(page, i);
+            div.style.position = 'absolute';
+            div.style.top = (i * ITEM_HEIGHT) + 'px';
+            div.style.left = '0';
+            div.style.right = '0';
+            container.appendChild(div);
+        }
+
+        // Setup scroll listener once
+        if (!this.thumbnailScrollHandler) {
+            this.thumbnailScrollHandler = () => {
+                requestAnimationFrame(() => this.renderThumbnails());
+            };
+            scrollParent.addEventListener('scroll', this.thumbnailScrollHandler, { passive: true });
+        }
+    }
+
+    createThumbnailElement(page, index) {
+        const div = document.createElement('div');
+        div.className = `thumbnail ${index === this.currentPageIndex ? 'active' : ''}`;
+        div.dataset.index = index;
+
+        // Create thumbnail preview
+        const imgContainer = document.createElement('div');
+        imgContainer.style.cssText = 'width:100%;height:120px;display:flex;justify-content:center;align-items:center;overflow:hidden;';
+
+        const img = document.createElement('img');
+        img.loading = 'lazy'; // Native lazy loading
+        img.src = page.data;
+        img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;';
+        imgContainer.appendChild(img);
+        div.appendChild(imgContainer);
+
+        // Add page label
+        const label = document.createElement('div');
+        label.style.cssText = 'text-align:center;margin-top:8px;font-size:12px;color:#5f6368;';
+        label.textContent = page.name || `Page ${index + 1}`;
+        div.appendChild(label);
+
+        div.onclick = () => {
+            this.currentPageIndex = index;
+            this.renderCurrentView();
+            this.updateThumbnailActiveState();
+            this.updatePageInfo();
+        };
+
+        return div;
+    }
+
+    updateThumbnailActiveState() {
+        const container = document.getElementById('thumbnails-list');
+        if (!container) return;
+
+        container.querySelectorAll('.thumbnail').forEach(el => {
+            const idx = parseInt(el.dataset.index);
+            el.classList.toggle('active', idx === this.currentPageIndex);
         });
     }
 }

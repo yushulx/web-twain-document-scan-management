@@ -67,8 +67,18 @@
                     </div>
                     <span class="toolbar-separator"></span>
                     <div class="toolbar-group">
+                        <button id="searchBtn" class="btn btn-icon" title="Search Text (Ctrl+F)">🔍</button>
                         <button id="toggleToolsBtn" class="btn btn-icon" title="Toggle Annotation Tools">🛠️</button>
                     </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div id="searchBar" class="search-bar hidden">
+                    <input type="text" id="searchInput" placeholder="Search text in PDF...">
+                    <span id="searchResults">0/0</span>
+                    <button id="searchPrevBtn" class="btn btn-icon" title="Previous">◀</button>
+                    <button id="searchNextBtn" class="btn btn-icon" title="Next">▶</button>
+                    <button id="searchCloseBtn" class="btn btn-icon" title="Close">✕</button>
                 </div>
 
                 <div class="annotation-toolbar-wrapper hidden" id="annotationToolbar">
@@ -106,7 +116,10 @@
                         <p class="placeholder-hint" style="font-size: 12px; margin-top: 8px;">Supports: PDF, Images
                             (JPEG, PNG, BMP, GIF), Multi-page TIFF</p>
                     </div>
-                    <canvas id="document-canvas"></canvas>
+                    <div id="canvas-wrapper">
+                        <canvas id="document-canvas"></canvas>
+                        <div id="search-highlights-layer"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -162,7 +175,6 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tiff.js@1.0.0/tiff.min.js"></script>
     <script>
