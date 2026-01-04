@@ -14,7 +14,7 @@
     <div id="app">
         <header class="toolbar">
             <div class="toolbar-left">
-                <button id="openFileBtn" class="btn" title="Open File (Ctrl+O)">📁 Open</button>
+                <button id="openFileBtn" class="btn" title="Open File (Ctrl+O)">📁 Add</button>
                 <button id="removeBtn" class="btn" title="Remove Current Document">❌ Remove</button>
                 <button id="clearAllBtn" class="btn" title="Remove All Documents">🗑️ Clear All</button>
                 <button id="saveBtn" class="btn" title="Save Current State (Ctrl+S)">💾 Save</button>
@@ -22,9 +22,11 @@
                 <button id="printBtn" class="btn" title="Print (Ctrl+P)">🖨️ Print</button>
             </div>
             <div class="toolbar-center">
+                <button id="firstPageBtn" class="btn btn-icon" title="First Page (Home)">⏮</button>
                 <button id="prevPageBtn" class="btn btn-icon" title="Previous Page (←)">◀</button>
                 <span id="pageInfo">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
                 <button id="nextPageBtn" class="btn btn-icon" title="Next Page (→)">▶</button>
+                <button id="lastPageBtn" class="btn btn-icon" title="Last Page (End)">⏭</button>
             </div>
             <div class="toolbar-right">
                 <button id="fullscreenBtn" class="btn btn-icon" title="Toggle Fullscreen">⛶</button>
@@ -175,6 +177,22 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+
+    <script>
+        var Module = {
+            locateFile: function (path, prefix) {
+                if (path.endsWith(".wasm")) {
+                    return "lib/" + path;
+                }
+                return prefix + path;
+            },
+            onRuntimeInitialized: function () {
+                console.log('PDFium WASM runtime initialized');
+            }
+        };
+    </script>
+    <script src="lib/pdfium.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tiff.js@1.0.0/tiff.min.js"></script>
     <script>

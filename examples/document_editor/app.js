@@ -461,6 +461,8 @@ class DocumentViewer {
         const fitWidthBtn = document.getElementById('fitWidthBtn');
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
+        const firstPageBtn = document.getElementById('firstPageBtn');
+        const lastPageBtn = document.getElementById('lastPageBtn');
 
         if (zoomInBtn) zoomInBtn.addEventListener('click', () => { this.saveStateToStack(); this.performOperation('zoom', 1.1); });
         if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { this.saveStateToStack(); this.performOperation('zoom', 0.9); });
@@ -470,6 +472,8 @@ class DocumentViewer {
         if (fitWidthBtn) fitWidthBtn.addEventListener('click', () => this.fitWidth());
         if (prevPageBtn) prevPageBtn.addEventListener('click', () => this.changePage(-1));
         if (nextPageBtn) nextPageBtn.addEventListener('click', () => this.changePage(1));
+        if (firstPageBtn) firstPageBtn.addEventListener('click', () => this.goToFirstPage());
+        if (lastPageBtn) lastPageBtn.addEventListener('click', () => this.goToLastPage());
 
         const undoBtn = document.getElementById('undoBtn');
         if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
@@ -736,6 +740,9 @@ class DocumentViewer {
 
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
+            // Skip if user is typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
             if (e.ctrlKey && e.key === 'z') {
                 e.preventDefault();
                 this.undo();
@@ -743,6 +750,23 @@ class DocumentViewer {
             if (e.ctrlKey && e.key === 'y') {
                 e.preventDefault();
                 this.redo();
+            }
+            // Page navigation
+            if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                this.changePage(-1);
+            }
+            if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+                e.preventDefault();
+                this.changePage(1);
+            }
+            if (e.key === 'Home') {
+                e.preventDefault();
+                this.goToFirstPage();
+            }
+            if (e.key === 'End') {
+                e.preventDefault();
+                this.goToLastPage();
             }
         });
     }
@@ -1180,6 +1204,401 @@ class DocumentViewer {
     }
 
     async loadPdf(file) {
+        // Use PDF.js with lazy loading as primary (pure JS, good compatibility)
+        // Set usePdfiumWasm = true to use WASM renderer instead
+        const usePdfiumWasm = true;
+
+        if (usePdfiumWasm && typeof Module !== 'undefined' && Module.ccall) {
+            await this.loadPdfWasm(file);
+        } else {
+            console.log('Using PDF.js with lazy loading');
+            await this.loadPdfJsLazy(file);
+        }
+    }
+
+    async loadPdfJsLazy(file) {
+        console.log('Loading PDF with PDF.js (lazy loading)...');
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+
+        // Store document for lazy loading
+        this.pdfJsDoc = pdfDoc;
+        this.pdfJsFileName = file.name;
+
+        const pageCount = pdfDoc.numPages;
+        console.log(`PDF.js: Document loaded with ${pageCount} pages`);
+
+        // Track the starting index of pages from this PDF
+        const pdfStartIndex = this.pages.length;
+
+        // Create placeholder pages for lazy loading
+        for (let i = 0; i < pageCount; i++) {
+            const pageObj = new Page('image', null, `${file.name} - Page ${i + 1}`);
+            pageObj.pdfJsPageIndex = i + 1;  // PDF.js uses 1-based index
+            pageObj.loaded = false;
+            this.pages.push(pageObj);
+        }
+
+        // Update UI immediately with total page count
+        this.currentPageIndex = pdfStartIndex;  // Go to first page of PDF
+        this.updatePageInfo();
+        this.renderThumbnails();
+
+        // Load and render only the first page of the PDF
+        await this.loadPdfJsPage(pdfStartIndex);
+        this.renderCurrentView();
+        this.fitPage();
+
+        // Start background loading of remaining PDF pages for thumbnails
+        this.startBackgroundThumbnailLoading(pdfStartIndex);
+    }
+
+    async startBackgroundThumbnailLoading(startIndex = 0) {
+        // Cancel any previous background loading
+        this.backgroundLoadingCancelled = false;
+        this.backgroundLoadingId = Date.now();
+        const loadingId = this.backgroundLoadingId;
+
+        // Load pages in background for thumbnails, starting from startIndex + 1 (skip first page which is already loaded)
+        const BATCH_SIZE = 5;  // Load 5 pages at a time
+        const DELAY_BETWEEN_BATCHES = 100;  // ms delay between batches
+
+        for (let i = startIndex + 1; i < this.pages.length; i += BATCH_SIZE) {
+            // Check if cancelled or a new loading started
+            if (this.backgroundLoadingCancelled || this.backgroundLoadingId !== loadingId) {
+                console.log('Background loading cancelled');
+                return;
+            }
+
+            const batch = [];
+            for (let j = i; j < Math.min(i + BATCH_SIZE, this.pages.length); j++) {
+                const page = this.pages[j];
+                // Only load pages that have pdfJsPageIndex (belong to current PDF) and not yet loaded
+                if (page && page.pdfJsPageIndex && !page.loaded) {
+                    batch.push(this.loadPageForThumbnail(j));
+                }
+            }
+            if (batch.length > 0) {
+                await Promise.all(batch);
+                // Update thumbnails after each batch (if not cancelled)
+                if (!this.backgroundLoadingCancelled && this.backgroundLoadingId === loadingId) {
+                    this.renderThumbnails();
+                }
+            }
+            // Small delay to avoid blocking UI
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        }
+    }
+
+    async startBackgroundThumbnailLoadingWasm(startIndex = 0) {
+        // Cancel any previous background loading
+        this.backgroundLoadingCancelled = false;
+        this.backgroundLoadingId = Date.now();
+        const loadingId = this.backgroundLoadingId;
+
+        // Load pages in background for thumbnails using PDFium WASM
+        // PDFium doesn't handle parallel well, so load sequentially
+        const BATCH_SIZE = 3;  // Smaller batch for WASM
+        const DELAY_BETWEEN_BATCHES = 50;  // ms delay between batches
+
+        for (let i = startIndex + 1; i < this.pages.length; i += BATCH_SIZE) {
+            // Check if cancelled or a new loading started
+            if (this.backgroundLoadingCancelled || this.backgroundLoadingId !== loadingId) {
+                console.log('Background WASM loading cancelled');
+                return;
+            }
+
+            for (let j = i; j < Math.min(i + BATCH_SIZE, this.pages.length); j++) {
+                // Check cancellation before each page
+                if (this.backgroundLoadingCancelled || this.backgroundLoadingId !== loadingId) {
+                    return;
+                }
+                const page = this.pages[j];
+                // Only load pages that have pdfiumPageIndex (belong to current PDF) and not yet loaded
+                if (page && page.pdfiumPageIndex !== undefined && !page.loaded) {
+                    await this.loadPdfiumPage(j);
+                }
+            }
+            // Update thumbnails after each batch (if not cancelled)
+            if (!this.backgroundLoadingCancelled && this.backgroundLoadingId === loadingId) {
+                this.renderThumbnails();
+            }
+            // Small delay to avoid blocking UI
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        }
+    }
+
+    async loadPageForThumbnail(pageIndex) {
+        // Load page in background (same as loadPdfJsPage but without console logs)
+        if (this.pdfJsDoc) {
+            await this.loadPdfJsPage(pageIndex);
+        } else if (this.pdfiumDoc) {
+            await this.loadPdfiumPage(pageIndex);
+        }
+    }
+
+    async loadPdfJsPage(pageIndex) {
+        if (!this.pdfJsDoc || pageIndex < 0 || pageIndex >= this.pages.length) return;
+
+        const pageObj = this.pages[pageIndex];
+        if (pageObj.loaded && pageObj.originalImage) return; // Already loaded
+
+        // Only load pages that belong to this PDF (have pdfJsPageIndex)
+        if (!pageObj.pdfJsPageIndex) return;  // Not a PDF.js page
+
+        // Use the stored PDF page index (1-based)
+        const pdfPageNum = pageObj.pdfJsPageIndex;
+        if (pdfPageNum < 1 || pdfPageNum > this.pdfJsDoc.numPages) {
+            console.error(`Invalid page number: ${pdfPageNum}, PDF has ${this.pdfJsDoc.numPages} pages`);
+            return;
+        }
+
+        console.log(`Loading PDF.js page ${pdfPageNum}...`);
+
+        const pdfPage = await this.pdfJsDoc.getPage(pdfPageNum); // 1-based
+        const viewport = pdfPage.getViewport({ scale: 1.5 });
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        await pdfPage.render({
+            canvasContext: tempCtx,
+            viewport: viewport,
+            annotationMode: 0
+        }).promise;
+
+        const imageData = tempCanvas.toDataURL('image/png');
+
+        // Extract text content for search functionality
+        try {
+            const textContent = await pdfPage.getTextContent();
+            pageObj.textContent = {
+                items: textContent.items,
+                text: textContent.items.map(item => item.str).join(' ')
+            };
+        } catch (err) {
+            // Could not extract text content
+        }
+
+        // Extract PDF annotations and convert to our annotation format
+        try {
+            const pdfAnnotations = await pdfPage.getAnnotations();
+            const scale = 1.5; // Same scale used for rendering
+
+            for (const pdfAnn of pdfAnnotations) {
+                const annotation = this.convertPdfAnnotation(pdfAnn, viewport, scale);
+                if (annotation) {
+                    pageObj.annotations.push(annotation);
+                }
+            }
+        } catch (err) {
+            // Could not extract PDF annotations
+        }
+
+        // Update the page object
+        pageObj.data = imageData;
+        pageObj.loaded = true;
+        await pageObj.load();
+
+        console.log(`Page ${pageIndex + 1} loaded`);
+    }
+
+    async loadPdfWasm(file) {
+        console.log('Loading PDF with WASM renderer...');
+
+        // Ensure WASM runtime is ready
+        if (!Module.calledRun) {
+            console.log('Waiting for WASM runtime to initialize...');
+            await new Promise(resolve => {
+                const checkReady = () => {
+                    if (Module.calledRun) {
+                        resolve();
+                    } else {
+                        setTimeout(checkReady, 50);
+                    }
+                };
+                checkReady();
+            });
+        }
+        console.log('WASM runtime ready');
+
+        // Initialize PDFium Library if not already done
+        if (!this.pdfiumInitialized) {
+            console.log('Initializing PDFium library...');
+            Module.ccall('FPDF_InitLibrary', null, [], []);
+            this.pdfiumInitialized = true;
+            console.log('PDFium library initialized');
+        }
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            console.log(`PDF file size: ${uint8Array.length} bytes`);
+
+            // Also load with PDF.js for annotation/text extraction
+            this.pdfJsDoc = await pdfjsLib.getDocument(arrayBuffer.slice(0)).promise;
+            console.log('PDF.js document loaded for annotation extraction');
+
+            // Allocate memory in WASM heap
+            const fileDataPtr = Module._malloc(uint8Array.length);
+            Module.HEAPU8.set(uint8Array, fileDataPtr);
+            console.log(`Allocated memory at: ${fileDataPtr}`);
+
+            // Load Document
+            // FPDF_LoadMemDocument(data_buf, size, password)
+            const doc = Module.ccall('FPDF_LoadMemDocument', 'number', ['number', 'number', 'string'], [fileDataPtr, uint8Array.length, null]);
+            console.log(`Document handle: ${doc}`);
+
+            if (!doc) {
+                Module._free(fileDataPtr);
+                throw new Error('Failed to load PDF document via PDFium');
+            }
+
+            const pageCount = Module.ccall('FPDF_GetPageCount', 'number', ['number'], [doc]);
+            console.log(`PDFium: Document loaded with ${pageCount} pages`);
+
+            // Store document handle for lazy loading
+            this.pdfiumDoc = doc;
+            this.pdfiumFileDataPtr = fileDataPtr;
+            this.pdfiumPageCount = pageCount;
+
+            // Track the starting index of pages from this PDF
+            const pdfStartIndex = this.pages.length;
+
+            // Create placeholder pages for lazy loading
+            for (let i = 0; i < pageCount; i++) {
+                const pageObj = new Page('image', null, `${file.name} - Page ${i + 1}`);
+                pageObj.pdfiumPageIndex = i;  // Store index for lazy loading
+                pageObj.loaded = false;
+                this.pages.push(pageObj);
+            }
+
+            // Update UI immediately with total page count
+            this.currentPageIndex = pdfStartIndex;
+            this.updatePageInfo();
+            this.renderThumbnails();
+
+            // Load and render only the first page
+            await this.loadPdfiumPage(pdfStartIndex);
+            this.renderCurrentView();
+            this.fitPage();
+
+            // Start background loading of remaining PDF pages for thumbnails
+            this.startBackgroundThumbnailLoadingWasm(pdfStartIndex);
+
+        } catch (error) {
+            console.error('Error loading PDF with WASM:', error);
+            alert('Failed to load PDF with WASM renderer: ' + error.message);
+        }
+    }
+
+    async loadPdfiumPage(pageIndex) {
+        if (!this.pdfiumDoc || pageIndex < 0 || pageIndex >= this.pages.length) return;
+
+        const pageObj = this.pages[pageIndex];
+        if (pageObj.loaded && pageObj.originalImage) return; // Already loaded
+
+        console.log(`Loading PDFium page ${pageIndex + 1}...`);
+
+        const page = Module.ccall('FPDF_LoadPage', 'number', ['number', 'number'], [this.pdfiumDoc, pageIndex]);
+        if (!page) {
+            console.error(`Failed to load page ${pageIndex + 1}`);
+            return;
+        }
+
+        // Get dimensions (points)
+        const width = Module.ccall('FPDF_GetPageWidth', 'number', ['number'], [page]);
+        const height = Module.ccall('FPDF_GetPageHeight', 'number', ['number'], [page]);
+
+        const scale = 1.5;
+        const renderWidth = Math.round(width * scale);
+        const renderHeight = Math.round(height * scale);
+
+        // Create Bitmap
+        const bitmap = Module.ccall('FPDFBitmap_Create', 'number', ['number', 'number', 'number'], [renderWidth, renderHeight, 1]);
+
+        // Fill with white background
+        Module.ccall('FPDFBitmap_FillRect', 'void', ['number', 'number', 'number', 'number', 'number', 'number'],
+            [bitmap, 0, 0, renderWidth, renderHeight, 0xFFFFFFFF]);
+
+        // Render Page
+        Module.ccall('FPDF_RenderPageBitmap', 'void', ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
+            [bitmap, page, 0, 0, renderWidth, renderHeight, 0, 0]);
+
+        // Get Buffer
+        const bufferPtr = Module.ccall('FPDFBitmap_GetBuffer', 'number', ['number'], [bitmap]);
+
+        const length = renderWidth * renderHeight * 4;
+        const data = new Uint8ClampedArray(Module.HEAPU8.subarray(bufferPtr, bufferPtr + length));
+
+        // Convert BGRA to RGBA
+        for (let p = 0; p < length; p += 4) {
+            const b = data[p];
+            const r = data[p + 2];
+            data[p] = r;
+            data[p + 2] = b;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = renderWidth;
+        canvas.height = renderHeight;
+        const ctx = canvas.getContext('2d');
+        const imageDataObj = new ImageData(data, renderWidth, renderHeight);
+        ctx.putImageData(imageDataObj, 0, 0);
+
+        const imageDataUrl = canvas.toDataURL('image/png');
+
+        // Cleanup Bitmap and Page
+        Module.ccall('FPDFBitmap_Destroy', 'void', ['number'], [bitmap]);
+        Module.ccall('FPDF_ClosePage', 'void', ['number'], [page]);
+
+        // Extract text content and annotations using PDF.js
+        if (this.pdfJsDoc) {
+            try {
+                const pdfPage = await this.pdfJsDoc.getPage(pageIndex + 1);  // 1-based
+                const viewport = pdfPage.getViewport({ scale: 1.5 });
+
+                // Extract text content for search functionality
+                try {
+                    const textContent = await pdfPage.getTextContent();
+                    pageObj.textContent = {
+                        items: textContent.items,
+                        text: textContent.items.map(item => item.str).join(' ')
+                    };
+                } catch (err) {
+                    // Could not extract text content
+                }
+
+                // Extract PDF annotations and convert to our annotation format
+                try {
+                    const pdfAnnotations = await pdfPage.getAnnotations();
+                    const scale = 1.5;
+
+                    for (const pdfAnn of pdfAnnotations) {
+                        const annotation = this.convertPdfAnnotation(pdfAnn, viewport, scale);
+                        if (annotation) {
+                            pageObj.annotations.push(annotation);
+                        }
+                    }
+                } catch (err) {
+                    // Could not extract PDF annotations
+                }
+            } catch (err) {
+                console.warn(`Could not extract text/annotations for page ${pageIndex + 1}:`, err);
+            }
+        }
+
+        // Update the page object
+        pageObj.data = imageDataUrl;
+        pageObj.loaded = true;
+        await pageObj.load();
+
+        console.log(`Page ${pageIndex + 1} loaded`);
+    }
+
+    async loadPdfJs(file) {
         const arrayBuffer = await file.arrayBuffer();
         const pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
 
@@ -1609,10 +2028,62 @@ class DocumentViewer {
     changePage(delta) {
         const newIndex = this.currentPageIndex + delta;
         if (newIndex >= 0 && newIndex < this.pages.length) {
-            this.currentPageIndex = newIndex;
-            this.renderCurrentView();
-            this.renderThumbnails();
-            this.updatePageInfo();
+            this.goToPage(newIndex);
+        }
+    }
+
+    async goToPage(pageIndex, instant = false) {
+        if (pageIndex < 0 || pageIndex >= this.pages.length) return;
+
+        this.currentPageIndex = pageIndex;
+
+        // Lazy load if needed (for PDFium WASM)
+        const page = this.pages[pageIndex];
+        if (this.pdfiumDoc && !page.loaded) {
+            await this.loadPdfiumPage(pageIndex);
+        }
+
+        // Lazy load if needed (for PDF.js)
+        if (this.pdfJsDoc && !page.loaded) {
+            await this.loadPdfJsPage(pageIndex);
+        }
+
+        this.renderCurrentView();
+        this.renderThumbnails();
+        this.updatePageInfo();
+        this.scrollThumbnailIntoView(pageIndex, instant);
+    }
+
+    goToFirstPage() {
+        this.goToPage(0, true);  // instant scroll
+    }
+
+    goToLastPage() {
+        if (this.pages.length === 0) return;
+        this.goToPage(this.pages.length - 1, true);  // instant scroll
+    }
+
+    scrollThumbnailIntoView(index, instant = false) {
+        const container = document.getElementById('thumbnails-list');
+        if (!container) return;
+
+        const behavior = instant ? 'instant' : 'smooth';
+
+        // For virtual scrolling (large documents)
+        if (this.pages.length > 50) {
+            const ITEM_HEIGHT = 160;
+            const scrollParent = container.closest('.sidebar-content');
+            if (scrollParent) {
+                const targetScroll = index * ITEM_HEIGHT - scrollParent.clientHeight / 2 + ITEM_HEIGHT / 2;
+                scrollParent.scrollTo({ top: Math.max(0, targetScroll), behavior: behavior });
+            }
+            return;
+        }
+
+        // For regular thumbnails
+        const thumbnail = container.querySelector(`[data-index="${index}"]`);
+        if (thumbnail) {
+            thumbnail.scrollIntoView({ behavior: behavior, block: 'center' });
         }
     }
 
@@ -1777,6 +2248,10 @@ class DocumentViewer {
         const page = this.currentPage;
         if (page) {
             if (page.type === 'image') {
+                // Check if image is loaded
+                if (!page.originalImage) {
+                    return { x: 0, y: 0 };
+                }
                 const radians = (page.rotation * Math.PI) / 180;
                 const sin = Math.abs(Math.sin(radians));
                 const cos = Math.abs(Math.cos(radians));
@@ -2037,8 +2512,17 @@ class DocumentViewer {
 
     async clearAll() {
         if (confirm('Clear all pages?')) {
+            // Cancel any background loading
+            this.backgroundLoadingCancelled = true;
+
             this.pages = [];
             this.currentPageIndex = -1;
+            // Clear PDF document references
+            this.pdfJsDoc = null;
+            this.pdfJsFileName = null;
+            this.pdfiumDoc = null;
+            // Reset virtual scroll state
+            this.virtualScrollState = null;
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.renderThumbnails();
             this.renderCurrentView();
@@ -2540,7 +3024,8 @@ class DocumentViewer {
         // Initialize virtual scroll state if not exists
         if (!this.virtualScrollState) {
             this.virtualScrollState = {
-                renderedRange: { start: -1, end: -1 }
+                renderedRange: { start: -1, end: -1 },
+                loadedPages: new Set()
             };
         }
 
@@ -2560,11 +3045,22 @@ class DocumentViewer {
         const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER);
         const endIndex = Math.min(this.pages.length - 1, Math.ceil((scrollTop + viewportHeight) / ITEM_HEIGHT) + BUFFER);
 
-        // Check if we need to re-render
+        // Check if any visible pages have been loaded since last render
         const state = this.virtualScrollState;
+        let hasNewlyLoadedPages = false;
+        for (let i = startIndex; i <= endIndex; i++) {
+            const page = this.pages[i];
+            if (page && page.loaded && !state.loadedPages.has(i)) {
+                hasNewlyLoadedPages = true;
+                state.loadedPages.add(i);
+            }
+        }
+
+        // Check if we need to re-render
         const needsRerender = state.renderedRange.start !== startIndex ||
             state.renderedRange.end !== endIndex ||
-            container.children.length === 0;
+            container.children.length === 0 ||
+            hasNewlyLoadedPages;
 
         if (!needsRerender) {
             // Just update active state
@@ -2605,13 +3101,21 @@ class DocumentViewer {
 
         // Create thumbnail preview
         const imgContainer = document.createElement('div');
-        imgContainer.style.cssText = 'width:100%;height:120px;display:flex;justify-content:center;align-items:center;overflow:hidden;';
+        imgContainer.style.cssText = 'width:100%;height:120px;display:flex;justify-content:center;align-items:center;overflow:hidden;background:#f5f5f5;border-radius:4px;';
 
-        const img = document.createElement('img');
-        img.loading = 'lazy'; // Native lazy loading
-        img.src = page.data;
-        img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;';
-        imgContainer.appendChild(img);
+        if (page.data) {
+            const img = document.createElement('img');
+            img.loading = 'lazy'; // Native lazy loading
+            img.src = page.data;
+            img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;';
+            imgContainer.appendChild(img);
+        } else {
+            // Placeholder for lazy-loaded pages
+            const placeholder = document.createElement('div');
+            placeholder.style.cssText = 'color:#999;font-size:24px;';
+            placeholder.textContent = index + 1;
+            imgContainer.appendChild(placeholder);
+        }
         div.appendChild(imgContainer);
 
         // Add page label
@@ -2620,11 +3124,9 @@ class DocumentViewer {
         label.textContent = page.name || `Page ${index + 1}`;
         div.appendChild(label);
 
-        div.onclick = () => {
-            this.currentPageIndex = index;
-            this.renderCurrentView();
-            this.updateThumbnailActiveState();
-            this.updatePageInfo();
+        div.onclick = async () => {
+            await this.goToPage(index);
+            this.scrollThumbnailIntoView(index);
         };
 
         return div;
