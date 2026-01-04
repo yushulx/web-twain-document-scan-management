@@ -1521,19 +1521,18 @@ class DocumentViewer {
                     }
 
                     this.pages.push(page);
-
-                    // If this is the first page, set it as current and render immediately
-                    if (this.pages.length === 1) {
-                        this.currentPageIndex = 0;
-                        this.renderCurrentView();
-                        this.updatePageInfo();
-                        this.fitPage();
-                    }
+                    const newPageIndex = this.pages.length - 1;
 
                     // Append thumbnail for this page
-                    this.appendThumbnail(this.pages.length - 1);
+                    this.appendThumbnail(newPageIndex);
 
-                    if (this.currentPageIndex === -1) this.currentPageIndex = 0;
+                    // Select the newly added image
+                    this.currentPageIndex = newPageIndex;
+                    this.renderCurrentView();
+                    this.renderThumbnails();
+                    this.updatePageInfo();
+                    this.fitPage();
+
                     resolve();
                 });
             };
