@@ -502,11 +502,8 @@ class DocumentViewer {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Tool clicked:', tool);
                     this.setTool(tool);
                 });
-            } else {
-                console.warn('Tool button not found:', tool);
             }
         });
 
@@ -811,7 +808,10 @@ class DocumentViewer {
             const file = files[i];
             const ext = file.name.toLowerCase();
 
-            if (file.type === 'application/pdf') {
+            if (ext.endsWith('.json')) {
+                // Load project file with editable annotations
+                await this.loadProject(file);
+            } else if (file.type === 'application/pdf') {
                 await this.loadPdf(file);
             } else if (ext.endsWith('.tif') || ext.endsWith('.tiff')) {
                 await this.loadTIFF(file);
@@ -840,7 +840,6 @@ class DocumentViewer {
                     const tiff = new Tiff({ buffer });
                     const pageCount = tiff.countDirectory();
 
-                    console.log(`Loading TIFF: ${file.name} with ${pageCount} page(s)`);
 
                     for (let i = 0; i < pageCount; i++) {
                         tiff.setDirectory(i);
@@ -857,7 +856,6 @@ class DocumentViewer {
                         const maxDim = Math.max(page.originalImage.width, page.originalImage.height);
                         if (maxDim > MAX_INITIAL_DIMENSION) {
                             page.scale = MAX_INITIAL_DIMENSION / maxDim;
-                            console.log(`Large TIFF page auto-scaled: ${page.originalImage.width}x${page.originalImage.height} at ${Math.round(page.scale * 100)}%`);
                         }
 
                         this.pages.push(page);
@@ -884,15 +882,17 @@ class DocumentViewer {
             const pdfPage = await pdfDoc.getPage(i);
             const viewport = pdfPage.getViewport({ scale: 1.5 }); // Higher scale for better quality
 
-            // Create temporary canvas to render PDF page
+            // Create temporary canvas to render PDF page WITHOUT annotations
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = viewport.width;
             tempCanvas.height = viewport.height;
             const tempCtx = tempCanvas.getContext('2d');
 
+            // Render WITHOUT annotations (annotationMode: 0 = DISABLE)
             await pdfPage.render({
                 canvasContext: tempCtx,
-                viewport: viewport
+                viewport: viewport,
+                annotationMode: 0  // Disable annotation rendering
             }).promise;
 
             // Convert canvas to image data URL
@@ -901,9 +901,243 @@ class DocumentViewer {
             // Create page as image type
             const page = new Page('image', imageData, `${file.name} - Page ${i}`);
             await page.load();
+
+            // Extract PDF annotations and convert to our annotation format
+            try {
+                const pdfAnnotations = await pdfPage.getAnnotations();
+                const scale = 1.5; // Same scale used for rendering
+
+                for (const pdfAnn of pdfAnnotations) {
+                    const annotation = this.convertPdfAnnotation(pdfAnn, viewport, scale);
+                    if (annotation) {
+                        page.annotations.push(annotation);
+                    }
+                }
+            } catch (err) {
+                // Could not extract PDF annotations
+            }
+
             this.pages.push(page);
         }
         if (this.currentPageIndex === -1) this.currentPageIndex = 0;
+    }
+
+    // Convert PDF.js annotation to our annotation format
+    convertPdfAnnotation(pdfAnn, viewport, scale) {
+        const rect = pdfAnn.rect;
+        if (!rect || rect.length < 4) return null;
+
+        // PDF coordinates are bottom-left origin, convert to top-left
+        const x = rect[0] * scale;
+        const y = (viewport.height / scale - rect[3]) * scale;
+        const width = (rect[2] - rect[0]) * scale;
+        const height = (rect[3] - rect[1]) * scale;
+
+        // Get color from annotation
+        const color = pdfAnn.color ?
+            `rgb(${Math.round(pdfAnn.color[0] * 255)}, ${Math.round(pdfAnn.color[1] * 255)}, ${Math.round(pdfAnn.color[2] * 255)})` :
+            '#ff0000';
+
+        // Check for our custom annotation data in multiple possible fields
+        // PDF.js exposes Contents as contentsObj.str
+        const possibleDataSources = [
+            pdfAnn.contentsObj?.str,  // PDF.js uses contentsObj.str for Contents
+            pdfAnn.contents,
+            pdfAnn.annotationName,
+            pdfAnn.NM,
+            pdfAnn.nm
+        ];
+
+        for (const source of possibleDataSources) {
+            if (source && typeof source === 'string' && source.startsWith('doceditor:')) {
+                try {
+                    const base64Data = source.substring('doceditor:'.length);
+                    const annData = JSON.parse(decodeURIComponent(escape(atob(base64Data))));
+
+                    // Reconstruct the annotation based on its type
+                    switch (annData.type) {
+                        case 'pen':
+                            return new PenAnnotation(annData);
+                        case 'rect':
+                            return new RectAnnotation(annData);
+                        case 'text':
+                            return new TextAnnotation(annData);
+                        case 'image':
+                            const imgAnn = new ImageAnnotation(annData);
+                            if (annData.imageData) {
+                                const img = new Image();
+                                img.src = annData.imageData;
+                                imgAnn.image = img;
+                            }
+                            return imgAnn;
+                        default:
+                            break;
+                    }
+                } catch (e) {
+                    // Not our custom data format, continue checking
+                }
+            }
+        }
+
+        // Also check if contentsObj.str looks like base64 encoded JSON (without prefix)
+        const contentsStr = pdfAnn.contentsObj?.str;
+        if (contentsStr && typeof contentsStr === 'string' && contentsStr.length > 50) {
+            try {
+                const annData = JSON.parse(decodeURIComponent(escape(atob(contentsStr))));
+                if (annData && annData.type) {
+                    switch (annData.type) {
+                        case 'pen':
+                            return new PenAnnotation(annData);
+                        case 'rect':
+                            return new RectAnnotation(annData);
+                        case 'text':
+                            return new TextAnnotation(annData);
+                        case 'image':
+                            const imgAnn = new ImageAnnotation(annData);
+                            if (annData.imageData) {
+                                const img = new Image();
+                                img.src = annData.imageData;
+                                imgAnn.image = img;
+                            }
+                            return imgAnn;
+                    }
+                }
+            } catch (e) {
+                // Not base64 JSON, continue with standard handling
+            }
+        }
+
+        switch (pdfAnn.subtype) {
+            case 'FreeText':
+                return new TextAnnotation({
+                    x: x,
+                    y: y,
+                    text: pdfAnn.contents || pdfAnn.title || 'Text',
+                    color: color,
+                    fontSize: pdfAnn.fontSize || 16
+                });
+
+            case 'Square':
+            case 'Rect':
+                return new RectAnnotation({
+                    startX: x,
+                    startY: y,
+                    endX: x + width,
+                    endY: y + height,
+                    color: color,
+                    lineWidth: pdfAnn.borderStyle?.width || 2,
+                    fillColor: pdfAnn.interiorColor ?
+                        `rgba(${Math.round(pdfAnn.interiorColor[0] * 255)}, ${Math.round(pdfAnn.interiorColor[1] * 255)}, ${Math.round(pdfAnn.interiorColor[2] * 255)}, 0.3)` :
+                        null
+                });
+
+            case 'Highlight':
+                return new RectAnnotation({
+                    startX: x,
+                    startY: y,
+                    endX: x + width,
+                    endY: y + height,
+                    color: 'rgba(255, 255, 0, 0.4)',
+                    lineWidth: 0,
+                    fillColor: 'rgba(255, 255, 0, 0.4)'
+                });
+
+            case 'Ink':
+                // Ink annotations have inkLists (arrays of points)
+                // PDF.js provides inkLists in PDF coordinate space (unscaled, bottom-left origin)
+                // We need to convert to our image coordinate space (scaled viewport, top-left origin)
+                if (pdfAnn.inkLists && pdfAnn.inkLists.length > 0) {
+                    const points = [];
+                    // viewport.height is already scaled (e.g., pdfHeight * 1.5)
+                    // inkList coordinates are in unscaled PDF space
+                    for (const inkList of pdfAnn.inkLists) {
+                        for (let j = 0; j < inkList.length; j += 2) {
+                            const pdfX = inkList[j];
+                            const pdfY = inkList[j + 1];
+                            // Scale to match the rendered viewport
+                            // Y needs to flip from bottom-left to top-left origin
+                            points.push({
+                                x: pdfX * scale,
+                                y: viewport.height - (pdfY * scale)
+                            });
+                        }
+                    }
+                    if (points.length > 0) {
+                        return new PenAnnotation({
+                            points: points,
+                            color: color,
+                            lineWidth: pdfAnn.borderStyle?.width || 2
+                        });
+                    }
+                }
+                return null;
+
+            case 'Line':
+                // Line annotations - convert to pen with two points
+                if (pdfAnn.lineCoordinates && pdfAnn.lineCoordinates.length >= 4) {
+                    const coords = pdfAnn.lineCoordinates;
+                    return new PenAnnotation({
+                        points: [
+                            { x: coords[0] * scale, y: (viewport.height / scale - coords[1]) * scale },
+                            { x: coords[2] * scale, y: (viewport.height / scale - coords[3]) * scale }
+                        ],
+                        color: color,
+                        lineWidth: pdfAnn.borderStyle?.width || 2
+                    });
+                }
+                return null;
+
+            case 'Text':
+            case 'Popup':
+                // Note/comment annotations
+                if (pdfAnn.contents) {
+                    return new TextAnnotation({
+                        x: x,
+                        y: y,
+                        text: pdfAnn.contents,
+                        color: color,
+                        fontSize: 12
+                    });
+                }
+                return null;
+
+            case 'Link':
+                // Check if this is our custom annotation link
+                const url = pdfAnn.url || (pdfAnn.dest && pdfAnn.dest.url);
+                if (url && url.startsWith('annotation:')) {
+                    try {
+                        const base64Data = url.substring('annotation:'.length);
+                        const annData = JSON.parse(atob(base64Data));
+
+                        // Reconstruct the annotation based on its type
+                        switch (annData.type) {
+                            case 'pen':
+                                return new PenAnnotation(annData);
+                            case 'rect':
+                                return new RectAnnotation(annData);
+                            case 'text':
+                                return new TextAnnotation(annData);
+                            case 'image':
+                                const imgAnn = new ImageAnnotation(annData);
+                                // Load the image asynchronously
+                                if (annData.imageData) {
+                                    const img = new Image();
+                                    img.src = annData.imageData;
+                                    imgAnn.image = img;
+                                }
+                                return imgAnn;
+                            default:
+                                return null;
+                        }
+                    } catch (e) {
+                        // Could not parse custom annotation
+                    }
+                }
+                return null;
+
+            default:
+                return null;
+        }
     }
 
     arrayBufferToBase64(buffer) {
@@ -949,7 +1183,6 @@ class DocumentViewer {
                     const maxDim = Math.max(page.originalImage.width, page.originalImage.height);
                     if (maxDim > MAX_INITIAL_DIMENSION) {
                         page.scale = MAX_INITIAL_DIMENSION / maxDim;
-                        console.log(`Large image auto-scaled: ${page.originalImage.width}x${page.originalImage.height} at ${Math.round(page.scale * 100)}%`);
                     }
 
                     this.pages.push(page);
@@ -1038,13 +1271,11 @@ class DocumentViewer {
     }
 
     setTool(tool) {
-        console.log('setTool called with:', tool);
         this.currentTool = tool;
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         const btn = document.querySelector(`[data-tool="${tool}"]`) || document.getElementById(`${tool}Tool`);
         if (btn) {
             btn.classList.add('active');
-            console.log('Tool button activated:', btn);
         }
         this.canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
 
@@ -1090,7 +1321,6 @@ class DocumentViewer {
 
             // Reduce page scale to fit in canvas
             page.scale = page.scale * limitFactor;
-            console.log(`Large image auto-scaled to ${Math.round(page.scale * 100)}%`);
 
             // Recalculate dimensions
             w = page.originalImage.width * page.scale;
@@ -1584,25 +1814,295 @@ class DocumentViewer {
     async downloadDocument() {
         if (this.pages.length === 0) return;
 
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        // Use pdf-lib for proper PDF annotation support
+        const { PDFDocument, rgb, StandardFonts, PDFName, PDFString, PDFArray, PDFDict, PDFNumber } = PDFLib;
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
         for (let i = 0; i < this.pages.length; i++) {
-            if (i > 0) doc.addPage();
-
             const page = this.pages[i];
+
+            // Render page WITHOUT annotations (base image only)
             const tempCanvas = document.createElement('canvas');
-            await this.renderPageToCanvas(page, tempCanvas);
+            await this.renderPageToCanvasWithoutAnnotations(page, tempCanvas);
 
-            const imgData = tempCanvas.toDataURL('image/jpeg', 0.95);
-            const imgProps = doc.getImageProperties(imgData);
-            const pdfWidth = doc.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            // Embed the image
+            const imgData = tempCanvas.toDataURL('image/png');
+            const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+            const pngImage = await pdfDoc.embedPng(imgBytes);
 
-            doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            // Create page with image dimensions
+            const pdfPage = pdfDoc.addPage([pngImage.width, pngImage.height]);
+            pdfPage.drawImage(pngImage, {
+                x: 0,
+                y: 0,
+                width: pngImage.width,
+                height: pngImage.height
+            });
+
+            const pageHeight = pngImage.height;
+
+            // Add annotations using pdf-lib (coordinates are already in canvas space)
+            for (const ann of page.annotations) {
+                await this.addPdfLibAnnotation(pdfDoc, pdfPage, ann, pageHeight, font);
+            }
         }
 
-        doc.save('document.pdf');
+        // Save and download
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'document.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Add annotation using pdf-lib (creates proper PDF annotation objects)
+    async addPdfLibAnnotation(pdfDoc, pdfPage, ann, pageHeight, font) {
+        const { rgb, PDFName, PDFString, PDFArray, PDFNumber } = PDFLib;
+
+        const parseColor = (colorStr) => {
+            if (!colorStr) return { r: 0, g: 0, b: 0 };
+            if (colorStr.startsWith('#')) {
+                const hex = colorStr.slice(1);
+                return {
+                    r: parseInt(hex.substr(0, 2), 16) / 255,
+                    g: parseInt(hex.substr(2, 2), 16) / 255,
+                    b: parseInt(hex.substr(4, 2), 16) / 255
+                };
+            }
+            if (colorStr.startsWith('rgb')) {
+                const match = colorStr.match(/[\d.]+/g);
+                if (match && match.length >= 3) {
+                    return {
+                        r: parseFloat(match[0]) / 255,
+                        g: parseFloat(match[1]) / 255,
+                        b: parseFloat(match[2]) / 255
+                    };
+                }
+            }
+            return { r: 1, g: 0, b: 0 }; // Default red
+        };
+
+        try {
+            // Serialize annotation data for re-import
+            const annData = JSON.stringify(ann, (key, value) => {
+                if (key === 'image' || key === 'selected') return undefined;
+                return value;
+            });
+            const encodedData = btoa(unescape(encodeURIComponent(annData)));
+
+            if (ann.type === 'text') {
+                const x = ann.x;
+                const y = pageHeight - ann.y; // PDF uses bottom-left origin
+                const color = parseColor(ann.color);
+                const fontSize = ann.fontSize || 16;
+
+                // Only draw text on page (FreeText annotations don't render well in most viewers)
+                pdfPage.drawText(ann.text || '', {
+                    x: x,
+                    y: y - fontSize,
+                    size: fontSize,
+                    font: font,
+                    color: rgb(color.r, color.g, color.b)
+                });
+
+                // Create FreeText annotation for editability
+                const textWidth = font.widthOfTextAtSize(ann.text || '', fontSize);
+                this.createPdfAnnotation(pdfDoc, pdfPage, 'FreeText', {
+                    rect: [x, y - fontSize * 1.5, x + textWidth + 10, y + 5],
+                    contents: ann.text || '',
+                    color: color,
+                    encodedData: encodedData
+                });
+
+            } else if (ann.type === 'rect') {
+                // RectAnnotation uses startX, startY, endX, endY
+                const minX = Math.min(ann.startX, ann.endX);
+                const minY = Math.min(ann.startY, ann.endY);
+                const w = Math.abs(ann.endX - ann.startX);
+                const h = Math.abs(ann.endY - ann.startY);
+
+                const x = minX;
+                const y = pageHeight - minY - h; // Convert to PDF coordinates (bottom-left origin)
+                const color = parseColor(ann.color);
+                const lineWidth = ann.lineWidth || 2;
+
+                // DON'T draw on page content - only create annotation object
+                // This prevents double rendering when re-importing
+
+                // Create Square annotation with appearance stream
+                this.createPdfAnnotation(pdfDoc, pdfPage, 'Square', {
+                    rect: [x, y, x + w, y + h],
+                    color: color,
+                    lineWidth: lineWidth,
+                    encodedData: encodedData
+                });
+
+            } else if (ann.type === 'pen' && ann.points && ann.points.length > 1) {
+                const color = parseColor(ann.color);
+                const lineWidth = ann.lineWidth || 2;
+
+                // DON'T draw on page content - only create annotation object
+                // This prevents double rendering when re-importing
+
+                // Create Ink annotation
+                const inkList = ann.points.map(p => [p.x, pageHeight - p.y]).flat();
+                const minX = Math.min(...ann.points.map(p => p.x));
+                const maxX = Math.max(...ann.points.map(p => p.x));
+                const minY = Math.min(...ann.points.map(p => pageHeight - p.y));
+                const maxY = Math.max(...ann.points.map(p => pageHeight - p.y));
+
+                this.createPdfAnnotation(pdfDoc, pdfPage, 'Ink', {
+                    rect: [minX - 5, minY - 5, maxX + 5, maxY + 5],
+                    inkList: inkList,
+                    color: color,
+                    lineWidth: lineWidth,
+                    encodedData: encodedData
+                });
+
+            } else if (ann.type === 'image' && ann.imageData) {
+                const x = ann.x;
+                const y = pageHeight - ann.y - ann.height;
+                const w = ann.width;
+                const h = ann.height;
+
+                // Image annotations need to be drawn on page (no native PDF image annotation type)
+                try {
+                    const imgBytes = await fetch(ann.imageData).then(res => res.arrayBuffer());
+                    let embeddedImg;
+                    if (ann.imageData.includes('image/png')) {
+                        embeddedImg = await pdfDoc.embedPng(imgBytes);
+                    } else {
+                        embeddedImg = await pdfDoc.embedJpg(imgBytes);
+                    }
+                    pdfPage.drawImage(embeddedImg, { x, y, width: w, height: h });
+
+                    // Create a link annotation to store data for re-import
+                    this.createPdfAnnotation(pdfDoc, pdfPage, 'Link', {
+                        rect: [x, y, x + w, y + h],
+                        encodedData: encodedData
+                    });
+                } catch (e) {
+                    // Could not embed image annotation
+                }
+            }
+        } catch (err) {
+            // Error adding PDF annotation
+        }
+    }
+
+    // Create PDF annotation dictionary
+    createPdfAnnotation(pdfDoc, pdfPage, subtype, options) {
+        const { PDFName, PDFString, PDFArray, PDFNumber, PDFDict, PDFHexString } = PDFLib;
+
+        try {
+            // Store our custom data with doceditor: prefix in Contents field
+            // Use PDFHexString to avoid encoding issues
+            const contentsValue = options.encodedData
+                ? `doceditor:${options.encodedData}`
+                : (options.contents || '');
+
+            const annot = pdfDoc.context.obj({
+                Type: 'Annot',
+                Subtype: subtype,
+                Rect: options.rect,
+                Border: [0, 0, 0],
+                F: 4, // Print flag
+            });
+
+            // Set Contents as PDFString explicitly
+            if (contentsValue) {
+                annot.set(PDFName.of('Contents'), PDFString.of(contentsValue));
+            }
+
+            // Add color if provided
+            if (options.color) {
+                annot.set(PDFName.of('C'), pdfDoc.context.obj([options.color.r, options.color.g, options.color.b]));
+            }
+
+            // Add InkList for Ink annotations
+            if (subtype === 'Ink' && options.inkList) {
+                annot.set(PDFName.of('InkList'), pdfDoc.context.obj([options.inkList]));
+            }
+
+            // Add border style
+            if (options.lineWidth) {
+                annot.set(PDFName.of('BS'), pdfDoc.context.obj({
+                    Type: 'Border',
+                    W: options.lineWidth,
+                    S: 'S'
+                }));
+            }
+
+            // Also store in NM field as backup
+            if (options.encodedData) {
+                annot.set(PDFName.of('NM'), PDFString.of(`doceditor:${options.encodedData}`));
+            }
+
+            // Add to page's annotations array
+            const existingAnnots = pdfPage.node.get(PDFName.of('Annots'));
+            if (existingAnnots) {
+                existingAnnots.push(pdfDoc.context.register(annot));
+            } else {
+                pdfPage.node.set(PDFName.of('Annots'), pdfDoc.context.obj([pdfDoc.context.register(annot)]));
+            }
+        } catch (err) {
+            // Error creating PDF annotation
+        }
+    }
+
+    // Render page to canvas WITHOUT annotations (for PDF export)
+    async renderPageToCanvasWithoutAnnotations(page, canvas) {
+        const ctx = canvas.getContext('2d');
+
+        if (!page.originalImage) await page.load();
+
+        const radians = (page.rotation * Math.PI) / 180;
+        const sin = Math.abs(Math.sin(radians));
+        const cos = Math.abs(Math.cos(radians));
+        let w = page.originalImage.width * page.scale;
+        let h = page.originalImage.height * page.scale;
+
+        let targetWidth = w * cos + h * sin;
+        let targetHeight = w * sin + h * cos;
+
+        // Apply canvas size limits
+        const MAX_CANVAS_SIZE = 16384;
+        const MAX_CANVAS_AREA = 268435456;
+
+        if (targetWidth > MAX_CANVAS_SIZE || targetHeight > MAX_CANVAS_SIZE ||
+            (targetWidth * targetHeight) > MAX_CANVAS_AREA) {
+
+            const scaleX = targetWidth > MAX_CANVAS_SIZE ? MAX_CANVAS_SIZE / targetWidth : 1;
+            const scaleY = targetHeight > MAX_CANVAS_SIZE ? MAX_CANVAS_SIZE / targetHeight : 1;
+            const areaScale = (targetWidth * targetHeight) > MAX_CANVAS_AREA ?
+                Math.sqrt(MAX_CANVAS_AREA / (targetWidth * targetHeight)) : 1;
+
+            const limitFactor = Math.min(scaleX, scaleY, areaScale) * 0.95;
+            page.scale = page.scale * limitFactor;
+
+            w = page.originalImage.width * page.scale;
+            h = page.originalImage.height * page.scale;
+            targetWidth = w * cos + h * sin;
+            targetHeight = w * sin + h * cos;
+        }
+
+        targetWidth = Math.max(1, Math.round(targetWidth));
+        targetHeight = Math.max(1, Math.round(targetHeight));
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(radians);
+        ctx.drawImage(page.originalImage, -w / 2, -h / 2, w, h);
+        ctx.restore();
+
+        // Don't render annotations - they will be added as PDF annotations
     }
 
     async printDocument() {
