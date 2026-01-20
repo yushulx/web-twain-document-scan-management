@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Scanner App</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container scanner-container">
+        <div class="scanner-header">
+            <h1 class="display-4"><i class="fas fa-scanner"></i> Document Scanner</h1>
+            <p class="lead">Scan documents directly from your web browser</p>
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i>
+                OCR feature requires DynamicWebTWAINOCRResources.zip to be installed.
+                <a href="#" onclick="alert('Download DynamicWebTWAINOCRResources.zip from Dynamsoft website and run Install.cmd as administrator.')">Learn more</a>
+            </small>
+        </div>
+
+        <div class="card scanner-card">
+            <div class="scanner-controls">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="mb-3"><i class="fas fa-cogs"></i> Scanner Controls</h5>
+                        <div class="mb-3">
+                            <label for="sourceSelect" class="form-label">Select Scanner:</label>
+                            <select class="form-select" id="sourceSelect">
+                                <option selected>Loading scanners...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <button id="scanBtn" class="btn btn-scan btn-lg" disabled>
+                            <i class="fas fa-play-circle"></i> Start Scanning
+                        </button>
+                        <br><br>
+                        <button id="loadBtn" class="btn btn-secondary-custom">
+                            <i class="fas fa-upload"></i> Load from File
+                        </button>
+                        <button id="saveBtn" class="btn btn-secondary-custom" disabled>
+                            <i class="fas fa-download"></i> Save All
+                        </button>
+                        <button id="clearBtn" class="btn btn-secondary-custom" disabled>
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viewer-container">
+                <div class="document-viewer">
+                    <!-- Thumbnail Panel -->
+                    <div class="thumbnail-panel">
+                        <h6 class="panel-title"><i class="fas fa-th"></i> Documents</h6>
+                        <div id="thumbnailContainer" class="thumbnail-grid">
+                            <div class="empty-state">
+                                <i class="fas fa-file-image"></i>
+                                <h6>No documents scanned yet</h6>
+                                <p>Click "Start Scanning" to begin</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Large Image Panel -->
+                    <div class="large-image-panel">
+                        <h6 class="panel-title"><i class="fas fa-image"></i> Document View</h6>
+                        <div id="largeImageContainer" class="large-image-view">
+                            <div class="no-selection">
+                                <i class="fas fa-hand-pointer"></i>
+                                <h6>Select a document to view</h6>
+                                <p>Click on a thumbnail to see it here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OCR Modal -->
+        <div id="ocrModal" class="ocr-modal">
+            <div class="ocr-content">
+                <div class="ocr-header">
+                    <h4><i class="fas fa-search"></i> OCR Result</h4>
+                    <button class="ocr-close" onclick="closeOCRModal()">&times;</button>
+                </div>
+                <div class="ocr-body">
+                    <div class="ocr-text" id="ocrText">Processing OCR...</div>
+                </div>
+                <div class="ocr-footer">
+                    <div class="ocr-language">
+                        <label for="ocrLanguage">Language:</label>
+                        <select id="ocrLanguage">
+                            <option value="en">English</option>
+                            <option value="fr">French</option>
+                            <option value="es">Spanish</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="pt">Portuguese</option>
+                        </select>
+                    </div>
+                    <button class="copy-btn" onclick="copyOCRText()">
+                        <i class="fas fa-copy"></i> Copy Text
+                    </button>
+                    <button class="copy-btn" onclick="summarizeOCRText()" id="summarizeBtn" style="background: #007bff;">
+                        <i class="fas fa-brain"></i> Summarize
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Modal -->
+        <div id="summaryModal" class="ocr-modal">
+            <div class="ocr-content">
+                <div class="ocr-header">
+                    <h4><i class="fas fa-brain"></i> Document Summary</h4>
+                    <button class="ocr-close" onclick="closeSummaryModal()">&times;</button>
+                </div>
+                <div class="ocr-body">
+                    <div id="summaryProgress" class="progress-bar" style="display: none;">
+                        <div class="progress-fill"></div>
+                        <span class="progress-text">Generating summary...</span>
+                    </div>
+                    <div class="ocr-text" id="summaryText">Preparing summary...</div>
+                </div>
+                <div class="ocr-footer">
+                    <button class="copy-btn" onclick="copySummaryText()">
+                        <i class="fas fa-copy"></i> Copy Summary
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Dynamic Web TWAIN -->
+    <script src="https://cdn.jsdelivr.net/npm/dwt@latest/dist/dynamsoft.webtwain.min.js"></script>
+    <!-- Custom JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>
