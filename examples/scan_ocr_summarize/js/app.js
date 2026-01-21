@@ -1,29 +1,37 @@
 
 // Initialize Dynamic Web TWAIN
-Dynamsoft.DWT.Containers = [];
 Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
 Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@latest/dist';
 Dynamsoft.DWT.ServiceInstallerLocation = 'https://download2.dynamsoft.com/Demo/DWT/Resources/dist/';
-Dynamsoft.DWT.AutoLoad = false;
-Dynamsoft.DWT.UseDefaultViewer = false;
-Dynamsoft.DWT.IfConfineMaskWithinTheViewer = false;
+Dynamsoft.DWT.AutoLoad = true;
+// Create a minimal viewer container to enable the Viewer component
+Dynamsoft.DWT.Containers = [{ 
+    ContainerId: 'dwtcontrolContainer', 
+    Width: '0px',  // Hidden viewer - we're using our own UI
+    Height: '0px' 
+}];
 
 let DWTObject;
 let deviceList = [];
 let selectedImageIndex = -1;
+let imageEditor = null;
+let isEditorVisible = false;
+let currentZoom = 1.0;
+const ZOOM_STEP = 0.2;
+const MAX_ZOOM = 3.0;
+const MIN_ZOOM = 0.5;
 
-// Initialize DWT
-Dynamsoft.DWT.CreateDWTObjectEx({
-    WebTwainId: 'dwtId',
-}, function (object) {
-    DWTObject = object;
+// Wait for DWT to be ready
+Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
+    DWTObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
     if (DWTObject) {
+        // Hide the default viewer since we're using our own UI
+        DWTObject.Viewer.hide();
+        
+        console.log('Dynamic Web TWAIN initialized successfully');
         loadScanners();
         setupEventListeners();
     }
-}, function (error) {
-    console.error('DWT initialization failed:', error);
-    alert('Failed to initialize scanner. Please refresh the page and try again.');
 });
 
 function loadScanners() {
@@ -62,24 +70,43 @@ function setupEventListeners() {
     });
 
     // Scan button
-    document.getElementById('scanBtn').addEventListener('click', function() {
+    document.getElementById('scanBtn').addEventListener('click', function () {
         acquireImage();
     });
 
     // Load from file button
-    document.getElementById('loadBtn').addEventListener('click', function() {
+    document.getElementById('loadBtn').addEventListener('click', function () {
         loadImages();
     });
 
     // Save button
-    document.getElementById('saveBtn').addEventListener('click', function() {
+    document.getElementById('saveBtn').addEventListener('click', function () {
         saveImages();
     });
 
     // Clear button
-    document.getElementById('clearBtn').addEventListener('click', function() {
+    document.getElementById('clearBtn').addEventListener('click', function () {
         clearImages();
     });
+
+    const ocrBtnLarge = document.getElementById('ocrBtnLarge');
+    const editBtnLarge = document.getElementById('editBtnLarge');
+    if (ocrBtnLarge) {
+        ocrBtnLarge.addEventListener('click', function () {
+            if (selectedImageIndex >= 0) {
+                performOCR(selectedImageIndex);
+            }
+        });
+    }
+    if (editBtnLarge) {
+        editBtnLarge.addEventListener('click', function () {
+            toggleImageEditor();
+        });
+    }
+
+    // Zoom controls
+    document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+    document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
 }
 
 function acquireImage() {
@@ -120,11 +147,10 @@ function loadImages() {
 
 function updateImageDisplay() {
     const thumbnailContainer = document.getElementById('thumbnailContainer');
-    const largeImageContainer = document.getElementById('largeImageContainer');
 
     // Clear only the content, preserve the container structure
     thumbnailContainer.innerHTML = '';
-    
+
     if (DWTObject.HowManyImagesInBuffer === 0) {
         // Keep the empty state but with consistent dimensions
         thumbnailContainer.innerHTML = `
@@ -135,14 +161,7 @@ function updateImageDisplay() {
             </div>
         `;
 
-        largeImageContainer.innerHTML = `
-            <div class="no-selection">
-                <i class="fas fa-hand-pointer"></i>
-                <h6>Select a document to view</h6>
-                <p>Click on a thumbnail to see it here</p>
-            </div>
-        `;
-
+        setLargeImageEmptyState();
         document.getElementById('saveBtn').disabled = true;
         document.getElementById('clearBtn').disabled = true;
         selectedImageIndex = -1;
@@ -161,16 +180,16 @@ function updateImageDisplay() {
             thumbnailDiv.classList.add('selected');
         }
         thumbnailDiv.onclick = () => selectImage(i);
-        
+
         // Create image element and preload to ensure it displays properly
         const img = document.createElement('img');
         img.src = imgUrl;
         img.alt = `Scanned document ${i + 1}`;
-        img.onload = function() {
+        img.onload = function () {
             // Ensure the image fits properly after loading
             this.style.display = 'block';
         };
-        img.onerror = function() {
+        img.onerror = function () {
             console.error(`Failed to load image: ${this.src}`);
             // Add fallback content if image fails to load
             this.parentNode.innerHTML = `
@@ -180,14 +199,14 @@ function updateImageDisplay() {
                 </div>
             `;
         };
-        
+
         thumbnailDiv.appendChild(img);
-        
+
         const labelDiv = document.createElement('div');
         labelDiv.className = 'thumbnail-label';
         labelDiv.textContent = `Page ${i + 1}`;
         thumbnailDiv.appendChild(labelDiv);
-        
+
         thumbnailContainer.appendChild(thumbnailDiv);
     }
 
@@ -201,6 +220,7 @@ function updateImageDisplay() {
 
 function selectImage(index) {
     selectedImageIndex = index;
+    DWTObject.CurrentImageIndexInBuffer = index;
 
     // Update thumbnail selection
     const thumbnails = document.querySelectorAll('.thumbnail-item');
@@ -217,33 +237,186 @@ function selectImage(index) {
 }
 
 function showLargeImage(index) {
-    const largeImageContainer = document.getElementById('largeImageContainer');
     const imgUrl = DWTObject.GetImageURL(index);
+    const imgElement = document.getElementById('largeImageDisplay');
+    const noSelection = document.getElementById('noSelection');
+    const stageElement = document.getElementById('largeImageStage');
 
-    // Check if we already have the image element
-    let imgElement = largeImageContainer.querySelector('.large-image-display');
-    let controlsElement = largeImageContainer.querySelector('.large-image-controls');
-
-    if (!imgElement) {
-        // Create the structure if it doesn't exist
-        largeImageContainer.innerHTML = `
-            <img class="large-image-display" src="${imgUrl}" alt="Scanned document ${index + 1}">
-            <div class="large-image-controls">
-                <button class="ocr-button-large" onclick="performOCR(${index})" title="Extract text with OCR">
-                    <i class="fas fa-search"></i> OCR
-                </button>
-            </div>
-        `;
-    } else {
-        // Just update the image source and OCR button
+    if (noSelection) {
+        noSelection.style.display = 'none';
+    }
+    if (stageElement && !isEditorVisible) {
+        stageElement.classList.remove('hidden');
+    }
+    if (imgElement) {
         imgElement.src = imgUrl;
         imgElement.alt = `Scanned document ${index + 1}`;
-        controlsElement.innerHTML = `
-            <button class="ocr-button-large" onclick="performOCR(${index})" title="Extract text with OCR">
-                <i class="fas fa-search"></i> OCR
-            </button>
-        `;
+        imgElement.style.display = 'block';
+
+        // Reset zoom when switching images
+        resetZoom();
     }
+    if (isEditorVisible) {
+        // If switching images while editor is open, update editor
+        DWTObject.CurrentImageIndexInBuffer = index;
+        if (imageEditor) {
+            imageEditor.show();
+        }
+    }
+    updateLargeImageControlsState(true);
+}
+
+function setLargeImageEmptyState() {
+    const noSelection = document.getElementById('noSelection');
+    const imgElement = document.getElementById('largeImageDisplay');
+    const stageElement = document.getElementById('largeImageStage');
+
+    if (noSelection) {
+        noSelection.style.display = 'flex';
+    }
+    if (stageElement) {
+        stageElement.classList.remove('hidden');
+    }
+    if (imgElement) {
+        imgElement.removeAttribute('src');
+        imgElement.style.display = 'none';
+    }
+
+    hideImageEditor();
+    updateLargeImageControlsState(false);
+}
+
+function updateLargeImageControlsState(enabled) {
+    const ocrBtnLarge = document.getElementById('ocrBtnLarge');
+    const editBtnLarge = document.getElementById('editBtnLarge');
+    if (ocrBtnLarge) {
+        ocrBtnLarge.disabled = !enabled;
+    }
+    if (editBtnLarge) {
+        editBtnLarge.disabled = !enabled;
+    }
+}
+
+function toggleImageEditor() {
+    if (!DWTObject || selectedImageIndex < 0) {
+        return;
+    }
+
+    if (isEditorVisible) {
+        hideImageEditor();
+    } else {
+        showImageEditor();
+    }
+}
+
+function showImageEditor() {
+    // Create editor if it doesn't exist
+    ensureImageEditor();
+
+    // Show editor with the current image
+    if (imageEditor) {
+        // Set the current image index before showing the editor
+        DWTObject.CurrentImageIndexInBuffer = selectedImageIndex;
+        imageEditor.show();
+        isEditorVisible = true;
+        updateEditorButtonState(true);
+    } else {
+        console.error("Failed to create image editor");
+        alert("Image editor could not be initialized. Please check that Dynamic Web TWAIN resources are loaded correctly.");
+    }
+}
+
+function hideImageEditor() {
+    if (imageEditor) {
+        imageEditor.hide();
+    }
+    isEditorVisible = false;
+    updateEditorButtonState(false);
+    
+    // Refresh the display after editing
+    updateImageDisplay();
+}
+
+function ensureImageEditor() {
+    if (imageEditor || !DWTObject) {
+        return;
+    }
+
+    try {
+        // The Viewer.createImageEditor() creates a full-screen editor by default
+        // We don't need to specify a container - it will create its own modal overlay
+        imageEditor = DWTObject.Viewer.createImageEditor();
+        console.log("Image Editor created successfully");
+    } catch (e) {
+        console.error("Error creating image editor:", e);
+        // If createImageEditor fails, it might be because Viewer isn't available
+        // Let's check if we need to bind a viewer first
+        if (!DWTObject.Viewer) {
+            console.error("DWTObject.Viewer is not available. This might be a version issue.");
+        }
+    }
+}
+
+// Zoom Functions
+function zoomIn() {
+    if (currentZoom < MAX_ZOOM) {
+        currentZoom = parseFloat((currentZoom + ZOOM_STEP).toFixed(1));
+        applyZoom();
+    }
+}
+
+function zoomOut() {
+    if (currentZoom > MIN_ZOOM) {
+        currentZoom = parseFloat((currentZoom - ZOOM_STEP).toFixed(1));
+        applyZoom();
+    }
+}
+
+function resetZoom() {
+    currentZoom = 1.0;
+    applyZoom();
+}
+
+function applyZoom() {
+    const img = document.getElementById('largeImageDisplay');
+    if (!img) return;
+
+    if (currentZoom === 1.0) {
+        // Reset to default
+        img.style.width = '';
+        img.style.height = '';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.objectFit = 'contain';
+    } else {
+        // Apply zoom
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+        img.style.objectFit = 'contain'; // Keep contain but size is forced by width? 
+        // Actually, if we set width/height, object-fit might still apply to the content box.
+        // Let's set dimensions relative to the container for zooming? 
+        // No, best is to scale the image element itself.
+
+        // Since we don't know the natural aspect ratio easily without querying, 
+        // we can use transform for smooth scaling, but that doesn't affect layout flow (scrollbars).
+        // A better approach for scrolling is setting width to percentage > 100% or pixels.
+        // Let's assume we want to zoom based on the current container view.
+        // Simple pixel scaling is better if we knew the base size.
+        // Let's try percentage. 100% is fit to container. 150% is 1.5x container.
+
+        img.style.width = `${currentZoom * 100}%`;
+        img.style.height = 'auto'; // Maintain aspect ratio
+    }
+}
+
+function updateEditorButtonState(isEditing) {
+    const editBtnLarge = document.getElementById('editBtnLarge');
+    if (!editBtnLarge) {
+        return;
+    }
+    editBtnLarge.innerHTML = isEditing
+        ? '<i class="fas fa-times"></i> Close'
+        : '<i class="fas fa-pen"></i> Edit';
 }
 
 function saveImages() {
@@ -254,9 +427,9 @@ function saveImages() {
 
     // Save as PDF - use asynchronous version with callbacks
     DWTObject.IfShowFileDialog = true;
-    DWTObject.SaveAllAsPDF('scanned_documents.pdf', function() {
+    DWTObject.SaveAllAsPDF('scanned_documents.pdf', function () {
         alert('Documents saved as PDF successfully!');
-    }, function(errorCode, errorString) {
+    }, function (errorCode, errorString) {
         alert('Failed to save PDF: ' + errorString);
     });
 }
@@ -270,7 +443,7 @@ function clearImages() {
 }
 
 // Handle page unload
-window.addEventListener('beforeunload', function() {
+window.addEventListener('beforeunload', function () {
     if (DWTObject) {
         DWTObject.RemoveAllImages();
     }
@@ -359,14 +532,14 @@ async function copyOCRText() {
 }
 
 // Close modal when clicking outside
-document.getElementById('ocrModal').addEventListener('click', function(e) {
+document.getElementById('ocrModal').addEventListener('click', function (e) {
     if (e.target === this) {
         closeOCRModal();
     }
 });
 
 // Close modal with Escape key
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         if (document.getElementById('ocrModal').classList.contains('show')) {
             closeOCRModal();
@@ -480,7 +653,7 @@ async function copySummaryText() {
 }
 
 // Close summary modal when clicking outside
-document.getElementById('summaryModal').addEventListener('click', function(e) {
+document.getElementById('summaryModal').addEventListener('click', function (e) {
     if (e.target === this) {
         closeSummaryModal();
     }
