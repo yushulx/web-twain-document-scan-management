@@ -100,7 +100,10 @@ function setupEventListeners() {
     }
     if (editBtnLarge) {
         editBtnLarge.addEventListener('click', function () {
-            toggleImageEditor();
+            // Simply open the editor - it's full screen so no toggle needed
+            if (selectedImageIndex >= 0) {
+                showImageEditor();
+            }
         });
     }
 
@@ -297,20 +300,12 @@ function updateLargeImageControlsState(enabled) {
     }
 }
 
-function toggleImageEditor() {
+function showImageEditor() {
     if (!DWTObject || selectedImageIndex < 0) {
         return;
     }
 
-    if (isEditorVisible) {
-        hideImageEditor();
-    } else {
-        showImageEditor();
-    }
-}
-
-function showImageEditor() {
-    // Create editor if it doesn't exist
+    // Create editor if it doesn't exist or if it was disposed
     ensureImageEditor();
 
     // Show editor with the current image
@@ -319,38 +314,124 @@ function showImageEditor() {
         DWTObject.CurrentImageIndexInBuffer = selectedImageIndex;
         imageEditor.show();
         isEditorVisible = true;
-        updateEditorButtonState(true);
+        
+        // Listen for when the editor closes to reset state and destroy the reference
+        setTimeout(() => {
+            if (imageEditor && imageEditor.inner && imageEditor.inner.element) {
+                const editorElement = imageEditor.inner.element;
+                // Check if editor is still visible
+                const checkEditorClosed = setInterval(() => {
+                    if (!editorElement.parentNode || editorElement.style.display === 'none') {
+                        clearInterval(checkEditorClosed);
+                        isEditorVisible = false;
+                        // Destroy the editor reference so it can be recreated next time
+                        imageEditor = null;
+                        updateImageDisplay();
+                    }
+                }, 500);
+            }
+        }, 100);
     } else {
         console.error("Failed to create image editor");
         alert("Image editor could not be initialized. Please check that Dynamic Web TWAIN resources are loaded correctly.");
     }
 }
 
-function hideImageEditor() {
-    if (imageEditor) {
-        imageEditor.hide();
-    }
-    isEditorVisible = false;
-    updateEditorButtonState(false);
-    
-    // Refresh the display after editing
-    updateImageDisplay();
-}
-
 function ensureImageEditor() {
-    if (imageEditor || !DWTObject) {
+    // Check if editor exists and is not disposed
+    if (imageEditor) {
+        // If editor exists but is disposed, clear the reference
+        if (imageEditor.inner && imageEditor.inner.bDispose) {
+            imageEditor = null;
+        } else {
+            // Editor exists and is valid
+            return;
+        }
+    }
+    
+    if (!DWTObject) {
         return;
     }
 
     try {
-        // The Viewer.createImageEditor() creates a full-screen editor by default
-        // We don't need to specify a container - it will create its own modal overlay
-        imageEditor = DWTObject.Viewer.createImageEditor();
+        // Create image editor with custom styling to match app theme
+        imageEditor = DWTObject.Viewer.createImageEditor({
+            // Full screen editor
+            element: null, // null = full screen
+            
+            // Custom colors matching the app theme
+            border: '1px solid #667eea',
+            topMenuBorder: '1px solid #764ba2',
+            background: '#f8f9fa',
+            
+            // Button customization
+            buttons: {
+                titles: {
+                    'previous': 'Previous Image',
+                    'next': 'Next Image',
+                    'scan': 'Scan More',
+                    'load': 'Load Images',
+                    'print': 'Print',
+                    'removeall': 'Remove All',
+                    'removeselected': 'Remove Selected',
+                    'rotateleft': 'Rotate Left',
+                    'rotate': 'Rotate',
+                    'rotateright': 'Rotate Right',
+                    'deskew': 'Deskew',
+                    'crop': 'Crop',
+                    'cut': 'Erase',
+                    'changeimagesize': 'Resize',
+                    'flip': 'Flip',
+                    'mirror': 'Mirror',
+                    'zoomin': 'Zoom In',
+                    'originalsize': 'Original Size',
+                    'zoomout': 'Zoom Out',
+                    'fit': 'Fit Window',
+                    'fitw': 'Fit Width',
+                    'fith': 'Fit Height',
+                    'hand': 'Hand Tool',
+                    'rectselect': 'Select',
+                    'zoom': 'Zoom Tool',
+                    'restore': 'Restore',
+                    'save': 'Save Changes',
+                    'close': 'Close Editor'
+                },
+                visibility: {
+                    'previous': true,
+                    'next': true,
+                    'scan': false,  // Hide scan in editor (we have it in main UI)
+                    'load': false,  // Hide load in editor
+                    'print': false, // Hide print
+                    'removeall': false,
+                    'removeselected': true,
+                    'rotateleft': true,
+                    'rotate': true,
+                    'rotateright': true,
+                    'deskew': true,
+                    'crop': true,
+                    'cut': true,
+                    'changeimagesize': true,
+                    'flip': true,
+                    'mirror': true,
+                    'zoomin': true,
+                    'originalsize': true,
+                    'zoomout': true,
+                    'fit': true,
+                    'fitw': true,
+                    'fith': true,
+                    'hand': true,
+                    'rectselect': true,
+                    'zoom': true,
+                    'restore': true,
+                    'save': true,
+                    'close': true
+                }
+            }
+        });
+        
         console.log("Image Editor created successfully");
     } catch (e) {
         console.error("Error creating image editor:", e);
-        // If createImageEditor fails, it might be because Viewer isn't available
-        // Let's check if we need to bind a viewer first
         if (!DWTObject.Viewer) {
             console.error("DWTObject.Viewer is not available. This might be a version issue.");
         }
@@ -409,15 +490,7 @@ function applyZoom() {
     }
 }
 
-function updateEditorButtonState(isEditing) {
-    const editBtnLarge = document.getElementById('editBtnLarge');
-    if (!editBtnLarge) {
-        return;
-    }
-    editBtnLarge.innerHTML = isEditing
-        ? '<i class="fas fa-times"></i> Close'
-        : '<i class="fas fa-pen"></i> Edit';
-}
+
 
 function saveImages() {
     if (DWTObject.HowManyImagesInBuffer === 0) {

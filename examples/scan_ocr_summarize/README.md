@@ -100,9 +100,6 @@ Click "Load from File" to import existing images or PDFs from your computer.
 1. Select a document
 2. Click the "Edit" button to open the image editor
 3. Use the editing tools to enhance your document (crop, rotate, adjust brightness, etc.)
-4. Click "Close" or the X button to save changes and return to the view
-
-**Note**: The image editor opens in full-screen mode with all editing tools available.
 
 ### Saving Documents
 
