@@ -572,3 +572,160 @@ body {
         margin-bottom: 1rem;
     }
 }
+
+/* ===== Image Editor Custom Styling ===== */
+/* Match the editor theme with the app's purple gradient theme */
+
+/* Hide the minimal DWT viewer container */
+#dwtcontrolContainer {
+    display: none !important;
+}
+
+/* Editor header/toolbar */
+.dwt-viewer-imageEditor .dwt-imageEditorHeader {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-bottom: 2px solid #764ba2 !important;
+    padding: 10px 15px !important;
+}
+
+/* Editor icons color and button styling */
+.dwt-viewer-imageEditor .dvs-editor-iconfont {
+    color: #ffffff !important;
+    font-size: 16px !important;
+    font-weight: normal !important;
+}
+
+/* Make editor icons look more consistent */
+.dwt-viewer-imageEditor .dvs-btn {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px !important;
+}
+
+.dwt-viewer-imageEditor .dvs-btn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Icon button groups spacing */
+.dwt-viewer-imageEditor .dvs-buttonGroup {
+    gap: 4px !important;
+    margin: 0 8px !important;
+}
+
+/* Separator lines between button groups */
+.dwt-viewer-imageEditor .dvs-separator {
+    background: rgba(255, 255, 255, 0.3) !important;
+    width: 1px !important;
+    height: 30px !important;
+    margin: 0 4px !important;
+}
+
+/* Active/selected button state */
+.dwt-viewer-imageEditor .dwt-viewer-imageEditor-selected,
+.dwt-viewer-imageEditor .dvs-btn.selected,
+.dwt-viewer-imageEditor .dvs-btn:active {
+    background: rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Editor body background */
+.dwt-viewer-imageEditor .dwt-imageEditorBody {
+    background: #f8f9fa !important;
+}
+
+/* Editor close button */
+.dwt-viewer-imageEditor .dwt-imageEditorHeader .dvs-btn-close {
+    background: rgba(220, 53, 69, 0.8) !important;
+    border-radius: 6px !important;
+}
+
+.dwt-viewer-imageEditor .dwt-imageEditorHeader .dvs-btn-close:hover {
+    background: rgba(220, 53, 69, 1) !important;
+}
+
+/* Tooltips */
+.dwt-viewer-imageEditor .dvs-tooltip {
+    background: #323334 !important;
+    color: #fff !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+}
+
+/* Scrollbars in editor */
+.dwt-viewer-imageEditor ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dwt-viewer-imageEditor ::-webkit-scrollbar-track {
+    background: #e9ecef;
+}
+
+.dwt-viewer-imageEditor ::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 4px;
+}
+
+.dwt-viewer-imageEditor ::-webkit-scrollbar-thumb:hover {
+    background: #764ba2;
+}
+
+/* Editor dialogs/modals */
+.dwt-viewer-imageEditor .dwt-dlg-mask {
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg {
+    border-radius: 8px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg-body {
+    background: white !important;
+    color: #323334 !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg-footer {
+    background: #f8f9fa !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+/* Dialog buttons */
+.dwt-viewer-imageEditor .dwt-dlg-footer button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 6px !important;
+    padding: 8px 20px !important;
+    transition: all 0.3s ease !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg-footer button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg-footer button.cancel {
+    background: #6c757d !important;
+}
+
+.dwt-viewer-imageEditor .dwt-dlg-footer button.cancel:hover {
+    background: #5a6268 !important;
+}
