@@ -129,3 +129,5 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 }
 ```
 
+## Blog
+[Building an Intelligent Web Document Scanner with OCR and Chrome's Built-in AI](https://www.dynamsoft.com/codepool/web-document-scanner-ocr-ai-summarization.html)
