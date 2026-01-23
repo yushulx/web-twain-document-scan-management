@@ -2,6 +2,7 @@
 
 A modern web-based document scanning application that combines **Dynamic Web TWAIN** for document scanning and OCR with **Gemini Nano** (Chrome's built-in AI) for intelligent document summarization.
 
+https://github.com/user-attachments/assets/3549a9b1-9d36-4e92-820d-7574e5cd64d0
 
 ## Features
 
@@ -128,3 +129,5 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 }
 ```
 
+## Blog
+[Building an Intelligent Web Document Scanner with OCR and Chrome's Built-in AI](https://www.dynamsoft.com/codepool/web-document-scanner-ocr-ai-summarization.html)
