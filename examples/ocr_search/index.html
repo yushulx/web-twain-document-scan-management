@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuScan - Document Scanner with OCR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app.css">
+    <!-- Dynamic Web TWAIN -->
+    <script src="https://unpkg.com/dwt@19.3.0/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <h1>DocuScan</h1>
+            </div>
+            <div class="header-actions">
+                <span id="status-bar" class="status-badge">Initializing...</span>
+            </div>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-section scanner-section">
+                <div class="toolbar-group">
+                    <!-- <label class="toolbar-label">Scanner</label> -->
+                    <select id="source" class="select">
+                        <option value="-1">Loading scanners...</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="acquireImage()">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <line x1="7" y1="20" x2="7" y2="24"></line>
+                        <line x1="17" y1="20" x2="17" y2="24"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    Scan
+                </button>
+                <button class="btn btn-secondary" onclick="loadImage()">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Load
+                </button>
+            </div>
+
+            <div class="toolbar-section toolbar-search">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search OCR text...">
+                    <button class="search-btn" onclick="searchText()">Search</button>
+                </div>
+                <button class="btn btn-ghost" onclick="clearSearch()">Clear</button>
+                <div class="nav-buttons">
+                    <button class="btn btn-ghost btn-icon-only" onclick="previousMatch()" title="Previous match (←)">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="btn btn-ghost btn-icon-only" onclick="nextMatch()" title="Next match (→)">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <button class="btn btn-danger-outline" onclick="removeSelected()">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Remove
+                </button>
+                <button class="btn btn-danger" onclick="removeAll()">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Remove All
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="viewer-container">
+                <div id="custom-viewer">
+                    <canvas id="image-canvas"></canvas>
+                    <canvas id="highlight-canvas"></canvas>
+                    <div id="text-layer"></div>
+                </div>
+                <div class="viewer-controls">
+                    <button onclick="previousImage()" class="btn btn-ghost btn-icon-only" title="Previous Image">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <span id="image-counter">0 / 0</span>
+                    <button onclick="nextImage()" class="btn btn-ghost btn-icon-only" title="Next Image">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <span>Powered by Dynamic Web TWAIN</span>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
