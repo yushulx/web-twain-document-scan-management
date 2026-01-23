@@ -1,0 +1,13 @@
+{
+	"servers": {
+		"dynamsoft": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"simple-dynamsoft-mcp@3.1.0"
+			],
+			"type": "stdio"
+		}
+	},
+	"inputs": []
+}
