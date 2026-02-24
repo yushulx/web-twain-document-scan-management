@@ -1,6 +1,8 @@
-# Web Document Scanner with OCR and Search
+# Web Document Scanner with OCR and Text Search
 
 A modern web-based document scanning application with Optical Character Recognition (OCR) and full-text search capabilities. Built with Dynamic Web TWAIN SDK and custom canvas rendering.
+
+https://github.com/user-attachments/assets/7802104f-421f-403d-899f-09d5b5e4cd10
 
 ## Features
 
@@ -59,3 +61,5 @@ A modern web-based document scanning application with Optical Character Recognit
 - **Remove**: Delete currently displayed document
 - **Remove All**: Clear all documents from storage
 
+## Blog
+[How OCR Helps Organize and Search Bulk Scanned Documents: A Developer's Guide](https://www.dynamsoft.com/codepool/scan-ocr-bulk-document-search-text.html)
