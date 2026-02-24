@@ -9,6 +9,7 @@
 
 <body>
     <select size="1" id="source" style="position: relative; width: 220px;"></select>
+    <input type="file" id="localFileInput" accept="image/*,.pdf" style="display:none;" onchange="onFileSelected(event);" />
 
     <div id="dwtcontrolContainer"></div>
     <!-- <input type="button" value="Scan" onclick="acquireImage();" />
@@ -30,22 +31,27 @@
             dwtObject.Viewer.height = 640;
             dwtObject.Viewer.show();
 
+            if (backend) backend.log("DWT Object created successfully.");
             onReady();
         }, (errorString) => {
             console.log(errorString);
+            if (backend) backend.log("CreateDWTObjectEx error: " + JSON.stringify(errorString));
         });
 
         var backend;
         new QWebChannel(qt.webChannelTransport, function (channel) {
             backend = channel.objects.backend;
+            backend.log("QWebChannel initialized.");
         });
 
 
         function onReady() {
             if (dwtObject) {
                 dwtObject.IfShowUI = false;
+                if (backend) backend.log("Calling GetDevicesAsync...");
                 // https://www.dynamsoft.com/web-twain/docs/info/api/Dynamsoft_Enum.html
                 dwtObject.GetDevicesAsync(Dynamsoft.DWT.EnumDWT_DeviceType.TWAINSCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.TWAINX64SCANNER | Dynamsoft.DWT.EnumDWT_DeviceType.ESCLSCANNER).then((sources) => {
+                    if (backend) backend.log("GetDevicesAsync returned " + sources.length + " sources.");
                     sourceList = sources;
                     selectSources.options.length = 0;
                     for (let i = 0; i < sources.length; i++) {
@@ -54,53 +60,85 @@
                         option.value = i.toString();
                         selectSources.add(option);
                     }
+                }).catch(err => {
+                    if (backend) backend.log("GetDevicesAsync error: " + err.message);
                 });
             }
         }
 
         async function acquireImage() {
             if (!dwtObject) {
+                if (backend) backend.log("acquireImage: dwtObject is null.");
                 alert("Please wait for the document to be loaded completely.");
                 return;
             }
 
-            if (selectSources) {
+            if (sourceList.length > 0) {
                 try {
+                    if (backend) backend.log("Selecting device: " + sourceList[selectSources.selectedIndex].displayName);
                     await dwtObject.SelectDeviceAsync(sourceList[selectSources.selectedIndex]);
+                    if (backend) backend.log("Opening source...");
                     await dwtObject.OpenSourceAsync();
-                    dwtObject.AcquireImageAsync({
+                    if (backend) backend.log("Acquiring image...");
+                    await dwtObject.AcquireImageAsync({
                         IfDisableSourceAfterAcquire: true
                     });
+                    if (backend) backend.log("Image acquired.");
                 } catch (e) {
                     console.error(e);
+                    if (backend) backend.log("acquireImage error: " + e.message);
                 }
-
-                dwtObject.CloseSource();
             } else {
+                if (backend) backend.log("acquireImage: No Source Available!");
                 alert("No Source Available!");
             }
         }
 
         function getCurrentImage() {
             if (dwtObject) {
+                if (backend) backend.log("Getting current image...");
                 dwtObject.ConvertToBase64(
                     [dwtObject.CurrentImageIndexInBuffer],
                     Dynamsoft.DWT.EnumDWT_ImageType.IT_JPG,
                     function (result, indices, type) {
+                        if (backend) backend.log("Image converted to base64.");
                         backend.onDataReady(result.getData(0, result.getLength()))
                     },
                     function (errorCode, errorString) {
                         console.log(errorString);
+                        if (backend) backend.log("getCurrentImage error: " + errorString);
                     }
                 );
             }
         }
 
         function loadImage() {
-            if (!dwtObject)
+            if (!dwtObject) {
+                if (backend) backend.log("loadImage: dwtObject is null.");
                 return;
-            dwtObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
-            let ret = dwtObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+            }
+            if (backend) backend.log("Loading image from local...");
+            if (dwtObject.Addon && dwtObject.Addon.PDF) {
+                dwtObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
+            }
+            var fileInput = document.getElementById("localFileInput");
+            fileInput.value = "";
+            fileInput.click();
+        }
+
+        function onFileSelected(e) {
+            var file = e.target.files[0];
+            if (!file || !dwtObject) return;
+            if (backend) backend.log("File selected: " + file.name);
+            dwtObject.LoadImageFromBinary(
+                file,
+                function () {
+                    if (backend) backend.log("Image loaded: " + file.name);
+                },
+                function (errorCode, errorString) {
+                    if (backend) backend.log("LoadImageFromBinary error: " + errorString);
+                }
+            );
         }
     </script>
 </body>
