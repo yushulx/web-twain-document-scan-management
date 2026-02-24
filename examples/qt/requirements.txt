@@ -1,3 +1,2 @@
-dbr
-PyQt5
-PyQtWebEngine
+dynamsoft-barcode-reader-bundle
+PySide6

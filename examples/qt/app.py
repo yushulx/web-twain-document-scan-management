@@ -1,18 +1,41 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWebChannel import QWebChannel
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineSettings
 
 import os
-from dbr import *
+from dynamsoft_barcode_reader_bundle import *
 import base64
+import http.server
+import socketserver
+import threading
+
+class HttpDaemon(threading.Thread):
+    def __init__(self, port):
+        threading.Thread.__init__(self)
+        self.port = port
+        self.daemon = True
+
+    def run(self):
+        Handler = http.server.SimpleHTTPRequestHandler
+        # Change directory to the script's directory to serve files correctly
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        with socketserver.TCPServer(("", self.port), Handler) as httpd:
+            httpd.serve_forever()
+
+# Start HTTP server
+http_daemon = HttpDaemon(8000)
+http_daemon.start()
 
 # Initialize Dynamsoft Barcode Reader
-reader = BarcodeReader()
-# Apply for a trial license https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-reader.init_license(
+# Apply for a trial license: https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
+errorCode, errorMsg = LicenseManager.init_license(
     'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==')
+if errorCode != EnumErrorCode.EC_OK and errorCode != EnumErrorCode.EC_LICENSE_WARNING:
+    print('License initialization failed: ErrorCode:', errorCode, ', ErrorString:', errorMsg)
+cvr_instance = CaptureVisionRouter()
 
 # Create Qt application
 app = QApplication([])
@@ -25,39 +48,47 @@ win.setLayout(layout)
 
 
 class Backend(QObject):
-    @pyqtSlot(str)
+    @Slot(str)
     def onDataReady(self, base64img):
         imgdata = base64.b64decode(base64img)
 
         try:
-            text_results = reader.decode_file_stream(bytearray(imgdata), '')
-            if text_results != None:
-                out = ''
-                for text_result in text_results:
-                    out += "Barcode Format : "
-                    out += text_result.barcode_format_string + '\n'
-                    out += "Barcode Text : "
-                    out += text_result.barcode_text + '\n'
-                    out += "-------------------------------------------------" + '\n'
+            result = cvr_instance.capture(bytes(imgdata), EnumPresetTemplate.PT_READ_BARCODES)
+            if result.get_error_code() not in [EnumErrorCode.EC_OK, EnumErrorCode.EC_LICENSE_WARNING]:
+                print('Capture error:', result.get_error_string())
+                return
+            barcode_result = result.get_decoded_barcodes_result()
+            if barcode_result is None:
+                text_area.setText('No barcode found.')
+                return
+            items = barcode_result.get_items()
+            out = ''
+            for item in items:
+                out += 'Barcode Format : '
+                out += item.get_format_string() + '\n'
+                out += 'Barcode Text : '
+                out += item.get_text() + '\n'
+                out += '-------------------------------------------------' + '\n'
+            text_area.setText(out)
+        except Exception as e:
+            print(e)
 
-                text_area.setText(out)
-        except BarcodeReaderError as bre:
-            print(bre)
+    @Slot(str)
+    def log(self, message):
+        print("[JS Log]:", message)
+        text_area.append("[JS Log]: " + message)
 
 
 class WebView(QWebEngineView):
     def __init__(self):
         QWebEngineView.__init__(self)
 
-        self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
-        self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        self.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
+        self.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
         self.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
 
         # Load web page and resource files to QWebEngineView
-        file_path = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), "index.html"))
-        local_url = QUrl.fromLocalFile(file_path)
-        self.load(local_url)
+        self.load(QUrl("http://127.0.0.1:8000/index.html"))
         self.backend = Backend(self)
         self.channel = QWebChannel(self.page())
         self.channel.registerObject('backend', self.backend)
@@ -120,4 +151,4 @@ def keyPressEvent(event):
 win.keyPressEvent = keyPressEvent
 
 win.show()
-app.exec_()
+app.exec()
