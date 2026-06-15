@@ -103,3 +103,6 @@ https://github.com/user-attachments/assets/ebe22c6b-03b2-443e-9cae-9854e29cd39d
 ├── script.js           # JavaScript application logic
 └── README.md          # This documentation
 ```
+
+## Blog
+[Build a Web Document Scanner with Claude Code AI and Dynamic Web TWAIN (10-Minute Tutorial)](https://www.dynamsoft.com/codepool/claude-code-ai-agent-web-document-scanning.html)
