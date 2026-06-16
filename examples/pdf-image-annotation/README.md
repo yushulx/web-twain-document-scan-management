@@ -80,3 +80,6 @@ https://unpkg.com/dwt@19.4.1/dist/dist
 ```
 
 For production, Dynamsoft recommends extracting the service installers from the SDK package and self-hosting them so the service version matches the deployed DWT runtime.
+
+## Blog
+[How to Build a Browser Document Annotation Studio with PDF, Image, and Scanner Capture in TypeScript](https://www.dynamsoft.com/codepool/build-pdf-image-annotation-document-viewer.html)
