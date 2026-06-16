@@ -38,15 +38,14 @@ import {
 /* ------------------------------------------------------------------ */
 
 /**
- * Provide your own license via a Vite env var:
- *   create a `.env.local` file with:  VITE_DDVR_LICENSE="DLS2eyJ..."
- *
- * Without a value, a short-lived public trial key is used as a fallback
- * so the app boots out of the box for evaluation.
+ * Default trial license key used as a fallback when the user does not
+ * provide their own license.
  */
-const LICENSE: string =
-  import.meta.env.VITE_DDVR_LICENSE ??
+const DEFAULT_LICENSE: string =
   "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+
+/** License from .env.local (if set) overrides the default. */
+const ENV_LICENSE: string | undefined = import.meta.env.VITE_DDVR_LICENSE;
 
 // Serve the WASM engine from the same CDN as the package. For fully
 // offline/production hosting, copy the `dist/engine` folder locally and
@@ -54,19 +53,70 @@ const LICENSE: string =
 const ENGINE_RESOURCE_PATH =
   "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@4.0.0/dist/engine";
 
-async function initDDV(): Promise<void> {
+async function initDDV(license: string): Promise<void> {
   const title = document.getElementById("init-title")!;
   const sub = document.getElementById("init-sub")!;
 
-  DDV.Core.license = LICENSE;
+  DDV.Core.license = license;
   DDV.Core.engineResourcePath = ENGINE_RESOURCE_PATH;
 
-  sub.textContent = "Loading the WASM document engine…";
+  sub.textContent = "Loading the WASM document engine\u2026";
   await DDV.Core.init();
 
   title.textContent = "Preparing tools";
-  sub.textContent = "Warming up image filters…";
+  sub.textContent = "Warming up image filters\u2026";
   DDV.setProcessingHandler("imageFilter", new DDV.ImageFilter());
+}
+
+/* ------------------------------------------------------------------ */
+/*  License screen                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Show the license activation screen and resolve with the chosen license
+ * key once the user clicks Activate or Use Default License.
+ */
+function waitForLicense(): Promise<string> {
+  return new Promise((resolve) => {
+    const screen = document.getElementById("license-screen")!;
+    const input = document.getElementById("license-input") as HTMLTextAreaElement;
+    const btnActivate = document.getElementById("btn-activate")!;
+    const btnDefault = document.getElementById("btn-use-default")!;
+    const errorEl = document.getElementById("license-error")!;
+
+    // If an env license is set, pre-fill the input.
+    if (ENV_LICENSE) {
+      input.value = ENV_LICENSE;
+    }
+
+    function proceed(license: string) {
+      screen.classList.add("hidden");
+      resolve(license);
+    }
+
+    function showError(msg: string) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove("hidden");
+      btnActivate.removeAttribute("disabled");
+    }
+
+    btnActivate.addEventListener("click", async () => {
+      const key = input.value.trim();
+      if (!key) {
+        showError("Please paste a license key, or click \"Use Default License\".");
+        return;
+      }
+      btnActivate.setAttribute("disabled", "true");
+      errorEl.classList.add("hidden");
+      proceed(key);
+    });
+
+    btnDefault.addEventListener("click", () => {
+      btnDefault.setAttribute("disabled", "true");
+      errorEl.classList.add("hidden");
+      proceed(DEFAULT_LICENSE);
+    });
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -82,18 +132,24 @@ let viewerHandle: EditViewerHandle | null = null;
 async function bootstrap(): Promise<void> {
   const initOverlay = document.getElementById("init-overlay")!;
 
+  // 1. Show the license screen and wait for the user to choose a key.
+  const license = await waitForLicense();
+
+  // 2. Show the WASM init overlay and initialize the engine.
+  initOverlay.classList.remove("hidden");
+
   try {
-    await initDDV();
+    await initDDV(license);
   } catch (err: any) {
     const title = document.getElementById("init-title")!;
     const sub = document.getElementById("init-sub")!;
     title.textContent = "Initialization failed";
     sub.textContent = err?.message ?? String(err);
-    showToast("SDK init failed — check your license key in .env.local", "error");
+    showToast("SDK init failed. Check your license key and try again.", "error");
     return;
   }
 
-  // Engine ready — hide the init overlay and build the viewer.
+  // 3. Engine ready — hide the init overlay and build the viewer.
   initOverlay.classList.add("hidden");
 
   viewerHandle = createEditViewer("ddv-container");
