@@ -2,6 +2,8 @@
 
 A browser-based document workbench for opening PDFs/images, appending more files or scanned pages into one working document, annotating pages, and exporting the result to PDF or image formats. It is built with [Dynamsoft Document Viewer](https://www.dynamsoft.com/document-viewer/overview/) v4, Dynamic Web TWAIN scanner capture, Vite, and TypeScript.
 
+https://github.com/user-attachments/assets/becc8b2e-0cd1-4706-9617-d9f3973d9f43
+
 ## Features
 
 - **Open and append documents**: PDF, PNG, JPEG, TIFF, and BMP can be loaded from the header button, empty-state CTA, or drag and drop. New files are appended to the current document instead of replacing it.
