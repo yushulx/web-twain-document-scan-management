@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/becc8b2e-0cd1-4706-9617-d9f3973d9f43
 ## Prerequisites
 
 - Node.js 18+
-- A [license key]((https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)) for production use
+- A [license key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) for production use
 - Optional scanner support requires:
   - Dynamic Web TWAIN Service installed/running on the client machine
   - A TWAIN/WIA/ICA/SANE/eSCL scanner supported by DWT
