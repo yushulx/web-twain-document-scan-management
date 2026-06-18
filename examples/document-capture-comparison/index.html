@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Capture Solution Comparison — Interactive Demo</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <header class="hero">
+        <div class="container">
+            <h1>How to Choose a Document Capture Solution<br>for Digitizing Paper Records</h1>
+            <p class="subtitle">An interactive comparison guide — try each approach live</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- ===== DECISION FRAMEWORK ===== -->
+        <section class="section" id="decision-framework">
+            <h2>Decision Framework</h2>
+            <p>Answer these questions to narrow down which approach fits your project. Your recommendation updates as
+                you answer.</p>
+            <form id="decision-form">
+                <div class="question-card" data-q="volume">
+                    <h3>Q1: What's your daily scanning volume?</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="volume" value="low"> &lt; 50 pages/day</label>
+                        <label><input type="radio" name="volume" value="medium"> 50–500 pages/day</label>
+                        <label><input type="radio" name="volume" value="high"> 500–5,000 pages/day</label>
+                        <label><input type="radio" name="volume" value="enterprise"> 5,000+ pages/day</label>
+                    </div>
+                </div>
+                <div class="question-card" data-q="doc-type">
+                    <h3>Q2: What kinds of documents?</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="doc-type" value="loose"> Standard loose sheets (A4 /
+                            Letter)</label>
+                        <label><input type="radio" name="doc-type" value="bound"> Bound books, fragile paper,
+                            photos</label>
+                        <label><input type="radio" name="doc-type" value="cards"> ID cards, driver licenses</label>
+                        <label><input type="radio" name="doc-type" value="mixed"> Mixed — both loose and bound</label>
+                    </div>
+                </div>
+                <div class="question-card" data-q="location">
+                    <h3>Q3: Where are your users?</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="location" value="same-room"> Same room as the scanner</label>
+                        <label><input type="radio" name="location" value="same-building"> Same building, different
+                            rooms</label>
+                        <label><input type="radio" name="location" value="remote"> Remote / home offices</label>
+                        <label><input type="radio" name="location" value="mixed"> Mixed (office + remote)</label>
+                    </div>
+                </div>
+                <div class="question-card" data-q="integration">
+                    <h3>Q4: What's your integration architecture?</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="integration" value="webapp"> Standalone web app (browser
+                            only)</label>
+                        <label><input type="radio" name="integration" value="backend"> Custom backend service (Python /
+                            .NET / Node.js)</label>
+                        <label><input type="radio" name="integration" value="mobile"> Mobile-first workflow</label>
+                        <label><input type="radio" name="integration" value="all"> All of the above</label>
+                    </div>
+                </div>
+            </form>
+            <div id="recommendation" class="recommendation hidden">
+                <h3>Recommended Approach</h3>
+                <p id="recommendation-text"></p>
+                <div class="approach-badges" id="recommendation-badges"></div>
+            </div>
+        </section>
+
+        <!-- ===== COMPARISON TABLE ===== -->
+        <section class="section" id="comparison-table">
+            <h2>Approach Comparison</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Criterion</th>
+                            <th class="approach-physical">Physical Scanner<br><small>TWAIN / WIA / SANE</small></th>
+                            <th class="approach-camera">Camera-Based<br><small>Mobile / Overhead</small></th>
+                            <th class="approach-network">Network / Remote<br><small>REST API</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Best for</strong></td>
+                            <td>High-volume, ADF-fed stacks</td>
+                            <td>Bound books, fragile docs, mobile</td>
+                            <td>Shared-office, multi-user access</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Throughput</strong></td>
+                            <td>20–200 ppm with duplex</td>
+                            <td>~5–15 pages/min (manual)</td>
+                            <td>Depends on scanner</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Image quality</strong></td>
+                            <td>Consistent 200–600 DPI</td>
+                            <td>Variable (lighting/angle)</td>
+                            <td>Same as physical scanner</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Document types</strong></td>
+                            <td>Loose sheets only (ADF)</td>
+                            <td>Any — bound, fragile, odd sizes</td>
+                            <td>Loose sheets (scanner-dependent)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Client setup</strong></td>
+                            <td>TWAIN driver on each PC</td>
+                            <td>Browser only</td>
+                            <td>Browser only (REST endpoint)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Offline support</strong></td>
+                            <td>Yes (local driver)</td>
+                            <td>Yes (browser-side)</td>
+                            <td>No (needs network)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Multi-user</strong></td>
+                            <td>One user per scanner</td>
+                            <td>One device, one user</td>
+                            <td>Many users share one scanner</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SDK</strong></td>
+                            <td><a href="https://www.dynamsoft.com/web-twain/overview/" target="_blank">Dynamic Web
+                                    TWAIN</a></td>
+                            <td><a href="https://www.dynamsoft.com/use-cases/mobile-web-capture-sdk/"
+                                    target="_blank">Mobile Web Capture</a></td>
+                            <td><a href="https://www.dynamsoft.com/blog/announcement/dynamsoft-service-restful-api/"
+                                    target="_blank">DWT Service REST API</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===== LIVE DEMOS ===== -->
+        <section class="section" id="live-demos">
+            <h2>Try Each Approach</h2>
+            <p class="section-note">All three demos share the same Dynamsoft license. A 30-day public trial key is
+                pre-filled; replace it with your own if you have one.</p>
+
+            <!-- Shared license field -->
+            <div class="shared-license-bar">
+                <label for="shared-license">
+                    <strong>Shared Dynamsoft License</strong>
+                    <small>(used by all three demos below)</small>
+                </label>
+                <div class="license-input-row">
+                    <input type="text" id="shared-license"
+                        placeholder="Enter your license key, or use the pre-filled public trial key">
+                    <span class="license-hint" id="license-hint">✓ Public trial key active</span>
+                </div>
+            </div>
+
+            <div class="demo-tabs">
+                <button class="tab-btn active" data-tab="twain-demo">Physical Scanner (TWAIN)</button>
+                <button class="tab-btn" data-tab="camera-demo">Camera Capture</button>
+                <button class="tab-btn" data-tab="rest-demo">REST API</button>
+            </div>
+
+            <!-- --- TWAIN Demo --- -->
+            <div class="demo-panel active" id="twain-demo">
+                <div class="demo-layout">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="dwt-scanner-select">Select Scanner</label>
+                            <select id="dwt-scanner-select" disabled>
+                                <option>Click "Initialize DWT" first</option>
+                            </select>
+                        </div>
+                        <div class="control-row checkboxes">
+                            <label><input type="checkbox" id="dwt-adf" checked> ADF (Auto Document Feeder)</label>
+                            <label><input type="checkbox" id="dwt-duplex"> Duplex</label>
+                        </div>
+                        <div class="control-row">
+                            <label>Resolution:
+                                <select id="dwt-resolution">
+                                    <option value="100">100 DPI</option>
+                                    <option value="200">200 DPI</option>
+                                    <option value="300" selected>300 DPI</option>
+                                    <option value="600">600 DPI</option>
+                                </select>
+                            </label>
+                            <label>Pixel Type:
+                                <select id="dwt-pixeltype">
+                                    <option value="0">Black &amp; White</option>
+                                    <option value="1">Grayscale</option>
+                                    <option value="2" selected>Color</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="control-actions">
+                            <button id="dwt-init-btn" class="btn-primary">Initialize DWT</button>
+                            <button id="dwt-scan-btn" class="btn-accent" disabled>Scan Document</button>
+                            <button id="dwt-save-btn" class="btn-secondary" disabled>Save as PDF</button>
+                        </div>
+                        <div id="dwt-status" class="status-msg"></div>
+                    </div>
+                    <div class="demo-viewer">
+                        <div id="dwt-thumbs" class="thumbs-strip"></div>
+                        <div id="dwt-image-area">
+                            <div id="dwt-container" style="display:none;width:100%;min-height:360px;"></div>
+                            <img id="dwt-image" alt="Latest scanned page"
+                                style="display:none;max-width:100%;max-height:420px;border:1px solid #d0d0e0;border-radius:6px;background:#fff;" />
+                            <div class="empty-state" id="dwt-empty">
+                                <p>Scanned pages will appear here</p>
+                                <small>Make sure the <a
+                                        href="https://www.dynamsoft.com/web-twain/docs/getstarted/Installation.html"
+                                        target="_blank">Dynamsoft Service</a> is installed and running.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- --- Camera Demo --- -->
+            <div class="demo-panel" id="camera-demo">
+                <div class="demo-layout">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label>
+                                <input type="checkbox" id="cam-auto-capture" checked>
+                                Auto-capture when document is stable
+                            </label>
+                        </div>
+                        <div class="control-actions">
+                            <button id="cam-init-btn" class="btn-primary">Start Camera</button>
+                            <button id="cam-capture-btn" class="btn-accent" disabled>Capture Document</button>
+                            <button id="cam-stop-btn" class="btn-secondary" disabled>Stop Camera</button>
+                        </div>
+                        <div id="cam-status" class="status-msg"></div>
+                    </div>
+                    <div class="demo-viewer camera-view">
+                        <div id="cam-thumbs" class="thumbs-strip"></div>
+                        <div id="cam-image-area">
+                            <div id="cam-video-wrapper"
+                                style="display:none;position:relative;width:100%;max-width:640px;background:#000;border-radius:6px;overflow:hidden;">
+                                <video id="cam-video" autoplay playsinline muted
+                                    style="width:100%;display:block;"></video>
+                                <canvas id="cam-overlay"
+                                    style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+                            </div>
+                            <img id="cam-image" alt="Latest captured document"
+                                style="display:none;max-width:100%;max-height:420px;border:1px solid #d0d0e0;border-radius:6px;background:#fff;" />
+                            <div class="empty-state" id="cam-empty">
+                                <p>Camera preview &amp; captures will appear here</p>
+                                <small>Click "Start Camera" to begin, then "Capture Document" to grab the current
+                                    frame.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- --- REST API Demo --- -->
+            <div class="demo-panel" id="rest-demo">
+                <div class="demo-layout">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="rest-host">Service Host</label>
+                            <input type="text" id="rest-host" value="http://127.0.0.1:18622"
+                                placeholder="http://localhost:18622">
+                            <small style="color:#5a5a7a;">Base URL without /api — it's appended automatically</small>
+                        </div>
+                        <div class="control-group">
+                            <label for="rest-scanner-select">Select Scanner</label>
+                            <select id="rest-scanner-select" disabled>
+                                <option>Click "Discover Scanners" first</option>
+                            </select>
+                        </div>
+                        <div class="control-actions">
+                            <button id="rest-get-scanners" class="btn-primary">Discover Scanners</button>
+                            <button id="rest-scan-btn" class="btn-accent" disabled>Scan &amp; Fetch Images</button>
+                            <button id="rest-clear" class="btn-secondary">Clear</button>
+                        </div>
+                        <div id="rest-status" class="status-msg"></div>
+                        <details class="api-details">
+                            <summary>API Endpoints Being Called (v19+)</summary>
+                            <pre class="code-block">
+GET    {host}/api/device/scanners                       — List available scanners
+POST   {host}/api/device/scanners/jobs                   — Create a scan job (auto)
+       Header: DWT-PRODUCT-KEY: {your-license}
+GET    {host}/api/device/scanners/jobs/{id}/next-page?type=image/png — Get page image
+DELETE {host}/api/device/scanners/jobs/{id}               — Delete job
+                            </pre>
+                        </details>
+                    </div>
+                    <div class="demo-viewer">
+                        <h4>Fetched Pages</h4>
+                        <div id="rest-thumbs" class="thumbs-strip"></div>
+                        <div id="rest-image-area">
+                            <img id="rest-image" alt="Latest fetched page"
+                                style="display:none;max-width:100%;max-height:420px;border:1px solid #d0d0e0;border-radius:6px;background:#fff;" />
+                            <div class="empty-state" id="rest-empty">
+                                <p>Scanned page images will appear here</p>
+                                <small>Click "Discover Scanners" → select a scanner → "Scan &amp; Fetch Images".</small>
+                            </div>
+                        </div>
+                        <details class="api-details">
+                            <summary>Raw API Log</summary>
+                            <pre id="rest-response" class="code-block small">{
+  "message": "Click 'Discover Scanners' to begin.
+               The DWT Service must be running on the host machine."
+}</pre>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CODE EXAMPLES ===== -->
+        <section class="section" id="code-examples">
+            <h2>Code Examples</h2>
+
+            <div class="code-section">
+                <h3>1. TWAIN Scanner via Dynamic Web TWAIN <span class="lang-badge">JavaScript</span></h3>
+                <pre class="code-block"><code>// Initialize and scan with ADF + duplex (DWT v19+)
+Dynamsoft.DWT.ProductKey = "YOUR-LICENSE-KEY";
+Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.4.1/dist";
+Dynamsoft.DWT.AutoLoad = false;
+
+Dynamsoft.DWT.CreateDWTObjectEx(
+    { WebTwainId: "dwtScanner" },
+    function (obj) {
+        // Headless mode — bind viewer to your own container
+        obj.Viewer.bind("dwt-container");
+        obj.Viewer.show();
+
+        obj.GetDevicesAsync().then(function (devices) {
+            return obj.SelectDeviceAsync(devices[0]);
+        }).then(function () {
+            return obj.AcquireImageAsync({
+                IfShowUI: false,
+                PixelType: 2, Resolution: 300,
+                IfFeederEnabled: true,
+                IfDuplexEnabled: true,
+                IfCloseSourceAfterAcquire: true,
+            });
+        }).then(function () {
+            // Get a URL for the latest scanned image
+            var lastIndex = obj.HowManyImagesInBuffer - 1;
+            var url = obj.GetImageURL(lastIndex);
+            document.getElementById("preview").src = url;
+        });
+    },
+    function (error) { console.error(error.code, error.message); }
+);</code></pre>
+            </div>
+
+            <div class="code-section">
+                <h3>2. Camera Capture with DCV Bundle <span class="lang-badge">JavaScript</span></h3>
+                <pre class="code-block"><code>// Initialize license + camera (getUserMedia) + document detection
+await Dynamsoft.License.LicenseManager.initLicense("YOUR-KEY", true);
+await Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
+
+const cvr = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+
+// Open camera via native getUserMedia
+const stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: { ideal: 1920 }, height: { ideal: 1080 } }
+});
+videoElement.srcObject = stream;
+
+// Detection loop using requestAnimationFrame
+async function scanLoop() {
+    const result = await cvr.capture(videoElement, "DetectDocumentBoundaries_Default");
+    const quad = result.items?.[0]?.location?.points; // detected boundary
+    if (quad && isStable(quad, previousQuad)) {
+        // Normalize: correct perspective and crop
+        const settings = await cvr.getSimplifiedSettings("NormalizeDocument_Default");
+        settings.roi.points = quad;
+        settings.roiMeasuredInPercentage = 0;
+        await cvr.updateSettings("NormalizeDocument_Default", settings);
+
+        // Capture current frame and normalize
+        const frameCanvas = captureFrame(videoElement);
+        const normResult = await cvr.capture(frameCanvas, "NormalizeDocument_Default");
+        const canvas = normResult.items[0].toCanvas(); // final document
+    }
+    requestAnimationFrame(scanLoop);
+}</code></pre>
+            </div>
+
+            <div class="code-section">
+                <h3>3. Remote Scanner via REST API <span class="lang-badge">JavaScript</span></h3>
+                <pre class="code-block"><code>// List scanners on a remote machine running DWT Service (v19+)
+const host = "http://scanner-host:18622/api";
+const scanners = await (await fetch(host + "/device/scanners")).json();
+
+// Populate scanner dropdown for user selection
+scanners.forEach(s => addOption(s.name));
+
+// When user clicks "Scan": create job + fetch images in one flow
+const scanner = scanners[selectedIdx];
+const job = await (await fetch(host + "/device/scanners/jobs", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "DWT-PRODUCT-KEY": "YOUR-LICENSE-KEY"
+    },
+    body: JSON.stringify({
+        autoRun: true,
+        device: scanner.device,
+        name: scanner.name,
+        config: { Resolution: 300, PixelType: 2, IfFeederEnabled: true }
+    })
+})).json();
+
+// Fetch each scanned page image as PNG bytes
+while (true) {
+    const imgRes = await fetch(
+        host + "/device/scanners/jobs/" + job.jobuid + "/next-page?type=image/png",
+        { headers: { "DWT-PRODUCT-KEY": "YOUR-LICENSE-KEY" } }
+    );
+    if (imgRes.status === 204) break; // no more pages
+    const blob = await imgRes.blob();
+    // display blob via URL.createObjectURL(blob)
+}
+
+// Clean up
+await fetch(host + "/device/scanners/jobs/" + job.jobuid, { method: "DELETE" });</code></pre>
+            </div>
+        </section>
+
+        <!-- ===== REAL-WORLD SCENARIOS ===== -->
+        <section class="section" id="scenarios">
+            <h2>Real-World Combinations</h2>
+            <div class="scenario-grid">
+                <div class="scenario-card">
+                    <div class="scenario-icon">🏥</div>
+                    <h3>Hospital Records</h3>
+                    <p><strong>Physical scanner (ADF)</strong> for loose patient records + <strong>Camera
+                            capture</strong> for bound logbooks and oversized charts.</p>
+                    <span class="scenario-tag">Physical + Camera</span>
+                </div>
+                <div class="scenario-card">
+                    <div class="scenario-icon">⚖️</div>
+                    <h3>Law Firm e-Discovery</h3>
+                    <p><strong>Remote scanning via REST API</strong> — all lawyers scan to a central repository from
+                        their browsers, with scanner locking.</p>
+                    <span class="scenario-tag">REST API</span>
+                </div>
+                <div class="scenario-card">
+                    <div class="scenario-icon">🏫</div>
+                    <h3>School Exam Archive</h3>
+                    <p><strong>Physical scanner</strong> for answer sheets → OCR → barcode indexing → searchable PDF
+                        archive.</p>
+                    <span class="scenario-tag">Physical + OCR</span>
+                </div>
+                <div class="scenario-card">
+                    <div class="scenario-icon">📱</div>
+                    <h3>Remote Notary</h3>
+                    <p><strong>Camera-based capture</strong> on mobile for on-the-go document digitization, instant
+                        upload to DMS.</p>
+                    <span class="scenario-tag">Camera</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>
+                Built with <a href="https://www.dynamsoft.com/web-twain/overview/" target="_blank">Dynamic Web TWAIN</a>
+                and
+                <a href="https://www.dynamsoft.com/use-cases/mobile-web-capture-sdk/" target="_blank">Mobile Web
+                    Capture</a>.
+                <a href="https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform"
+                    target="_blank">Get a free 30-day trial license →</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- DCV Bundle MUST load first (it overwrites globalThis.Dynamsoft={}) -->
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-bundle@3.2.5000/dist/dcv.bundle.min.js"></script>
+    <!-- DWT loads second, it merges into existing Dynamsoft namespace (preserves DCV) -->
+    <script src="https://cdn.jsdelivr.net/npm/dwt@19.4.1/dist/dynamsoft.webtwain.min.js"></script>
+
+    <script src="js/app.js?v=6"></script>
+</body>
+
+</html>
