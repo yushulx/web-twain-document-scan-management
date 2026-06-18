@@ -6,6 +6,11 @@ This single-page web app lets you:
 - Compare physical scanners, camera capture, and network scanning side-by-side
 - Try each approach **live** with real Dynamsoft SDKs
 
+https://github.com/user-attachments/assets/14a5c904-245b-4f39-89f3-37854368b767
+
+## Online Demo
+https://yushulx.me/web-twain-document-scan-management/examples/document-capture-comparison/
+
 ## Quick Start
 
 ```bash
