@@ -4,6 +4,9 @@ A browser-based document workbench for opening PDFs/images, appending more files
 
 https://github.com/user-attachments/assets/becc8b2e-0cd1-4706-9617-d9f3973d9f43
 
+## Online Demo
+[PDF & Image Annotation Studio](https://yushulx.me/web-twain-document-scan-management/examples/pdf-image-annotation/dist/)
+
 ## Features
 
 - **Open and append documents**: PDF, PNG, JPEG, TIFF, and BMP can be loaded from the header button, empty-state CTA, or drag and drop. New files are appended to the current document instead of replacing it.
@@ -80,3 +83,6 @@ https://unpkg.com/dwt@19.4.1/dist/dist
 ```
 
 For production, Dynamsoft recommends extracting the service installers from the SDK package and self-hosting them so the service version matches the deployed DWT runtime.
+
+## Blog
+[How to Build a Browser Document Annotation Studio with PDF, Image, and Scanner Capture in TypeScript](https://www.dynamsoft.com/codepool/build-pdf-image-annotation-document-viewer.html)
