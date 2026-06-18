@@ -44,3 +44,6 @@ https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cro
 - The [Dynamic Web TWAIN Service](https://www.dynamsoft.com/web-twain/downloads) installed and running
 - A scanner connected to the service host machine
 - Service default endpoint: `http://127.0.0.1:18622`
+
+## Blog
+[Choose and Test a Document Capture Solution for Digitizing Paper Records](https://www.dynamsoft.com/codepool/how-to-choose-document-capture-solution-for-digitizing-paper-records.html)
