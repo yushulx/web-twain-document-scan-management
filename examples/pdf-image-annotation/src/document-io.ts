@@ -88,6 +88,21 @@ export async function appendScannedPdf(
   }
 }
 
+export async function appendImageBlob(
+  handle: EditViewerHandle,
+  blob: Blob,
+  label: string
+): Promise<void> {
+  setBusy(true, `Adding ${label}…`);
+  try {
+    await loadIntoViewer(handle, blob, undefined, label);
+  } catch (err: any) {
+    showToast(`Could not add ${label}: ${messageOf(err)}`, "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
 function looksLikePasswordError(err: any): boolean {
   const m = (messageOf(err) || "").toLowerCase();
   return (
