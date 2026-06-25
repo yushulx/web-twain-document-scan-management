@@ -26,7 +26,7 @@ import {
 import { quickRedact, addDateStamp } from "./annotations";
 import { listScanners, scanFromDevice } from "./scanner";
 import { openCameraCapture } from "./camera";
-import { detectDocumentBoundary } from "./document-detect";
+import { detectDocumentBoundary, initDocumentDetector } from "./document-detect";
 import { uploadToGoogleDrive } from "./gdrive";
 import {
   showToast,
@@ -151,6 +151,14 @@ async function bootstrap(): Promise<void> {
     sub.textContent = err?.message ?? String(err);
     showToast("SDK init failed. Check your license key and try again.", "error");
     return;
+  }
+
+  // Initialize the Capture Vision document detector (non-fatal — manual
+  // boundary editing still works if the detector fails to start).
+  try {
+    await initDocumentDetector(license);
+  } catch (err: any) {
+    console.warn("Document detector init failed:", err);
   }
 
   // 3. Engine ready — hide the init overlay and build the viewer.

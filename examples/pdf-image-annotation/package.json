@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dynamsoft-capture-vision-bundle": "^3.0.0",
     "dynamsoft-document-viewer": "^4.0.0"
   },
   "devDependencies": {

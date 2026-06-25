@@ -1,23 +1,43 @@
 /**
- * document-detect.ts — Document edge detection & perspective correction.
+ * document-detect.ts — Document boundary detection & perspective correction.
  *
- * Uses a pure-canvas edge detection algorithm (grayscale → Sobel →
- * threshold → largest contour → convex hull → quadrilateral fit) to
- * locate the document boundary, then applies a perspective transform
- * via a computed homography. No external SDK or license required.
+ * Two interchangeable detection backends are available so their results can
+ * be compared from the preview dialog:
+ *   - "dcv": Dynamsoft Capture Vision's Document Normalizer (DDN) engine via
+ *            the `DetectDocumentBoundaries_Default` preset template.
+ *   - "custom": a pure-canvas pipeline (grayscale → blur → Otsu threshold →
+ *            morphology → largest contour → convex hull → quad fit).
+ *
+ * After detection, a perspective transform is applied via a computed
+ * homography. The DCV backend requires a Dynamsoft license (shared with DDV);
+ * the custom backend needs no SDK or license.
  *
  * Flow:
  *   1. Grab the current DDV page as a PNG Blob.
- *   2. Downscale and run edge detection to find the document quad.
- *   3. Show a preview dialog with the auto-detected result.
- *   4. If the user is not satisfied, they can drag the four quad corners
- *      on a canvas overlay to manually adjust the boundary, then re-normalize.
- *   5. On confirm, the normalized image replaces the original page via
+ *   2. Run the selected detection backend to find the document quad.
+ *   3. Show a preview dialog with the auto-detected result. The user can
+ *      switch backends to compare, drag the four quad corners to adjust the
+ *      boundary, then re-normalize.
+ *   4. On confirm, the normalized image replaces the original page via
  *      DDV's doc.updatePage().
  */
 
+import {
+  CoreModule,
+  LicenseManager,
+  CaptureVisionRouter,
+  EnumCapturedResultItemType,
+  DetectedQuadResultItem,
+} from "dynamsoft-capture-vision-bundle";
+
 import { EditViewerHandle } from "./ddv";
 import { showToast, setBusy } from "./toolbar";
+
+/** Available document-detection backends. */
+export type DetectAlgorithm = "dcv" | "custom";
+
+/** The backend used for the next detection run (toggled from the dialog). */
+let currentAlgorithm: DetectAlgorithm = "dcv";
 
 /* ------------------------------------------------------------------ */
 /*  Public entry point                                                 */
@@ -53,13 +73,13 @@ export async function detectDocumentBoundary(
   const imgWidth = imgEl.naturalWidth;
   const imgHeight = imgEl.naturalHeight;
 
-  // Run edge detection to find the document boundary.
+  // Run the selected detection backend to find the boundary.
   let detectedQuad: Quad | null = null;
   try {
-    detectedQuad = detectDocumentQuad(imgEl);
+    detectedQuad = await runDetection(currentAlgorithm, originalBlob, imgEl);
   } catch (err: any) {
     // Non-fatal — fall back to manual mode.
-    console.warn("Edge detection failed:", err);
+    console.warn("Document detection failed:", err);
   }
 
   setBusy(false);
@@ -103,7 +123,7 @@ export async function detectDocumentBoundary(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Edge detection — pure canvas, no external SDK                     */
+/*  Detection dispatcher                                                */
 /* ------------------------------------------------------------------ */
 
 interface Quad {
@@ -112,6 +132,132 @@ interface Quad {
   br: { x: number; y: number };
   bl: { x: number; y: number };
 }
+
+/**
+ * Runs the requested detection backend and returns the quad in original
+ * image coordinates, or null if no boundary was found.
+ */
+async function runDetection(
+  algo: DetectAlgorithm,
+  blob: Blob,
+  img: HTMLImageElement
+): Promise<Quad | null> {
+  return algo === "dcv" ? detectQuadDCV(blob) : detectQuadCustom(img);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Backend 1 — Dynamsoft Capture Vision (DDN)                         */
+/* ------------------------------------------------------------------ */
+
+/** Capture Vision preset template that returns the document quadrilateral. */
+const DETECT_TEMPLATE = "DetectDocumentBoundaries_Default";
+
+/** Lazily-created CaptureVisionRouter, configured for full-resolution detection. */
+let routerPromise: Promise<CaptureVisionRouter> | null = null;
+let licenseInitialized = false;
+
+/**
+ * Initializes the Dynamsoft Capture Vision license used by the document
+ * detector. Call once at startup with the same license key as DDV.
+ *
+ * The engine's wasm/worker assets are loaded from the jsDelivr CDN. This
+ * must be set explicitly: when the SDK is bundled (e.g. by Vite) it cannot
+ * infer its own script URL, so without a `rootDirectory` it would request
+ * the assets from the app's own origin and receive `index.html` back —
+ * surfacing as "Unexpected token '<'".
+ */
+export async function initDocumentDetector(license: string): Promise<void> {
+  if (licenseInitialized) return;
+  CoreModule.engineResourcePaths.rootDirectory = "https://cdn.jsdelivr.net/npm/";
+  await LicenseManager.initLicense(license);
+  licenseInitialized = true;
+}
+
+/**
+ * Returns the shared CaptureVisionRouter, creating it on first use. The
+ * router is configured to process the image at full resolution so the
+ * detected quad maps directly onto the original page coordinates.
+ */
+async function getRouter(): Promise<CaptureVisionRouter> {
+  if (!routerPromise) {
+    routerPromise = (async () => {
+      const router = await CaptureVisionRouter.createInstance();
+      router.maxImageSideLength = Infinity;
+      const settings = await router.getSimplifiedSettings(DETECT_TEMPLATE);
+      settings.outputOriginalImage = true;
+      await router.updateSettings(DETECT_TEMPLATE, settings);
+      return router;
+    })();
+  }
+  return routerPromise;
+}
+
+/**
+ * Detects the document boundary with Dynamsoft Capture Vision's Document
+ * Normalizer (DDN) engine using the `DetectDocumentBoundaries_Default`
+ * preset template.
+ *
+ * Based on the official Dynamsoft `document-scanner-javascript` sample
+ * (DocumentCorrectionView.setBoundaryAutomatically).
+ *
+ * Returns the quad in original image coordinates, or null if no boundary
+ * is found.
+ */
+async function detectQuadDCV(blob: Blob): Promise<Quad | null> {
+  const router = await getRouter();
+  const result = await router.capture(blob, DETECT_TEMPLATE);
+
+  const detected = result.items.find(
+    (item) => item.type === EnumCapturedResultItemType.CRIT_DETECTED_QUAD
+  ) as DetectedQuadResultItem | undefined;
+
+  const points = detected?.location?.points;
+  if (!points || points.length < 4) return null;
+
+  return orderQuadCorners(points.map((p) => ({ x: p.x, y: p.y })));
+}
+
+/**
+ * Orders 4 points as: top-left, top-right, bottom-right, bottom-left.
+ *
+ * Uses centroid-angle winding (robust to arbitrary rotation) rather than
+ * a naive Y/X sort, then picks the corner nearest the image origin as the
+ * top-left and walks clockwise from there.
+ */
+function orderQuadCorners(
+  pts: Array<{ x: number; y: number }>
+): Quad | null {
+  if (pts.length !== 4) return null;
+
+  let cx = 0, cy = 0;
+  for (const p of pts) { cx += p.x; cy += p.y; }
+  cx /= 4;
+  cy /= 4;
+
+  // Sort clockwise around the centroid (canvas Y grows downward).
+  const cw = [...pts].sort(
+    (a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx)
+  );
+
+  // Rotate so the corner closest to the top-left (min x + y) comes first.
+  let startIdx = 0;
+  let bestSum = Infinity;
+  for (let i = 0; i < 4; i++) {
+    const sum = cw[i].x + cw[i].y;
+    if (sum < bestSum) { bestSum = sum; startIdx = i; }
+  }
+
+  const tl = cw[startIdx];
+  const tr = cw[(startIdx + 1) % 4];
+  const br = cw[(startIdx + 2) % 4];
+  const bl = cw[(startIdx + 3) % 4];
+
+  return { tl, tr, br, bl };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Backend 2 — pure-canvas edge detection (no external SDK)           */
+/* ------------------------------------------------------------------ */
 
 /**
  * Detects the document boundary by:
@@ -130,7 +276,7 @@ interface Quad {
  * Returns the quad in original image coordinates, or null if no
  * suitable boundary is found.
  */
-function detectDocumentQuad(img: HTMLImageElement): Quad | null {
+function detectQuadCustom(img: HTMLImageElement): Quad | null {
   const origW = img.naturalWidth;
   const origH = img.naturalHeight;
 
@@ -683,44 +829,7 @@ function perpDistance(
   return Math.hypot(p.x - projX, p.y - projY);
 }
 
-/**
- * Orders 4 points as: top-left, top-right, bottom-right, bottom-left.
- *
- * Uses centroid-angle winding (robust to arbitrary rotation) rather than
- * a naive Y/X sort, then picks the corner nearest the image origin as the
- * top-left and walks clockwise from there.
- */
-function orderQuadCorners(
-  pts: Array<{ x: number; y: number }>
-): Quad | null {
-  if (pts.length !== 4) return null;
-
-  let cx = 0, cy = 0;
-  for (const p of pts) { cx += p.x; cy += p.y; }
-  cx /= 4;
-  cy /= 4;
-
-  // Sort clockwise around the centroid (canvas Y grows downward).
-  const cw = [...pts].sort(
-    (a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx)
-  );
-
-  // Rotate so the corner closest to the top-left (min x + y) comes first.
-  let startIdx = 0;
-  let bestSum = Infinity;
-  for (let i = 0; i < 4; i++) {
-    const sum = cw[i].x + cw[i].y;
-    if (sum < bestSum) { bestSum = sum; startIdx = i; }
-  }
-
-  const tl = cw[startIdx];
-  const tr = cw[(startIdx + 1) % 4];
-  const br = cw[(startIdx + 2) % 4];
-  const bl = cw[(startIdx + 3) % 4];
-
-  return { tl, tr, br, bl };
-}
-
+/** Scales every corner of a quad by a uniform factor. */
 function scaleQuad(quad: Quad, factor: number): Quad {
   return {
     tl: { x: quad.tl.x * factor, y: quad.tl.y * factor },
@@ -751,6 +860,10 @@ function showDetectPreview(
   const btnConfirm = document.getElementById("btn-detect-confirm") as HTMLButtonElement;
   const btnClose = document.getElementById("btn-detect-close") as HTMLButtonElement;
   const statusEl = document.getElementById("detect-status")!;
+  const algoToggle = document.getElementById("detect-algo")!;
+  const algoButtons = Array.from(
+    algoToggle.querySelectorAll<HTMLButtonElement>(".detect-algo-btn")
+  );
 
   let quad: Quad = { ...detectedQuad };
   let manualMode = true; // Start in manual mode so the user can verify/adjust.
@@ -772,6 +885,7 @@ function showDetectPreview(
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointerleave", onPointerUp);
+      for (const b of algoButtons) b.removeEventListener("click", onAlgoClick);
       btnManual.onclick = null;
       btnConfirm.onclick = null;
       btnClose.onclick = null;
@@ -913,6 +1027,47 @@ function showDetectPreview(
       canvas.style.display = "none";
     }
 
+    function syncAlgoButtons() {
+      for (const b of algoButtons) {
+        b.classList.toggle("is-active", b.dataset.algo === currentAlgorithm);
+      }
+    }
+
+    async function onAlgoClick(e: Event) {
+      const algo = (e.currentTarget as HTMLButtonElement).dataset.algo as DetectAlgorithm;
+      if (!algo || algo === currentAlgorithm) return;
+      currentAlgorithm = algo;
+      syncAlgoButtons();
+
+      const img = (canvas as any)._img as HTMLImageElement | undefined;
+      if (!img) return;
+
+      // Re-run detection with the chosen backend so the two can be
+      // compared in place on the same page.
+      manualMode = true;
+      btnManual.textContent = "Manual Edit";
+      showCanvasView();
+      setBusy(true, "Detecting document boundary…");
+      let result: Quad | null = null;
+      try {
+        result = await runDetection(algo, originalBlob, img);
+      } catch (err: any) {
+        console.warn("Document detection failed:", err);
+      }
+      setBusy(false);
+
+      if (result) {
+        quad = result;
+        statusEl.textContent =
+          algo === "dcv"
+            ? "Detected with Dynamsoft Capture Vision. Drag the corners to adjust, then confirm."
+            : "Detected with the built-in algorithm. Drag the corners to adjust, then confirm.";
+      } else {
+        showToast("No boundary detected with this algorithm. Adjust manually.", "info");
+      }
+      drawPreview();
+    }
+
     btnManual.onclick = async () => {
       if (!manualMode) {
         manualMode = true;
@@ -964,6 +1119,9 @@ function showDetectPreview(
 
     btnClose.onclick = () => finish(null);
     dialog.oncancel = () => finish(null);
+
+    for (const b of algoButtons) b.addEventListener("click", onAlgoClick);
+    syncAlgoButtons();
 
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);

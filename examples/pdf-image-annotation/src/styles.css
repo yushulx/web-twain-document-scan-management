@@ -1455,6 +1455,53 @@ dialog.detect-dialog::backdrop {
   min-height: 300px;
 }
 
+.detect-algo-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.detect-algo-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.detect-algo-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.detect-algo-btn {
+  appearance: none;
+  border: none;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.detect-algo-btn + .detect-algo-btn {
+  border-left: 1px solid var(--border);
+}
+
+.detect-algo-btn:hover {
+  background: var(--surface-2);
+}
+
+.detect-algo-btn.is-active {
+  background: var(--primary, #2563eb);
+  color: #fff;
+}
+
 #detect-canvas {
   max-width: 100%;
   max-height: 460px;
