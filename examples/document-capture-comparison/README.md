@@ -6,6 +6,11 @@ This single-page web app lets you:
 - Compare physical scanners, camera capture, and network scanning side-by-side
 - Try each approach **live** with real Dynamsoft SDKs
 
+https://github.com/user-attachments/assets/14a5c904-245b-4f39-89f3-37854368b767
+
+## Online Demo
+https://yushulx.me/web-twain-document-scan-management/examples/document-capture-comparison/
+
 ## Quick Start
 
 ```bash
@@ -39,3 +44,6 @@ https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cro
 - The [Dynamic Web TWAIN Service](https://www.dynamsoft.com/web-twain/downloads) installed and running
 - A scanner connected to the service host machine
 - Service default endpoint: `http://127.0.0.1:18622`
+
+## Blog
+[Choose and Test a Document Capture Solution for Digitizing Paper Records](https://www.dynamsoft.com/codepool/how-to-choose-document-capture-solution-for-digitizing-paper-records.html)
