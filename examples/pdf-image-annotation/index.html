@@ -398,6 +398,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
+    <div class="detect-algo-bar">
+      <span class="detect-algo-label">Detection algorithm</span>
+      <div class="detect-algo-toggle" id="detect-algo" role="group" aria-label="Detection algorithm">
+        <button type="button" class="detect-algo-btn is-active" data-algo="dcv">Dynamsoft Capture Vision</button>
+        <button type="button" class="detect-algo-btn" data-algo="custom">Built-in (canvas)</button>
+      </div>
+    </div>
     <div class="detect-body">
       <canvas id="detect-canvas"></canvas>
       <img id="detect-normalized" alt="Normalized document preview" style="display:none; max-width:100%; max-height:460px; border-radius:8px;" />
