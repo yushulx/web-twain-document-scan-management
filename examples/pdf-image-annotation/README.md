@@ -108,3 +108,4 @@ For production, Dynamsoft recommends extracting the service installers from the 
 
 ## Blog
 - [How to Build a Browser Document Annotation Studio with PDF, Image, and Scanner Capture in TypeScript](https://www.dynamsoft.com/codepool/build-pdf-image-annotation-document-viewer.html)
+- [How to Build a Web Document Scanner with Google Drive Cloud Storage Upload](https://www.dynamsoft.com/codepool/build-web-scanner-google-drive-cloud-storage-upload.html)
