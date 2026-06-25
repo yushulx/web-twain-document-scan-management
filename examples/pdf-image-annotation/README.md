@@ -2,7 +2,16 @@
 
 A browser-based document workbench for opening PDFs/images, appending more files or scanned pages into one working document, annotating pages, and exporting the result to PDF or image formats. It is built with [Dynamsoft Document Viewer](https://www.dynamsoft.com/document-viewer/overview/) v4, Dynamic Web TWAIN scanner capture, Vite, and TypeScript.
 
-https://github.com/user-attachments/assets/becc8b2e-0cd1-4706-9617-d9f3973d9f43
+## Demo Video
+- PDF annotation
+
+  https://github.com/user-attachments/assets/becc8b2e-0cd1-4706-9617-d9f3973d9f43
+
+- Google drive upload
+
+  https://github.com/user-attachments/assets/2c6377e6-712a-47f5-808a-bff01c077866
+
+
 
 ## Online Demo
 [PDF & Image Annotation Studio](https://yushulx.me/web-twain-document-scan-management/examples/pdf-image-annotation/dist/)
