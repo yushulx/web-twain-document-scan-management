@@ -160,49 +160,228 @@ function detectDocumentQuad(img: HTMLImageElement): Quad | null {
   const blurred = gaussianBlur(gray, w, h);
 
   // 3. Otsu threshold — separates foreground (document) from background.
-  //    We determine whether the document is darker or lighter than the
-  //    background by checking which side has more border pixels.
+  //    The document may be darker OR lighter than its background, and a
+  //    single border-brightness heuristic is unreliable for low-contrast
+  //    scenes (e.g. an ID card on a wooden table). Instead we segment with
+  //    BOTH polarities and keep whichever yields the more document-like
+  //    (large, rectangular, reasonably centered) region.
   const threshold = otsuThreshold(blurred);
   const borderBrightness = medianBorderBrightness(blurred, w, h);
-  // If the border is bright, the document is the dark region; if the
-  // border is dark, the document is the bright region.
-  const docIsDark = borderBrightness > threshold;
-  const binary = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i++) {
-    if (docIsDark) {
-      binary[i] = blurred[i] < threshold ? 1 : 0;
-    } else {
-      binary[i] = blurred[i] > threshold ? 1 : 0;
+  // Try the most likely polarity first, then the opposite as a fallback.
+  const preferDark = borderBrightness > threshold;
+  const polarities = preferDark ? [true, false] : [false, true];
+
+  let best: { quad: Quad; score: number } | null = null;
+
+  for (const docIsDark of polarities) {
+    const binary = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      binary[i] = (docIsDark ? blurred[i] < threshold : blurred[i] > threshold) ? 1 : 0;
+    }
+
+    // 4. Morphological closing (dilate then erode) to fill gaps
+    const closed = morphologicalClose(binary, w, h, 3);
+
+    // 5. Find the largest connected component
+    const componentMask = new Uint8Array(w * h);
+    const boundaryPoints = findLargestComponent(closed, w, h, componentMask);
+    if (!boundaryPoints || boundaryPoints.length < 20) continue;
+
+    // 6. Convex hull of the boundary points
+    const hull = convexHull(boundaryPoints);
+    if (hull.length < 4) continue;
+
+    // 7. Fit a quadrilateral that is robust to rotation (orientation-aware).
+    const fit = fitBestQuad(hull, w, h);
+    if (!fit) continue;
+
+    const ordered = orderQuadCorners(fit.quad);
+    if (!ordered) continue;
+
+    if (!best || fit.score > best.score) {
+      best = { quad: ordered, score: fit.score };
     }
   }
 
-  // 4. Morphological closing (dilate then erode) to fill gaps
-  const closed = morphologicalClose(binary, w, h, 3);
+  if (!best) return null;
+  return scaleQuad(best.quad, 1 / scale);
+}
 
-  // 5. Find the largest connected component
-  const componentMask = new Uint8Array(w * h);
-  const boundaryPoints = findLargestComponent(closed, w, h, componentMask);
-  if (!boundaryPoints || boundaryPoints.length < 20) return null;
+type Pt = { x: number; y: number };
 
-  // 6. Compute convex hull of the boundary points
-  const hull = convexHull(boundaryPoints);
+/**
+ * Fits the best quadrilateral to a convex hull and scores how
+ * document-like it is. Returns the 4 corner points plus a score that
+ * combines rectangularity and how much of the frame the quad fills.
+ *
+ * The key robustness improvement over a naive "axis-aligned extreme
+ * point" fit is that corners are found in the hull's OWN orientation
+ * (derived from its minimum-area rectangle), so rotated cards no longer
+ * collapse into degenerate triangles.
+ */
+function fitBestQuad(
+  hull: Pt[],
+  w: number,
+  h: number
+): { quad: Pt[]; score: number } | null {
   if (hull.length < 4) return null;
 
-  // 7. Simplify hull to a quadrilateral using the Ramer-Douglas-Peucker
-  //    algorithm with increasing epsilon until we get 4 corners.
-  const quadPoints = simplifyToQuad(hull);
-  if (!quadPoints || quadPoints.length !== 4) {
-    // Fallback: fit quad from extreme points
-    const fallback = fitQuadrilateralFromExtremes(hull);
-    if (!fallback) return null;
-    return scaleQuad(fallback, 1 / scale);
+  const hullArea = polygonArea(hull);
+  if (hullArea < (w * h) * 0.02) return null; // too small to be a document
+
+  const rect = minAreaRect(hull);
+  if (!rect) return null;
+
+  // Candidate quads:
+  //  a) Perspective-aware corners in the hull's orientation (best for
+  //     trapezoidal documents shot at an angle).
+  //  b) The minimum-area rectangle itself (best for clean rectangles and
+  //     a safe fallback when the perspective fit is degenerate).
+  //  c) RDP polygon simplification (occasionally tighter on clean hulls).
+  const candidates: Pt[][] = [];
+  const oriented = fitQuadOriented(hull, rect.angle);
+  if (oriented) candidates.push(oriented);
+  candidates.push(rect.corners);
+  const rdpQuad = simplifyToQuad(hull);
+  if (rdpQuad && rdpQuad.length === 4) candidates.push(rdpQuad);
+
+  // Rectangularity of the underlying region: clean documents fill most of
+  // their minimum-area rectangle (~1.0); irregular "background" blobs do
+  // not. This is the main signal that distinguishes the correct polarity.
+  const rectangularity = hullArea / Math.max(rect.area, 1e-6);
+
+  // Fraction of the frame covered. A real document is surrounded by
+  // background, so it essentially never fills more than ~90% of the
+  // photo. Rejecting high coverage here is what discards the spurious
+  // "whole frame" blob that the inverse polarity tends to produce
+  // (validated against real document/ID-card photos).
+  const coverage = hullArea / (w * h);
+  if (coverage < 0.04 || coverage > 0.9) return null;
+
+  let bestQuad: Pt[] | null = null;
+  let bestQuadArea = 0;
+  for (const c of candidates) {
+    if (c.length !== 4 || !isConvexQuad(c)) continue;
+    const a = polygonArea(c);
+    // Prefer the candidate whose area is closest to the hull area (tight
+    // fit) — penalize both under- and over-shoot.
+    const ratio = a / hullArea;
+    const fit = ratio <= 1 ? ratio : 1 / ratio;
+    if (fit > bestQuadArea) {
+      bestQuadArea = fit;
+      bestQuad = c;
+    }
+  }
+  if (!bestQuad || bestQuadArea < 0.6) return null;
+
+  // Final score: reward rectangular, well-fitting, reasonably sized quads.
+  const score = rectangularity * bestQuadArea * Math.min(coverage * 4, 1);
+  return { quad: bestQuad, score };
+}
+
+/** Shoelace polygon area (absolute value). */
+function polygonArea(pts: Pt[]): number {
+  let area = 0;
+  for (let i = 0, n = pts.length; i < n; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % n];
+    area += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(area) / 2;
+}
+
+/** True if the 4 points form a convex (non-self-intersecting) quad. */
+function isConvexQuad(q: Pt[]): boolean {
+  if (q.length !== 4) return false;
+  let sign = 0;
+  for (let i = 0; i < 4; i++) {
+    const a = q[i];
+    const b = q[(i + 1) % 4];
+    const c = q[(i + 2) % 4];
+    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    if (Math.abs(cross) < 1e-6) continue;
+    const s = cross > 0 ? 1 : -1;
+    if (sign === 0) sign = s;
+    else if (s !== sign) return false;
+  }
+  return sign !== 0;
+}
+
+/**
+ * Minimum-area enclosing rectangle of a convex hull via rotating
+ * calipers. Returns the 4 corners (in original coordinates), the edge
+ * orientation angle, and the rectangle area.
+ */
+function minAreaRect(hull: Pt[]): { corners: Pt[]; angle: number; area: number } | null {
+  if (hull.length < 3) return null;
+
+  let minArea = Infinity;
+  let best: { corners: Pt[]; angle: number; area: number } | null = null;
+  const n = hull.length;
+
+  for (let i = 0; i < n; i++) {
+    const p1 = hull[i];
+    const p2 = hull[(i + 1) % n];
+    const edgeAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    const c = Math.cos(edgeAngle);
+    const s = Math.sin(edgeAngle);
+
+    // Rotate every hull point by -edgeAngle (rx = x·c + y·s, ry = -x·s + y·c).
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of hull) {
+      const rx = p.x * c + p.y * s;
+      const ry = -p.x * s + p.y * c;
+      if (rx < minX) minX = rx;
+      if (rx > maxX) maxX = rx;
+      if (ry < minY) minY = ry;
+      if (ry > maxY) maxY = ry;
+    }
+
+    const area = (maxX - minX) * (maxY - minY);
+    if (area < minArea) {
+      minArea = area;
+      // Corners in rotated frame, then rotate back by +edgeAngle
+      // (ox = rx·c - ry·s, oy = rx·s + ry·c).
+      const rotated: Pt[] = [
+        { x: minX, y: minY },
+        { x: maxX, y: minY },
+        { x: maxX, y: maxY },
+        { x: minX, y: maxY },
+      ];
+      const corners = rotated.map((p) => ({
+        x: p.x * c - p.y * s,
+        y: p.x * s + p.y * c,
+      }));
+      best = { corners, angle: edgeAngle, area };
+    }
+  }
+  return best;
+}
+
+/**
+ * Finds the four corner points of the hull in the frame defined by
+ * `angle` (the document's own orientation). Working in the rotated frame
+ * makes the diagonal-extreme corner search valid for rotated documents,
+ * while still returning the real hull points so perspective is preserved.
+ */
+function fitQuadOriented(hull: Pt[], angle: number): Pt[] | null {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+
+  let tl: Pt | null = null, tr: Pt | null = null, br: Pt | null = null, bl: Pt | null = null;
+  let tlS = Infinity, trS = Infinity, brS = Infinity, blS = Infinity;
+
+  for (const p of hull) {
+    const rx = p.x * c + p.y * s;
+    const ry = -p.x * s + p.y * c;
+    if (rx + ry < tlS) { tlS = rx + ry; tl = p; }
+    if (-rx + ry < trS) { trS = -rx + ry; tr = p; }
+    if (-rx - ry < brS) { brS = -rx - ry; br = p; }
+    if (rx - ry < blS) { blS = rx - ry; bl = p; }
   }
 
-  // Order the 4 points as tl, tr, br, bl
-  const ordered = orderQuadCorners(quadPoints);
-  if (!ordered) return null;
-
-  return scaleQuad(ordered, 1 / scale);
+  if (!tl || !tr || !br || !bl) return null;
+  return [tl, tr, br, bl];
 }
 
 /** 3x3 Gaussian blur. */
@@ -341,13 +520,16 @@ function findLargestComponent(
       const idx = y * w + x;
       if (visited[idx] || !binary[idx]) continue;
 
-      // Flood fill (BFS)
+      // Flood fill (BFS). Use a head pointer instead of Array.shift()
+      // so the traversal stays O(n) even for large components (the
+      // opposite-polarity pass can flood the whole background).
       const queue = [idx];
+      let head = 0;
       const component: number[] = [];
       visited[idx] = 1;
 
-      while (queue.length > 0) {
-        const cur = queue.shift()!;
+      while (head < queue.length) {
+        const cur = queue[head++];
         component.push(cur);
         const cx = cur % w;
         const cy = (cur / w) | 0;
@@ -503,52 +685,38 @@ function perpDistance(
 
 /**
  * Orders 4 points as: top-left, top-right, bottom-right, bottom-left.
+ *
+ * Uses centroid-angle winding (robust to arbitrary rotation) rather than
+ * a naive Y/X sort, then picks the corner nearest the image origin as the
+ * top-left and walks clockwise from there.
  */
 function orderQuadCorners(
   pts: Array<{ x: number; y: number }>
 ): Quad | null {
   if (pts.length !== 4) return null;
 
-  // Sort by Y (top to bottom), then take top 2 and bottom 2.
-  const sorted = [...pts].sort((a, b) => a.y - b.y);
-  const top = sorted.slice(0, 2).sort((a, b) => a.x - b.x);
-  const bottom = sorted.slice(2).sort((a, b) => a.x - b.x);
-
-  return {
-    tl: top[0],
-    tr: top[1],
-    br: bottom[1],
-    bl: bottom[0],
-  };
-}
-
-/** Fallback: find 4 extreme points relative to centroid. */
-function fitQuadrilateralFromExtremes(
-  hull: Array<{ x: number; y: number }>
-): Quad | null {
-  if (hull.length < 4) return null;
-
   let cx = 0, cy = 0;
-  for (const p of hull) { cx += p.x; cy += p.y; }
-  cx /= hull.length;
-  cy /= hull.length;
+  for (const p of pts) { cx += p.x; cy += p.y; }
+  cx /= 4;
+  cy /= 4;
 
-  let tl = hull[0], tr = hull[0], br = hull[0], bl = hull[0];
-  let tlScore = Infinity, trScore = Infinity, brScore = Infinity, blScore = Infinity;
+  // Sort clockwise around the centroid (canvas Y grows downward).
+  const cw = [...pts].sort(
+    (a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx)
+  );
 
-  for (const p of hull) {
-    const dx = p.x - cx;
-    const dy = p.y - cy;
-
-    const sTL = dx + dy;
-    if (sTL < tlScore) { tlScore = sTL; tl = p; }
-    const sTR = -dx + dy;
-    if (sTR < trScore) { trScore = sTR; tr = p; }
-    const sBR = -dx - dy;
-    if (sBR < brScore) { brScore = sBR; br = p; }
-    const sBL = dx - dy;
-    if (sBL < blScore) { blScore = sBL; bl = p; }
+  // Rotate so the corner closest to the top-left (min x + y) comes first.
+  let startIdx = 0;
+  let bestSum = Infinity;
+  for (let i = 0; i < 4; i++) {
+    const sum = cw[i].x + cw[i].y;
+    if (sum < bestSum) { bestSum = sum; startIdx = i; }
   }
+
+  const tl = cw[startIdx];
+  const tr = cw[(startIdx + 1) % 4];
+  const br = cw[(startIdx + 2) % 4];
+  const bl = cw[(startIdx + 3) % 4];
 
   return { tl, tr, br, bl };
 }
