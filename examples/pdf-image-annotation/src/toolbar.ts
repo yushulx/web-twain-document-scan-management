@@ -86,7 +86,9 @@ export function setDocActionsEnabled(enabled: boolean): void {
   (document.getElementById("btn-redact") as HTMLButtonElement)!.disabled = !enabled;
   (document.getElementById("btn-stamp") as HTMLButtonElement)!.disabled = !enabled;
   (document.getElementById("btn-delete-page") as HTMLButtonElement)!.disabled = !enabled;
+  (document.getElementById("btn-detect") as HTMLButtonElement)!.disabled = !enabled;
   (document.getElementById("btn-export") as HTMLButtonElement)!.disabled = !enabled;
+  (document.getElementById("btn-gdrive") as HTMLButtonElement)!.disabled = !enabled;
 }
 
 /* ================================================================== */
@@ -98,8 +100,11 @@ export interface ToolbarActions {
   onRedact: () => void;
   onStamp: () => void;
   onDeletePage: () => void;
+  onDetect: () => void;
   onRefreshScanners: () => void;
   onScan: () => void;
+  onCamera: () => void;
+  onGDrive: (mode: "pdf" | "images") => void;
   onExport: (format: ExportFormat) => void;
 }
 
@@ -108,23 +113,46 @@ export function wireToolbar(actions: ToolbarActions): void {
   const redact = el("btn-redact");
   const stamp = el("btn-stamp");
   const deletePage = el("btn-delete-page");
+  const detect = el("btn-detect");
   const refreshScanners = el("btn-refresh-scanners");
   const scan = el("btn-scan");
+  const camera = el("btn-camera");
 
   open.addEventListener("click", actions.onOpen);
   redact.addEventListener("click", actions.onRedact);
   stamp.addEventListener("click", actions.onStamp);
   deletePage.addEventListener("click", actions.onDeletePage);
+  detect.addEventListener("click", actions.onDetect);
   refreshScanners.addEventListener("click", actions.onRefreshScanners);
   scan.addEventListener("click", actions.onScan);
+  camera.addEventListener("click", actions.onCamera);
 
   /* ---- Export dropdown ---- */
   const exportBtn = el("btn-export");
   const exportMenu = el("export-menu");
 
+  /* ---- Google Drive dropdown ---- */
+  const gdriveBtn = el("btn-gdrive");
+  const gdriveMenu = el("gdrive-menu");
+
   exportBtn.addEventListener("click", (e) => {
     e.stopPropagation();
+    gdriveMenu.classList.remove("open");
     exportMenu.classList.toggle("open");
+  });
+
+  gdriveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    exportMenu.classList.remove("open");
+    gdriveMenu.classList.toggle("open");
+  });
+
+  gdriveMenu.querySelectorAll<HTMLButtonElement>("button[data-gdrive]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.getAttribute("data-gdrive") as "pdf" | "images";
+      actions.onGDrive(mode);
+      gdriveMenu.classList.remove("open");
+    });
   });
 
   // Close on outside click / Esc.
@@ -132,9 +160,15 @@ export function wireToolbar(actions: ToolbarActions): void {
     if (!exportMenu.contains(e.target as Node) && !exportBtn.contains(e.target as Node)) {
       exportMenu.classList.remove("open");
     }
+    if (!gdriveMenu.contains(e.target as Node) && !gdriveBtn.contains(e.target as Node)) {
+      gdriveMenu.classList.remove("open");
+    }
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") exportMenu.classList.remove("open");
+    if (e.key === "Escape") {
+      exportMenu.classList.remove("open");
+      gdriveMenu.classList.remove("open");
+    }
   });
 
   exportMenu.querySelectorAll<HTMLButtonElement>("button[data-format]").forEach((btn) => {

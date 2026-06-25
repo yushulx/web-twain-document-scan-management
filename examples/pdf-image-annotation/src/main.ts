@@ -20,10 +20,14 @@ import {
   exportDocument,
   deleteCurrentPage,
   appendScannedPdf,
+  appendImageBlob,
   ExportFormat,
 } from "./document-io";
 import { quickRedact, addDateStamp } from "./annotations";
 import { listScanners, scanFromDevice } from "./scanner";
+import { openCameraCapture } from "./camera";
+import { detectDocumentBoundary } from "./document-detect";
+import { uploadToGoogleDrive } from "./gdrive";
 import {
   showToast,
   updatePageStatus,
@@ -159,8 +163,11 @@ async function bootstrap(): Promise<void> {
     onRedact: () => viewerHandle && quickRedact(viewerHandle),
     onStamp: () => viewerHandle && addDateStamp(viewerHandle),
     onDeletePage: () => viewerHandle && deleteCurrentPage(viewerHandle),
+    onDetect: () => viewerHandle && detectDocumentBoundary(viewerHandle),
     onRefreshScanners: () => refreshScanners(),
     onScan: () => scanSelectedDevice(),
+    onCamera: () => captureFromCamera(),
+    onGDrive: (mode) => viewerHandle && uploadToGoogleDrive(viewerHandle, mode),
     onExport: (format: ExportFormat) => viewerHandle && exportDocument(viewerHandle, format),
   });
 
@@ -235,6 +242,19 @@ async function scanSelectedDevice(): Promise<void> {
   } catch (err: any) {
     showToast(`Scan failed: ${err?.message ?? err}`, "error");
   }
+}
+
+async function captureFromCamera(): Promise<void> {
+  if (!viewerHandle) return;
+
+  const photos = await openCameraCapture();
+  if (photos.length === 0) return;
+
+  for (let i = 0; i < photos.length; i++) {
+    await appendImageBlob(viewerHandle, photos[i].blob, `camera photo ${i + 1}`);
+    URL.revokeObjectURL(photos[i].url);
+  }
+  showToast(`Added ${photos.length} photo${photos.length > 1 ? "s" : ""} from camera.`, "success");
 }
 
 /* ------------------------------------------------------------------ */
