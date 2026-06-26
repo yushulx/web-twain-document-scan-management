@@ -52,7 +52,6 @@ function buildUiConfig(): UiConfig {
         children: [
           DDV.Elements.Pagination,
           DDV.Elements.SeparatorLine,
-          DDV.Elements.DisplayMode,
           DDV.Elements.FitMode,
           DDV.Elements.Zoom,
           DDV.Elements.SeparatorLine,
@@ -101,6 +100,12 @@ export function createEditViewer(containerId: string): EditViewerHandle {
 
   const docManager = DDV.documentManager;
   const viewer = new EditViewer(options);
+
+  // Force single-page display. Continuous mode lays out pages relative to
+  // their resolution, so a perspective-corrected (cropped) page would render
+  // at a different width than its neighbours. Single-page mode fits each page
+  // to the viewport, so the cropped result always looks correct.
+  viewer.displayMode = "single";
 
   /* ---- Fix DDV's internal layout after mount ---- */
   // DDV's default CSS (.ddv-layout) sets height:100%, justify-content:space-around
