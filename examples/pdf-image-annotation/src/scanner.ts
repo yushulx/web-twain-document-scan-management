@@ -12,7 +12,7 @@ export interface ScanResult {
   pageCount: number;
 }
 
-const DWT_VERSION = "19.4.1";
+const DWT_VERSION = "19.4.3";
 const DWT_CDN = `https://cdn.jsdelivr.net/npm/dwt@${DWT_VERSION}/dist`;
 const DWT_SERVICE_INSTALLER_PATH = `https://unpkg.com/dwt@${DWT_VERSION}/dist/dist`;
 const DWT_SCRIPT = `${DWT_CDN}/dynamsoft.webtwain.min.js`;

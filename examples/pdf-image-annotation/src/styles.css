@@ -1,7 +1,7 @@
 /* ================================================================== */
 /*  PDF & Image Annotation Studio — Design System                     */
 /*  A polished, production-ready UI built around Dynamsoft Document    */
-/*  Viewer v4. Own app chrome (header, empty state, toasts) + DDV's    */
+/*  Viewer v5. Own app chrome (header, empty state, toasts) + DDV's    */
 /*  native edit/annotation toolbar inside the canvas.                  */
 /* ================================================================== */
 
@@ -66,23 +66,31 @@ body {
 }
 
 body {
+  /* App shell: header on top, stage fills the rest. Using dvh keeps the
+     canvas visible when mobile browser chrome (URL bar) is showing. */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
 button {
   font-family: inherit;
+  touch-action: manipulation;
 }
 
 /* ================================================================== */
 /*  App header (brand + primary actions)                              */
 /* ================================================================== */
 .app-header {
-  height: var(--header-height);
+  flex: 0 0 auto;
+  min-height: var(--header-height);
   background: var(--header-bg);
   color: var(--header-fg);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 0 14px;
   box-shadow: var(--shadow-md);
   position: relative;
@@ -97,6 +105,7 @@ button {
   font-size: 15px;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .brand-mark {
@@ -128,6 +137,7 @@ button {
   width: 1px;
   height: 26px;
   background: rgba(255, 255, 255, .12);
+  flex-shrink: 0;
 }
 
 .header-status {
@@ -137,13 +147,15 @@ button {
   font-size: 12.5px;
   color: #d7def0;
   min-width: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .header-actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -164,6 +176,7 @@ button {
   white-space: nowrap;
   transition: background .14s, border-color .14s, transform .05s, opacity .14s;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .btn svg {
@@ -230,11 +243,12 @@ button {
   align-items: center;
   gap: 6px;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .scanner-select {
   height: 36px;
-  width: min(220px, 22vw);
+  width: min(190px, 18vw);
   min-width: 146px;
   padding: 0 34px 0 11px;
   color: var(--header-fg);
@@ -260,7 +274,9 @@ button {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 286px;
+  width: min(286px, calc(100vw - 24px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -384,7 +400,8 @@ button {
 /* ================================================================== */
 .stage {
   display: flex;
-  height: calc(100vh - var(--header-height));
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -584,10 +601,61 @@ button {
   background: #eef4ff !important;
 }
 
+/* ---- DDV mobile bottom toolbar (phones only) ---- */
+/*  On phones the editing + annotation tools live in this footer bar so the  */
+/*  header can keep page navigation and zoom without hiding any button.     */
 #ddv-container .ddv-edit-viewer-footer-mobile {
-  background: var(--surface) !important;
-  border-bottom: 1px solid var(--border) !important;
-  box-shadow: var(--shadow-sm) !important;
+  flex: 0 0 auto !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  background: #fbfcfe !important;
+  border-top: 1px solid var(--border) !important;
+  border-bottom: none !important;
+  box-shadow: 0 -1px 2px rgba(16, 24, 40, .06) !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 4px 6px !important;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none;
+}
+
+#ddv-container .ddv-edit-viewer-footer-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+#ddv-container .ddv-edit-viewer-footer-mobile .ddv-button {
+  /* Share the row evenly on phones; stay compact on tablets. */
+  flex: 0 1 64px !important;
+  width: auto !important;
+  min-width: 34px !important;
+  max-width: 64px !important;
+  height: 42px !important;
+  border-radius: 7px !important;
+  color: #233044 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+#ddv-container .ddv-edit-viewer-footer-mobile .ddv-button:not(.ddv-button-disabled):hover {
+  background: #eef4ff !important;
+  border-color: #cfe0ff !important;
+}
+
+#ddv-container .ddv-edit-viewer-footer-mobile .ddv-button-disabled {
+  opacity: .36 !important;
+}
+
+#ddv-container .ddv-edit-viewer-footer-mobile .ddv-split-row,
+#ddv-container .ddv-edit-viewer-footer-mobile .ddv-split-column {
+  flex: 0 0 1px !important;
+  width: 1px !important;
+  height: 26px !important;
+  background: var(--border) !important;
+  margin: 0 2px !important;
 }
 
 /* ---- DDV body (content row): takes remaining vertical space ---- */
@@ -1206,62 +1274,6 @@ dialog.password-dialog::backdrop {
 }
 
 /* ================================================================== */
-/*  Responsive                                                        */
-/* ================================================================== */
-@media (max-width: 860px) {
-  .brand-name {
-    display: none;
-  }
-
-  .scanner-select {
-    width: 150px;
-    min-width: 120px;
-  }
-}
-
-@media (max-width: 640px) {
-  :root {
-    --header-height: 52px;
-  }
-
-  .brand-name {
-    display: none;
-  }
-
-  .header-divider {
-    display: none;
-  }
-
-  .header-status {
-    display: none;
-  }
-
-  .btn-label {
-    display: none;
-  }
-
-  /* icon-only buttons on mobile */
-  .btn {
-    padding: 0 10px;
-  }
-
-  .scan-group {
-    display: none;
-  }
-
-  .empty-card {
-    padding: 32px 24px;
-  }
-
-  .toast-stack {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    max-width: none;
-  }
-}
-
-/* ================================================================== */
 /*  Camera capture dialog                                             */
 /* ================================================================== */
 dialog.cam-dialog,
@@ -1275,6 +1287,24 @@ dialog.detect-dialog {
   color: var(--text);
   background: var(--surface);
   overflow: hidden;
+}
+
+/* Keep the header/footer pinned and let the body scroll when the dialog
+   is taller than the viewport (mobile, landscape, short windows). */
+dialog.cam-dialog[open],
+dialog.detect-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.cam-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.detect-body {
+  flex: 1 1 auto;
+  overflow: auto;
 }
 
 dialog.cam-dialog::backdrop,
@@ -1524,4 +1554,274 @@ dialog.detect-dialog::backdrop {
 
 .detect-dialog .cam-footer .btn-primary {
   margin-left: auto;
+}
+
+/* ================================================================== */
+/*  Responsive                                                        */
+/*  Kept last so these rules win over the component styles above.     */
+/* ================================================================== */
+
+/* Narrow desktops / tablets: the action strip scrolls instead of
+   clipping buttons. Nothing is ever hidden from the user. */
+@media (max-width: 1400px) {
+  .header-actions {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Below this width the DDV tools live in the bottom toolbar, so toasts
+     move under the canvas header instead of covering the toolbar. */
+  .toast-stack {
+    left: 12px;
+    right: 12px;
+    top: calc(var(--header-height) + 56px);
+    bottom: auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .brand-name {
+    display: none;
+  }
+
+  .scanner-select {
+    width: 150px;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --header-height: 52px;
+  }
+
+  /* --- DDV header: navigation + zoom only, compacted to one line --- */
+  #ddv-container .ddv-edit-viewer-header {
+    padding: 4px 4px !important;
+    gap: 2px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-pagination {
+    gap: 2px !important;
+    padding: 0 !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-pagination .ddv-button {
+    width: 24px !important;
+    min-width: 24px !important;
+    flex-basis: 24px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-pagination-goto {
+    width: 28px !important;
+    min-width: 28px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-fit-type {
+    width: 34px !important;
+    min-width: 34px !important;
+    flex-basis: 34px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-controller {
+    gap: 0 !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-controller .ddv-button {
+    width: 30px !important;
+    min-width: 30px !important;
+    flex-basis: 30px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-percentage {
+    padding: 0 2px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-percentage input,
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-percentage span {
+    width: 42px !important;
+    font-size: 12px !important;
+  }
+
+  .app-header {
+    padding: 0 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    gap: 10px;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  .header-divider {
+    display: none;
+  }
+
+  .header-status {
+    display: none;
+  }
+
+  /* Icon-only buttons in the header; dialog actions keep their labels. */
+  .app-header .btn-label {
+    display: none;
+  }
+
+  .app-header .btn {
+    padding: 0 10px;
+  }
+
+  .scan-group {
+    display: none;
+  }
+
+  /* Keep the primary action pinned while the rest of the strip scrolls. */
+  .header-actions .export-wrap:last-of-type {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    padding-left: 6px;
+    background: var(--header-bg);
+    box-shadow: -10px 0 12px -6px rgba(0, 0, 0, .55);
+  }
+
+  /* Dropdowns become bottom sheets so they stay reachable no matter how
+     far the action strip is scrolled. */
+  .export-menu {
+    position: fixed;
+    top: auto;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    width: auto;
+    max-height: 62dvh;
+    transform: translateY(12px) scale(1);
+  }
+
+  .export-menu.open {
+    transform: translateY(0) scale(1);
+  }
+
+  .export-menu::before {
+    display: none;
+  }
+
+  .empty-state {
+    padding: 16px;
+  }
+
+  .empty-card {
+    padding: 28px 20px;
+  }
+
+  .empty-illu {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 14px;
+  }
+
+  .empty-card h2 {
+    font-size: 19px;
+  }
+
+  .empty-card p.lead {
+    font-size: 14px;
+  }
+
+  /* Full-screen dialogs on phones */
+  dialog.cam-dialog,
+  dialog.detect-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .cam-header {
+    padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  }
+
+  .cam-body {
+    padding: 12px 16px;
+  }
+
+  .cam-preview {
+    aspect-ratio: 4 / 3;
+    max-height: 42dvh;
+  }
+
+  .cam-footer {
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .detect-body {
+    min-height: 0;
+    padding: 12px;
+  }
+
+  #detect-canvas {
+    max-height: 40dvh;
+  }
+
+  .detect-algo-bar {
+    padding: 10px 12px;
+  }
+}
+
+/* Small phones (360px and below): shave a few more pixels so the header
+   navigation still fits without horizontal scrolling. */
+@media (max-width: 400px) {
+  #ddv-container .ddv-edit-viewer-header {
+    padding: 4px 2px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-pagination .ddv-button {
+    width: 22px !important;
+    min-width: 22px !important;
+    flex-basis: 22px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-fit-type {
+    width: 30px !important;
+    min-width: 30px !important;
+    flex-basis: 30px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-controller .ddv-button {
+    width: 28px !important;
+    min-width: 28px !important;
+    flex-basis: 28px !important;
+  }
+
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-percentage input,
+  #ddv-container .ddv-edit-viewer-header .ddv-zoom-percentage span {
+    width: 38px !important;
+  }
+}
+
+/* Landscape phones: dialogs are height-constrained, so shrink the preview */
+@media (max-height: 520px) and (orientation: landscape) {
+  .cam-preview {
+    aspect-ratio: 16 / 9;
+    max-height: 46dvh;
+  }
+
+  #detect-canvas {
+    max-height: 46dvh;
+  }
 }

@@ -24,6 +24,7 @@ const DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3/files?uploa
 
 const CLIENT_ID: string = import.meta.env.VITE_GDRIVE_CLIENT_ID ?? "";
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
+const DEMO_MODE: boolean = import.meta.env.VITE_DEMO_MODE === "true";
 
 let gisLoaded = false;
 let accessToken: string | null = null;
@@ -50,7 +51,12 @@ export async function uploadToGoogleDrive(
   }
 
   if (!CLIENT_ID) {
-    showToast("Google Drive is not configured. Set VITE_GDRIVE_CLIENT_ID.", "error");
+    showToast(
+      DEMO_MODE
+        ? "Google Drive upload is not configured for this hosted demo — each project needs its own OAuth client ID. See the tutorial to set one up."
+        : "Google Drive is not configured. Set VITE_GDRIVE_CLIENT_ID.",
+      "error"
+    );
     return;
   }
 

@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:demo": "tsc && vite build --mode demo",
     "preview": "vite preview"
   },
   "dependencies": {
-    "dynamsoft-capture-vision-bundle": "^3.0.0",
-    "dynamsoft-document-viewer": "^4.0.0"
+    "dynamsoft-capture-vision-bundle": "^3.6.3200",
+    "dynamsoft-document-viewer": "^5.0.0"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

@@ -14,6 +14,10 @@
 import "dynamsoft-document-viewer/dist/ddv.css";
 
 import { DDV } from "dynamsoft-document-viewer";
+// DDV 5 ships annotation and PDF/TIFF parsing as on-demand plugins that are
+// no longer part of the core bundle. Import and register them explicitly.
+import { AnnotationPlugin } from "dynamsoft-document-viewer/annotation";
+import { ImagePdfParserPlugin } from "dynamsoft-document-viewer/imagePdf";
 import { createEditViewer, EditViewerHandle, fixViewerLayout } from "./ddv";
 import {
   openFile,
@@ -51,11 +55,50 @@ const DEFAULT_LICENSE: string =
 /** License from .env.local (if set) overrides the default. */
 const ENV_LICENSE: string | undefined = import.meta.env.VITE_DDVR_LICENSE;
 
+/**
+ * Hosted-demo build flag. When "true" the license screen is skipped and a
+ * license is activated automatically, so visitors never have to paste a key.
+ */
+const DEMO_MODE: boolean = import.meta.env.VITE_DEMO_MODE === "true";
+
+/**
+ * Hosts the domain-bound Codepool license is registered for. Off these hosts
+ * the key cannot activate ("Mismatch in AppDomain"), so the demo falls back to
+ * the SDK's public trial key — local and staging testing keeps working, with
+ * the usual 24-hour trial notice.
+ */
+const BOUND_LICENSE_HOSTS = ["dynamsoft.com"];
+
+function isBoundLicenseHost(): boolean {
+  const host = window.location.hostname.toLowerCase();
+  return BOUND_LICENSE_HOSTS.some(
+    (domain) => host === domain || host.endsWith(`.${domain}`)
+  );
+}
+
+/**
+ * Resolves the license used by the hosted-demo build:
+ *   • on *.dynamsoft.com — the domain-bound key from VITE_DDVR_LICENSE,
+ *   • anywhere else       — the SDK trial key (localhost is accepted).
+ */
+function resolveDemoLicense(): string {
+  if (ENV_LICENSE && isBoundLicenseHost()) return ENV_LICENSE;
+
+  console.info(
+    `[demo] Using the SDK trial license: the Codepool license is bound to ` +
+      `${BOUND_LICENSE_HOSTS.join(", ")} and cannot activate on "${window.location.hostname}".`
+  );
+  (window as any).DemoAnalytics?.action?.("license_fallback", {
+    host: window.location.hostname,
+  });
+  return DEFAULT_LICENSE;
+}
+
 // Serve the WASM engine from the same CDN as the package. For fully
 // offline/production hosting, copy the `dist/engine` folder locally and
 // point this at that path instead.
 const ENGINE_RESOURCE_PATH =
-  "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@4.0.0/dist/engine";
+  "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.0/dist/engine";
 
 async function initDDV(license: string): Promise<void> {
   const title = document.getElementById("init-title")!;
@@ -63,6 +106,10 @@ async function initDDV(license: string): Promise<void> {
 
   DDV.Core.license = license;
   DDV.Core.engineResourcePath = ENGINE_RESOURCE_PATH;
+
+  // Register the optional DDV 5 plugins before the engine starts.
+  DDV.use(AnnotationPlugin);
+  DDV.use(ImagePdfParserPlugin);
 
   sub.textContent = "Loading the WASM document engine\u2026";
   await DDV.Core.init();
@@ -136,8 +183,9 @@ let viewerHandle: EditViewerHandle | null = null;
 async function bootstrap(): Promise<void> {
   const initOverlay = document.getElementById("init-overlay")!;
 
-  // 1. Show the license screen and wait for the user to choose a key.
-  const license = await waitForLicense();
+  // 1. Resolve the license. The hosted demo picks it by hostname; the
+  //    standalone build asks the user for a key first.
+  const license = DEMO_MODE ? resolveDemoLicense() : await waitForLicense();
 
   // 2. Show the WASM init overlay and initialize the engine.
   initOverlay.classList.remove("hidden");
