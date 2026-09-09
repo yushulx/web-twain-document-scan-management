@@ -3,15 +3,17 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>PDF &amp; Image Annotation Studio — Dynamsoft Document Viewer</title>
   <meta name="description"
-    content="Open, annotate, redact, and export PDFs and images in the browser. Built with Dynamsoft Document Viewer v4." />
+    content="Open, annotate, redact, and export PDFs and images in the browser. Built with Dynamsoft Document Viewer v5." />
   <link rel="stylesheet" href="./src/styles.css" />
 </head>
 
 <body>
   <!-- ============ LICENSE DIALOG ============ -->
+  <!-- DEMO:STRIP:START — the hosted Codepool demo activates a domain-bound
+       license automatically, so the license screen is stripped from that build. -->
   <div id="license-screen" class="license-screen">
     <div class="license-card">
       <div class="license-brand">
@@ -23,7 +25,7 @@
           </svg>
         </div>
         <h1>Document Annotation Studio</h1>
-        <p class="license-subtitle">Powered by Dynamsoft Document Viewer v4</p>
+        <p class="license-subtitle">Powered by Dynamsoft Document Viewer v5</p>
       </div>
       <div class="license-form">
         <label for="license-input">DDV License Key</label>
@@ -41,6 +43,7 @@
       </div>
     </div>
   </div>
+  <!-- DEMO:STRIP:END -->
 
   <!-- ============ INIT OVERLAY (WASM engine load) ============ -->
   <div id="init-overlay" class="overlay init-overlay hidden" aria-live="polite" role="status">
@@ -333,7 +336,7 @@
               <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
               <path d="M12 8v4M12 16h.01" />
             </svg>
-            100% client-side · powered by Dynamsoft Document Viewer v4
+            100% client-side · powered by Dynamsoft Document Viewer v5
           </div>
         </div>
       </div>

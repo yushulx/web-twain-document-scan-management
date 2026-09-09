@@ -31,13 +31,20 @@ export function quickRedact(handle: EditViewerHandle): void {
     return;
   }
 
+  // The annotation plugin (registered at startup) provides this manager.
+  const annotationManager = DDV.annotationManager;
+  if (!annotationManager) {
+    showToast("Annotation tools are not available.", "error");
+    return;
+  }
+
   const { pageUid, mediaBox } = ctx;
   const width = mediaBox.width * 0.5;
   const height = mediaBox.height * 0.12;
   const x = (mediaBox.width - width) / 2;
   const y = (mediaBox.height - height) / 2;
 
-  const created = DDV.annotationManager.createAnnotation(pageUid, "redaction", {
+  const created = annotationManager.createAnnotation(pageUid, "redaction", {
     redactionType: "rectangle",
     background: "#000000",
     rects: [{ x, y, width, height }],
@@ -65,6 +72,12 @@ export function addDateStamp(handle: EditViewerHandle): void {
     return;
   }
 
+  const annotationManager = DDV.annotationManager;
+  if (!annotationManager) {
+    showToast("Annotation tools are not available.", "error");
+    return;
+  }
+
   const { pageUid, mediaBox } = ctx;
   const stampText = `REVIEWED ${formatDate(new Date())}`;
   const width = 170;
@@ -73,7 +86,7 @@ export function addDateStamp(handle: EditViewerHandle): void {
   const x = mediaBox.width - width - margin;
   const y = mediaBox.height - height - margin;
 
-  DDV.annotationManager.createAnnotation(pageUid, "textBox", {
+  annotationManager.createAnnotation(pageUid, "textBox", {
     x,
     y,
     width,

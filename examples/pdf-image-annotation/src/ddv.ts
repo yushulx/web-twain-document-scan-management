@@ -38,49 +38,93 @@ export interface EditViewerHandle {
 /*  Deliberately minimal: page navigation + the native annotation set  */
 /*  (which itself exposes shapes, ink, text, stamps, redaction).       */
 /*  File open / export / quick actions live in our app header instead. */
+/*                                                                     */
+/*  Desktop: one header row with everything.                           */
+/*  Phones + tablets: navigation + zoom stay in the header, while       */
+/*           rotate/crop/filter/undo/delete and the annotation sets     */
+/*           move to DDV's mobile bottom toolbar so no tool is hidden   */
+/*           off-screen.                                               */
 /* ------------------------------------------------------------------ */
 
+/* Below this width the full toolbar cannot fit in one row. */
+const MOBILE_BREAKPOINT = 900;
+
+function isMobileViewport(): boolean {
+  return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+/** Document editing + annotation tools (header on desktop, footer on phones). */
+function editingTools(): unknown[] {
+  return [
+    DDV.Elements.RotateLeft,
+    DDV.Elements.RotateRight,
+    DDV.Elements.Crop,
+    DDV.Elements.Filter,
+    DDV.Elements.SeparatorLine,
+    DDV.Elements.Undo,
+    DDV.Elements.Redo,
+    DDV.Elements.Delete,
+    DDV.Elements.SeparatorLine,
+    DDV.Elements.AnnotationSet,
+    DDV.Elements.RedactionSet,
+  ];
+}
+
 function buildUiConfig(): UiConfig {
+  const mobile = isMobileViewport();
+
+  const header = {
+    type: DDV.Elements.Layout,
+    className: "ddv-edit-viewer-header",
+    children: [
+      DDV.Elements.Pagination,
+      DDV.Elements.SeparatorLine,
+      DDV.Elements.FitMode,
+      DDV.Elements.Zoom,
+      ...(mobile ? [] : [DDV.Elements.SeparatorLine, ...editingTools()]),
+    ],
+  };
+
+  const body = {
+    type: DDV.Elements.Layout,
+    flexDirection: "row",
+    className: "ddv-edit-viewer-body",
+    children: [DDV.Elements.MainView],
+  };
+
+  const children: unknown[] = [header, body];
+
+  if (mobile) {
+    children.push({
+      type: DDV.Elements.Layout,
+      className: "ddv-edit-viewer-footer-mobile",
+      children: editingTools(),
+    });
+  }
+
   return {
     type: DDV.Elements.Layout,
     flexDirection: "column",
     className: "ddv-edit-viewer-desktop",
-    children: [
-      {
-        type: DDV.Elements.Layout,
-        className: "ddv-edit-viewer-header",
-        children: [
-          DDV.Elements.Pagination,
-          DDV.Elements.SeparatorLine,
-          DDV.Elements.FitMode,
-          DDV.Elements.Zoom,
-          DDV.Elements.SeparatorLine,
-          DDV.Elements.RotateLeft,
-          DDV.Elements.RotateRight,
-          DDV.Elements.Crop,
-          DDV.Elements.Filter,
-          DDV.Elements.SeparatorLine,
-          DDV.Elements.Undo,
-          DDV.Elements.Redo,
-          DDV.Elements.Delete,
-          DDV.Elements.SeparatorLine,
-          DDV.Elements.AnnotationSet,
-          DDV.Elements.RedactionSet,
-        ],
-      },
-      {
-        type: DDV.Elements.Layout,
-        flexDirection: "row",
-        className: "ddv-edit-viewer-body",
-        children: [DDV.Elements.MainView],
-      },
-    ],
+    children,
   } as unknown as UiConfig;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Create viewer                                                      */
 /* ------------------------------------------------------------------ */
+
+/**
+ * The thumbnail rail width is chosen at creation time so the canvas stays
+ * usable on phones, where a 204px rail would eat most of the viewport.
+ */
+function thumbnailRailSize(): string {
+  const width = window.innerWidth;
+  if (width < 480) return "96px";
+  if (width < 640) return "116px";
+  if (width < 900) return "168px";
+  return "204px";
+}
 
 export function createEditViewer(containerId: string): EditViewerHandle {
   const container = document.getElementById(containerId)!;
@@ -92,7 +136,7 @@ export function createEditViewer(containerId: string): EditViewerHandle {
       // Our left rail hosts DDV's thumbnail component.
       visibility: "visible",
       position: "left",
-      size: "204px",
+      size: thumbnailRailSize(),
       columns: 1,
       multiselectMode: false,
     },

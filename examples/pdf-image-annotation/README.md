@@ -1,6 +1,6 @@
 # PDF & Image Annotation Studio
 
-A browser-based document workbench for opening PDFs/images, appending more files or scanned pages into one working document, annotating pages, and exporting the result to PDF or image formats. It is built with [Dynamsoft Document Viewer](https://www.dynamsoft.com/document-viewer/overview/) v4, Dynamic Web TWAIN scanner capture, Vite, and TypeScript.
+A browser-based document workbench for opening PDFs/images, appending more files or scanned pages into one working document, annotating pages, and exporting the result to PDF or image formats. It is built with [Dynamsoft Document Viewer](https://www.dynamsoft.com/document-viewer/overview/) v5, Dynamic Web TWAIN scanner capture, Vite, and TypeScript. The UI adapts to desktop, tablet, and phone browsers: on phones the editing and annotation tools move from the in-canvas header to a bottom toolbar so no button is hidden, dialogs go full-screen, and safe-area insets are respected.
 
 ## Demo Video
 - PDF annotation
@@ -14,7 +14,7 @@ A browser-based document workbench for opening PDFs/images, appending more files
 
 
 ## Online Demo
-[PDF & Image Annotation Studio](https://yushulx.me/web-twain-document-scan-management/examples/pdf-image-annotation/dist/)
+[PDF & Image Annotation Studio](https://www.dynamsoft.com/codepool/demos/pdf-image-annotation/) (Codepool hosted, license activated automatically)
 
 ## Features
 
@@ -87,21 +87,31 @@ The production output is written to `dist/`.
 DDV's WASM engine is loaded from:
 
 ```text
-https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@4.0.0/dist/engine
+https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.0/dist/engine
 ```
 
 For offline or controlled deployments, copy `node_modules/dynamsoft-document-viewer/dist/engine` into your static assets and update `ENGINE_RESOURCE_PATH` in `src/main.ts`.
 
+DDV 5 ships annotation and PDF/TIFF parsing as on-demand plugins. The app registers them before `DDV.Core.init()`:
+
+```ts
+import { AnnotationPlugin } from "dynamsoft-document-viewer/annotation";
+import { ImagePdfParserPlugin } from "dynamsoft-document-viewer/imagePdf";
+
+DDV.use(AnnotationPlugin);
+DDV.use(ImagePdfParserPlugin);
+```
+
 Dynamic Web TWAIN is loaded from:
 
 ```text
-https://cdn.jsdelivr.net/npm/dwt@19.4.1/dist/dynamsoft.webtwain.min.js
+https://cdn.jsdelivr.net/npm/dwt@19.4.3/dist/dynamsoft.webtwain.min.js
 ```
 
 The DWT Service installer location is:
 
 ```text
-https://unpkg.com/dwt@19.4.1/dist/dist
+https://unpkg.com/dwt@19.4.3/dist/dist
 ```
 
 For production, Dynamsoft recommends extracting the service installers from the SDK package and self-hosting them so the service version matches the deployed DWT runtime.
