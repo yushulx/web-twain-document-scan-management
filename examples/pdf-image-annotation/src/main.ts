@@ -30,7 +30,9 @@ import {
 import { quickRedact, addDateStamp } from "./annotations";
 import { listScanners, scanFromDevice } from "./scanner";
 import { openCameraCapture } from "./camera";
-import { detectDocumentBoundary, initDocumentDetector } from "./document-detect";
+import { detectDocumentBoundary } from "./document-detect";
+import { detectBarcodes, readMrz, wireResultsDialog } from "./recognition";
+import { initCaptureVision } from "./cv";
 import { uploadToGoogleDrive } from "./gdrive";
 import {
   showToast,
@@ -39,6 +41,7 @@ import {
   wireToolbar,
   setScannerOptions,
   selectedScannerIndex,
+  type DetectMode,
 } from "./toolbar";
 
 /* ------------------------------------------------------------------ */
@@ -201,12 +204,12 @@ async function bootstrap(): Promise<void> {
     return;
   }
 
-  // Initialize the Capture Vision document detector (non-fatal — manual
-  // boundary editing still works if the detector fails to start).
+  // Initialize the Capture Vision engine shared by every Detect action
+  // (non-fatal — manual boundary editing still works if it fails to start).
   try {
-    await initDocumentDetector(license);
+    await initCaptureVision(license);
   } catch (err: any) {
-    console.warn("Document detector init failed:", err);
+    console.warn("Capture Vision init failed:", err);
   }
 
   // 3. Engine ready — hide the init overlay and build the viewer.
@@ -219,13 +222,15 @@ async function bootstrap(): Promise<void> {
     onRedact: () => viewerHandle && quickRedact(viewerHandle),
     onStamp: () => viewerHandle && addDateStamp(viewerHandle),
     onDeletePage: () => viewerHandle && deleteCurrentPage(viewerHandle),
-    onDetect: () => viewerHandle && detectDocumentBoundary(viewerHandle),
+    onDetect: (mode: DetectMode) => runDetect(mode),
     onRefreshScanners: () => refreshScanners(),
     onScan: () => scanSelectedDevice(),
     onCamera: () => captureFromCamera(),
     onGDrive: (mode) => viewerHandle && uploadToGoogleDrive(viewerHandle, mode),
     onExport: (format: ExportFormat) => viewerHandle && exportDocument(viewerHandle, format),
   });
+
+  wireResultsDialog();
 
   /* ---- File input (button + empty-state CTA) ---- */
   const fileInput = document.getElementById("file-input") as HTMLInputElement;
@@ -267,6 +272,24 @@ async function bootstrap(): Promise<void> {
 
 function openFilePicker(): void {
   (document.getElementById("file-input") as HTMLInputElement)!.click();
+}
+
+/** Dispatches the header's Detect menu to the matching reader. */
+function runDetect(mode: DetectMode): void {
+  if (!viewerHandle) return;
+  const handle = viewerHandle;
+
+  switch (mode) {
+    case "document":
+      detectDocumentBoundary(handle);
+      break;
+    case "barcode":
+      detectBarcodes(handle);
+      break;
+    case "mrz":
+      readMrz(handle);
+      break;
+  }
 }
 
 async function refreshScanners(): Promise<void> {
