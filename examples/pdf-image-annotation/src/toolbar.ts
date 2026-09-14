@@ -161,6 +161,7 @@ export function wireToolbar(actions: ToolbarActions): void {
       e.stopPropagation();
       const willOpen = !entry.menu.classList.contains("open");
       closeMenus(entry.menu);
+      if (willOpen) placeMenu(entry);
       entry.menu.classList.toggle("open", willOpen);
     });
   }
@@ -235,6 +236,39 @@ export function selectedScannerIndex(): number | null {
   const select = document.getElementById("scanner-select") as HTMLSelectElement | null;
   if (!select || select.value === "") return null;
   return Number(select.value);
+}
+
+/** Smallest gap between an opened menu and the viewport edge, in px. */
+const MENU_VIEWPORT_GUTTER = 12;
+
+/**
+ * Puts an opened menu where it can actually be seen.
+ *
+ * Two things go wrong on a narrow window, where the header's action strip
+ * scrolls horizontally (see the `max-width: 1400px` rules):
+ *
+ *  • the trigger can be scrolled near the left of the strip, and the menu is
+ *    right-aligned to it, so the menu would hang off the left edge — clamp it
+ *    back inside;
+ *  • the trigger can even be scrolled fully out of the strip's visible area,
+ *    in which case the menu would be off-screen with it — scroll the trigger
+ *    into view first.
+ */
+function placeMenu(entry: { button: HTMLElement; menu: HTMLElement }): void {
+  entry.button.scrollIntoView({ block: "nearest", inline: "nearest" });
+
+  // The menu is right-aligned to the trigger (`right: 0`), so it overflows the
+  // left edge by `width + gutter - triggerRight`. A NEGATIVE `margin-right`
+  // moves such a box to the right by exactly that much — the sign matters, a
+  // positive one pushes it further off-screen.
+  entry.menu.style.marginRight = "";
+  const overflowLeft =
+    entry.menu.offsetWidth +
+    MENU_VIEWPORT_GUTTER -
+    entry.button.getBoundingClientRect().right;
+  if (overflowLeft > 0) {
+    entry.menu.style.marginRight = `-${Math.ceil(overflowLeft)}px`;
+  }
 }
 
 function el(id: string): HTMLElement {
