@@ -18,12 +18,10 @@ A browser-based document workbench for opening PDFs/images, appending more files
 
 ## Features
 
-- **Open and append documents**: PDF, PNG, JPEG, TIFF, and BMP can be loaded from the header button, empty-state CTA, or drag and drop. New files are appended to the current document instead of replacing it.
+- **One Add menu for every input source**: the header's **Add** dropdown collects the three ways to bring pages in — **From file** (PDF, PNG, JPEG, TIFF, BMP; also the empty-state CTA, drag and drop, and Ctrl/Cmd+O), **From camera** (a live preview dialog where you snap several photos, review thumbnails with per-item delete, and add them as new pages), and **From scanner** (the menu lists the devices Dynamic Web TWAIN reports, and picking one scans it without DWT's own UI). New files are appended to the current document instead of replacing it. The scanner entry is hidden below 640 px — it needs the desktop service, and three separate input buttons never fit a phone's header.
 - **Multi-image PDF assembly**: keep adding image pages, delete unwanted pages, and export the final document as one PDF.
-- **Scanner capture**: refresh scanner devices, select a scanner from the dropdown, trigger a no-UI scan through Dynamic Web TWAIN, and append scanned pages to the active DDV document.
-- **Camera capture**: open a live camera preview dialog, snap multiple photos, review thumbnails with per-item delete, and add all confirmed photos as new pages.
 - **Detection menu**: the header's **Detect** button opens a dropdown with three readers, each run against the current page:
-  - **Document edges** — detect the document boundary, preview the auto-normalized result, manually adjust the quad if needed, and replace the page with the perspective-corrected image. Two interchangeable backends can be switched from the preview dialog to compare results: **Dynamsoft Capture Vision** (the DDN engine via the `DetectDocumentBoundaries_Default` preset template) and a **built-in** pure-canvas pipeline (no extra SDK or license). Both handle rotated ID cards and passports as well as full-page documents.
+  - **Document edges** — find the document boundary with **Dynamsoft Capture Vision**'s document normalizer (the `DetectDocumentBoundaries_Default` preset template), preview the auto-normalized result, drag the quad corners if the boundary needs adjusting, and replace the page with the perspective-corrected image. Handles rotated ID cards and passports as well as full-page documents.
   - **Barcodes** — decode every 1D/2D barcode on the page with Capture Vision's `ReadBarcodes_ReadRateFirst` preset.
   - **MRZ** — read the machine-readable zone of a passport or ID and parse it into fields (document code, issuing state, name, document number, nationality, dates of birth and expiry, sex, personal number).
 

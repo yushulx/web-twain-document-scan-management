@@ -73,6 +73,10 @@ function editingTools(): unknown[] {
 function buildUiConfig(): UiConfig {
   const mobile = isMobileViewport();
 
+  /*  View controls stay in the header on every width: page navigation, fit mode,
+      zoom, and Pan — the hand tool for dragging the page around when it is
+      zoomed past the viewport. It sits with the other view controls rather than
+      with the editing tools, which is where DDV's own default layout puts it. */
   const header = {
     type: DDV.Elements.Layout,
     className: "ddv-edit-viewer-header",
@@ -81,6 +85,7 @@ function buildUiConfig(): UiConfig {
       DDV.Elements.SeparatorLine,
       DDV.Elements.FitMode,
       DDV.Elements.Zoom,
+      DDV.Elements.Pan,
       ...(mobile ? [] : [DDV.Elements.SeparatorLine, ...editingTools()]),
     ],
   };

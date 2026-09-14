@@ -113,37 +113,32 @@ export function setDocActionsEnabled(enabled: boolean): void {
 export type DetectMode = "document" | "barcode" | "mrz";
 
 export interface ToolbarActions {
+  /** Pick a file from disk. Also bound to Ctrl/Cmd+O and the empty state. */
   onOpen: () => void;
   onRedact: () => void;
   onStamp: () => void;
   onDeletePage: () => void;
   onDetect: (mode: DetectMode) => void;
   onRefreshScanners: () => void;
-  onScan: () => void;
+  /** Scan from one specific scanner, chosen from the Add menu's device list. */
+  onScan: (scannerIndex: number) => void;
   onCamera: () => void;
   onGDrive: (mode: "pdf" | "images") => void;
   onExport: (format: ExportFormat) => void;
 }
 
 export function wireToolbar(actions: ToolbarActions): void {
-  const open = el("btn-open");
   const redact = el("btn-redact");
   const stamp = el("btn-stamp");
   const deletePage = el("btn-delete-page");
-  const refreshScanners = el("btn-refresh-scanners");
-  const scan = el("btn-scan");
-  const camera = el("btn-camera");
 
-  open.addEventListener("click", actions.onOpen);
   redact.addEventListener("click", actions.onRedact);
   stamp.addEventListener("click", actions.onStamp);
   deletePage.addEventListener("click", actions.onDeletePage);
-  refreshScanners.addEventListener("click", actions.onRefreshScanners);
-  scan.addEventListener("click", actions.onScan);
-  camera.addEventListener("click", actions.onCamera);
 
-  /* ---- Dropdown menus (Detect / Drive / Export) ---- */
+  /* ---- Dropdown menus (Add / Detect / Drive / Export) ---- */
   const menus: Array<{ button: HTMLElement; menu: HTMLElement }> = [
+    { button: el("btn-add"), menu: el("add-menu") },
     { button: el("btn-detect"), menu: el("detect-menu") },
     { button: el("btn-gdrive"), menu: el("gdrive-menu") },
     { button: el("btn-export"), menu: el("export-menu") },
@@ -165,6 +160,49 @@ export function wireToolbar(actions: ToolbarActions): void {
       entry.menu.classList.toggle("open", willOpen);
     });
   }
+
+  /* ---- Add menu: sources, then scanners ---- */
+  const sourcesPanel = el("add-sources");
+  const scannersPanel = el("add-scanners");
+
+  // The device buttons are built by `setScannerOptions()` later, so hand it the
+  // callback instead of closing over it at wire time.
+  onScanRequested = actions.onScan;
+
+  /** Shows one of the Add menu's two panels in place of the other. */
+  function showPanel(panel: "sources" | "scanners"): void {
+    sourcesPanel.hidden = panel !== "sources";
+    scannersPanel.hidden = panel !== "scanners";
+  }
+
+  // Always reopen on the source list, so the menu does not remember a stale
+  // device list from a previous session.
+  el("btn-add").addEventListener("click", () => showPanel("sources"));
+
+  el("add-menu").querySelectorAll<HTMLButtonElement>("button[data-add]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      switch (btn.getAttribute("data-add")) {
+        case "file":
+          closeMenus();
+          actions.onOpen();
+          break;
+        case "camera":
+          closeMenus();
+          actions.onCamera();
+          break;
+        case "scanner":
+          // Keep the menu open: the device list replaces the source list.
+          showPanel("scanners");
+          if (!scannerList().querySelector("button[data-scanner]")) {
+            actions.onRefreshScanners();
+          }
+          break;
+      }
+    });
+  });
+
+  el("btn-refresh-scanners").addEventListener("click", actions.onRefreshScanners);
+  el("btn-add-back").addEventListener("click", () => showPanel("sources"));
 
   el("detect-menu").querySelectorAll<HTMLButtonElement>("button[data-detect]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -217,25 +255,69 @@ export function wireToolbar(actions: ToolbarActions): void {
   });
 }
 
+/**
+ * Renders the scanner list inside the Add menu's second panel.
+ *
+ * The old header kept a `<select>` for this, which could not fit a menu and
+ * needed a separate Scan button next to it. A list of device buttons removes
+ * the extra step — picking a scanner *is* the action.
+ */
 export function setScannerOptions(options: Array<{ index: number; name: string }>): void {
-  const select = document.getElementById("scanner-select") as HTMLSelectElement | null;
-  if (!select) return;
+  const list = scannerList();
+  list.innerHTML = "";
 
-  select.innerHTML = "";
   if (options.length === 0) {
-    select.appendChild(new Option("No scanners found", ""));
-    return;
+    const note = document.createElement("p");
+    note.className = "em-note";
+    note.textContent =
+      "No scanners found. Check that the Dynamic Web TWAIN service is running, then refresh.";
+    list.appendChild(note);
+  } else {
+    for (const option of options) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.scanner = String(option.index);
+      button.setAttribute("role", "menuitem");
+      button.innerHTML =
+        '<span class="em-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+        '<path d="M6 3h12v6H6zM4 13h16l-2 8H6z"/><path d="M8 17h8"/></svg></span>' +
+        `<span class="em-device-name">${escapeHtml(option.name)}</span>`;
+      button.addEventListener("click", () => {
+        // index 0 is a real scanner, so the attribute is the only signal.
+        const index = Number(button.dataset.scanner);
+        closeMenusFrom(button);
+        onScanRequested?.(index);
+      });
+      list.appendChild(button);
+    }
   }
 
-  for (const option of options) {
-    select.appendChild(new Option(option.name, String(option.index)));
+  const hint = document.getElementById("add-scanner-hint");
+  if (hint) {
+    hint.textContent =
+      options.length === 1
+        ? options[0].name
+        : options.length === 0
+          ? "No scanner found — click to look again"
+          : `${options.length} scanners available`;
   }
 }
 
-export function selectedScannerIndex(): number | null {
-  const select = document.getElementById("scanner-select") as HTMLSelectElement | null;
-  if (!select || select.value === "") return null;
-  return Number(select.value);
+/**
+ * The scan action, stashed by `wireToolbar` for the device buttons it builds
+ * later. `setScannerOptions()` is called from the app after the toolbar is
+ * wired, so the callback cannot be captured in a closure at wire time.
+ */
+let onScanRequested: ((scannerIndex: number) => void) | null = null;
+
+/** Closes whichever menu the given element lives in. */
+function closeMenusFrom(element: HTMLElement): void {
+  const menu = element.closest(".export-menu");
+  menu?.classList.remove("open");
+}
+
+function scannerList(): HTMLElement {
+  return el("scanner-list");
 }
 
 /** Smallest gap between an opened menu and the viewport edge, in px. */
