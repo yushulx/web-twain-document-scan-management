@@ -97,6 +97,17 @@ button {
   z-index: 50;
 }
 
+/* `z-index: 50` above makes the header a stacking context, which traps the
+   dropdown menus inside it — so a toast, sitting at 9500 on the page, painted
+   over an open menu. That is easy to hit on a phone, where toasts move up to
+   just under the header: upload a file, and "Pages added." covers the first
+   Detect entry. Lift the whole header while a menu is open; the busy and init
+   overlays (9000 / 10000) still outrank it, and a menu closes before any of
+   them can appear. */
+.app-header:has(.export-menu.open) {
+  z-index: 9600;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -1712,8 +1723,11 @@ dialog.results-dialog {
 
   /* The strip has to clip vertically to scroll horizontally, but every
      dropdown menu hangs below the strip and was being cut off with it —
-     Export, Drive and Detect alike. While a menu is open, let the strip
-     overflow; the rest of the time it keeps scrolling. */
+     Export, Drive and Detect alike. While a menu is open, stop clipping
+     (`body` already has `overflow: hidden`, so the strip's own children cannot
+     drag a horizontal scrollbar onto the page). `toolbar.ts` scrolls the
+     trigger into view before opening, so the anchored menu lands on screen
+     even when the trigger was scrolled out of the strip. */
   .header-actions:has(.export-menu.open) {
     overflow: visible;
   }
@@ -1835,27 +1849,6 @@ dialog.results-dialog {
     padding-left: 6px;
     background: var(--header-bg);
     box-shadow: -10px 0 12px -6px rgba(0, 0, 0, .55);
-  }
-
-  /* Dropdowns become bottom sheets so they stay reachable no matter how
-     far the action strip is scrolled. */
-  .export-menu {
-    position: fixed;
-    top: auto;
-    right: 10px;
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    left: 10px;
-    width: auto;
-    max-height: 62dvh;
-    transform: translateY(12px) scale(1);
-  }
-
-  .export-menu.open {
-    transform: translateY(0) scale(1);
-  }
-
-  .export-menu::before {
-    display: none;
   }
 
   .empty-state {
