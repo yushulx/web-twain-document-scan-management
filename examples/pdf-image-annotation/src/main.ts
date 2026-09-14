@@ -40,7 +40,6 @@ import {
   setDocActionsEnabled,
   wireToolbar,
   setScannerOptions,
-  selectedScannerIndex,
   type DetectMode,
 } from "./toolbar";
 
@@ -224,7 +223,7 @@ async function bootstrap(): Promise<void> {
     onDeletePage: () => viewerHandle && deleteCurrentPage(viewerHandle),
     onDetect: (mode: DetectMode) => runDetect(mode),
     onRefreshScanners: () => refreshScanners(),
-    onScan: () => scanSelectedDevice(),
+    onScan: (scannerIndex: number) => scanWithScanner(scannerIndex),
     onCamera: () => captureFromCamera(),
     onGDrive: (mode) => viewerHandle && uploadToGoogleDrive(viewerHandle, mode),
     onExport: (format: ExportFormat) => viewerHandle && exportDocument(viewerHandle, format),
@@ -296,26 +295,20 @@ async function refreshScanners(): Promise<void> {
   try {
     const scanners = await listScanners(true);
     setScannerOptions(scanners);
-    showToast(
-      scanners.length ? `Found ${scanners.length} scanner${scanners.length === 1 ? "" : "s"}.` : "No scanners found.",
-      scanners.length ? "success" : "info"
-    );
+    if (scanners.length === 0) {
+      showToast("No scanners found. Is the Dynamic Web TWAIN service running?", "info");
+    }
   } catch (err: any) {
+    setScannerOptions([]);
     showToast(`Scanner setup failed: ${err?.message ?? err}`, "error");
   }
 }
 
-async function scanSelectedDevice(): Promise<void> {
+async function scanWithScanner(scannerIndex: number): Promise<void> {
   if (!viewerHandle) return;
 
-  const index = selectedScannerIndex();
-  if (index === null) {
-    showToast("Refresh scanners and select a scanner first.", "error");
-    return;
-  }
-
   try {
-    const result = await scanFromDevice(index);
+    const result = await scanFromDevice(scannerIndex);
     if (!result) return;
     await appendScannedPdf(viewerHandle, result.blob, result.pageCount);
   } catch (err: any) {

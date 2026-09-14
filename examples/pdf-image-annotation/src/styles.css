@@ -249,33 +249,6 @@ button {
   justify-content: center;
 }
 
-.scan-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex-shrink: 0;
-}
-
-.scanner-select {
-  height: 36px;
-  width: min(190px, 18vw);
-  min-width: 146px;
-  padding: 0 34px 0 11px;
-  color: var(--header-fg);
-  background: #0c111a;
-  border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 7px;
-  font: inherit;
-  font-size: 13px;
-  outline: none;
-}
-
-.scanner-select:focus {
-  border-color: rgba(254, 142, 20, .9);
-  box-shadow: 0 0 0 2px rgba(254, 142, 20, .28);
-}
-
 /* Export menu (dropdown) */
 .export-wrap {
   position: relative;
@@ -404,6 +377,73 @@ button {
   font-size: 11.5px;
   display: block;
   margin-top: 1px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Add menu — scanner list panel                                      */
+/* ------------------------------------------------------------------ */
+/*  The menu holds two panels: the input sources, and the scanner list that
+    replaces them in place. Keeping the device list inside the same menu means
+    the header needs one button for all three sources, and the list gets the
+    menu's full width instead of a cramped nested popover.                */
+
+.em-devices {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 2px;
+}
+
+/* A device button is just its name — picking it starts the scan, so there is
+   no separate Scan step and no "selected" state to show. */
+.export-menu .em-devices button {
+  padding: 8px 10px;
+}
+
+.em-device-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.export-menu .em-note {
+  padding: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/* Panel footer: Refresh / Back. */
+.em-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 6px 8px 2px;
+  border-top: 1px solid var(--border);
+}
+
+/* Text-button, so it reads as a menu affordance rather than an action. */
+.export-menu .em-link {
+  width: auto;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.export-menu .em-link:hover {
+  background: var(--primary-soft);
+}
+
+.export-menu .em-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }
 
 /* ================================================================== */
@@ -1499,53 +1539,6 @@ dialog.results-dialog::backdrop {
   min-height: 300px;
 }
 
-.detect-algo-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-
-.detect-algo-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-2);
-}
-
-.detect-algo-toggle {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.detect-algo-btn {
-  appearance: none;
-  border: none;
-  background: var(--surface);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 7px 14px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.detect-algo-btn + .detect-algo-btn {
-  border-left: 1px solid var(--border);
-}
-
-.detect-algo-btn:hover {
-  background: var(--surface-2);
-}
-
-.detect-algo-btn.is-active {
-  background: var(--primary, #fe8e14);
-  color: #fff;
-}
-
 #detect-canvas {
   max-width: 100%;
   max-height: 460px;
@@ -1750,10 +1743,6 @@ dialog.results-dialog {
     display: none;
   }
 
-  .scanner-select {
-    width: 150px;
-    min-width: 120px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1837,7 +1826,9 @@ dialog.results-dialog {
     padding: 0 10px;
   }
 
-  .scan-group {
+  /* A scanner needs the desktop service, and the entry point is dead weight on
+     a narrow header — the Add menu keeps file and camera only. */
+  #add-scanner-item {
     display: none;
   }
 
@@ -1913,9 +1904,6 @@ dialog.results-dialog {
     max-height: 40dvh;
   }
 
-  .detect-algo-bar {
-    padding: 10px 12px;
-  }
 }
 
 /* Small phones (360px and below): shave a few more pixels so the header

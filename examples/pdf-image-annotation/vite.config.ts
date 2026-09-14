@@ -127,12 +127,6 @@ function codepoolDemoPlugin(assetVersion: string): Plugin {
           /<meta name="description"[\s\S]*?>/,
           `<meta name="description" content="${DEMO_DESCRIPTION}" />`
         );
-        // The logo is served from `public/`, so its filename carries no content
-        // hash — version it by hand to keep it out of caches across releases.
-        html = html.replace(
-          'src="dynamsoft-logo-white.svg"',
-          `src="dynamsoft-logo-white.svg?v=${assetVersion}"`
-        );
         html = html.replace("</head>", `${DEMO_FOOTER_STYLE}${demoHead(assetVersion)}</head>`);
         // GTM noscript right after <body>, footer CTA before </body>.
         html = html.replace(
