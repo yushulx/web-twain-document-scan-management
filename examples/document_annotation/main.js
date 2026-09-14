@@ -14,6 +14,26 @@ let capturedBlobs = [];
 let currentDeviceId = null;
 let parser;
 
+// DDV's IPageData exposes `display` as an async *method* returning { data, width, height }
+// (true for 3.x and 5.x alike), so expressions like `pageData.display.width` were always
+// `undefined` and made every coordinate conversion produce NaN. DDV then rejects the
+// annotation with "'annotationOptions' is invalid". Always resolve the display size here.
+async function getPageDisplaySize(pageData) {
+    if (typeof pageData.display === "function") {
+        try {
+            const info = await pageData.display();
+            if (info && info.width > 0 && info.height > 0) {
+                return info;
+            }
+        } catch (e) {
+            console.warn("pageData.display() failed, falling back to mediaBox:", e);
+        }
+    } else if (pageData.display && pageData.display.width > 0) {
+        return pageData.display;
+    }
+    return pageData.mediaBox;
+}
+
 driverLicenseFields = [
     { 'abbreviation': 'DAA', 'description': 'Full Name' },
     { 'abbreviation': 'DAB', 'description': 'Last Name' },
@@ -231,7 +251,9 @@ normalizeDocumentButton.addEventListener('click', async () => {
     let blob = await normalizeImage();
 
     if (blob) {
-        await currentDoc.updatePage(currentPageId, blob);
+        // IDocument.updatePage expects an UpdatedSource ({ fileData, fileIndex? }),
+        // not a bare Blob - the SDK destructures `fileData` out of `source`.
+        await currentDoc.updatePage(currentPageId, { fileData: blob });
         documentPoints = null;
     }
 });
@@ -258,6 +280,7 @@ detectDocumentButton.addEventListener('click', async () => {
 
         let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
         let pageData = await currentDoc.getPageData(currentPageId);
+        const displaySize = await getPageDisplaySize(pageData);
 
         // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/polygonannotationoptions.html
         documentPoints = points;
@@ -265,8 +288,8 @@ detectDocumentButton.addEventListener('click', async () => {
         const polygonOptions = {
             points: points.map(p => {
                 return {
-                    x: p.x / pageData.display.width * pageData.mediaBox.width,
-                    y: p.y / pageData.display.height * pageData.mediaBox.height
+                    x: p.x / displaySize.width * pageData.mediaBox.width,
+                    y: p.y / displaySize.height * pageData.mediaBox.height
                 }
             }),
             borderColor: "rgb(0,0,255)",
@@ -330,6 +353,7 @@ const eventFunc = async (e) => {
 
     let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
     let pageData = await currentDoc.getPageData(currentPageId);
+    const displaySize = await getPageDisplaySize(pageData);
 
     let annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByUids([e.modifiedAnnotations[0].uid]);
 
@@ -340,8 +364,8 @@ const eventFunc = async (e) => {
             // Convert the points to the coordinates of the original image
             documentPoints = points.map(p => {
                 return {
-                    x: p.x / pageData.mediaBox.width * pageData.display.width,
-                    y: p.y / pageData.mediaBox.height * pageData.display.height
+                    x: p.x / pageData.mediaBox.width * displaySize.width,
+                    y: p.y / pageData.mediaBox.height * displaySize.height
                 }
             });
 
@@ -350,7 +374,12 @@ const eventFunc = async (e) => {
     }
 };
 
-Dynamsoft.DDV.annotationManager.on("annotationsModified", eventFunc);
+// DDV 5.x only exposes annotationManager after the annotation plugin is installed
+// and Core.init() has run, so this listener is registered from activate() instead of
+// at script load time.
+function registerAnnotationEvents() {
+    Dynamsoft.DDV.annotationManager.on("annotationsModified", eventFunc);
+}
 
 // Button for drawing signature
 let canvas = document.getElementById("signatureCanvas");
@@ -587,7 +616,13 @@ async function showViewer() {
 }
 
 function toggleDropdown(e) {
-    e[0].stopPropagation();
+    // DDV 4.0+ changed the payload of custom-element events: the listener arguments are
+    // now spread, so the DOM event arrives directly. DDV 3.x wrapped them in an array
+    // (hence the old `e[0]`). Accept both shapes, and tolerate no payload at all.
+    const domEvent = Array.isArray(e) ? e[0] : e;
+    if (domEvent && typeof domEvent.stopPropagation === "function") {
+        domEvent.stopPropagation();
+    }
     // Create dropdown if not exists
     if (!dropdown) {
         dropdown = createDropdownMenu();
@@ -598,7 +633,7 @@ function toggleDropdown(e) {
     dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
 
     // Position the dropdown below the button
-    // const rect = e[0].target.getBoundingClientRect();
+    // const rect = domEvent.target.getBoundingClientRect();
     // dropdown.style.left = `${rect.left}px`;
     // dropdown.style.top = `${rect.bottom + 5}px`;
 }
@@ -608,8 +643,9 @@ async function activate(license) {
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
         await Dynamsoft.Core.CoreModule.loadWasm(["dbr", "ddn", "dlr"]);
 
+        // NOTE: as of Dynamsoft Capture Vision 3.6 / dynamsoft-capture-vision-data@1.2,
+        // "AAMVA_DL_ID_WITH_MAG_STRIPE" has been merged into "AAMVA_DL_ID" (loaded below).
         await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
-        await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID_WITH_MAG_STRIPE");
         await Dynamsoft.DCP.CodeParserModule.loadSpec("SOUTH_AFRICA_DL");
         await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD1_ID");
         await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_FRENCH_ID");
@@ -617,21 +653,29 @@ async function activate(license) {
         await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_VISA");
         await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD3_PASSPORT");
         await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD3_VISA");
-        await Dynamsoft.CVR.CaptureVisionRouter.appendModelBuffer("MRZCharRecognition");
-        await Dynamsoft.CVR.CaptureVisionRouter.appendModelBuffer("MRZTextLineRecognition");
+        // Capture Vision 3.6 renamed CaptureVisionRouter.appendModelBuffer() to appendDLModelBuffer().
+        await Dynamsoft.CVR.CaptureVisionRouter.appendDLModelBuffer("MRZCharRecognition");
+        await Dynamsoft.CVR.CaptureVisionRouter.appendDLModelBuffer("MRZTextLineRecognition");
 
         // Initialize DCV
         cvRouter = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
         parser = await Dynamsoft.DCP.CodeParser.createInstance();
 
-        // Initialize Dynamsoft Document Viewer
-        // Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.1.0/dist/engine";
+        // Initialize Dynamsoft Document Viewer (v5.x)
+        // DDV 4.0+ moved optional features into plugins. Annotations and PDF/image
+        // parsing must be registered before Core.init(), otherwise
+        // Dynamsoft.DDV.annotationManager has no annotation types available.
+        Dynamsoft.DDV.Core.license = license;
+        // Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.0/dist/engine";
+        Dynamsoft.DDV.use(Dynamsoft.DDV.AnnotationPlugin);
+        Dynamsoft.DDV.use(Dynamsoft.DDV.ImagePdfParserPlugin);
         await Dynamsoft.DDV.Core.init();
         Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
         docManager = Dynamsoft.DDV.documentManager;
+        registerAnnotationEvents();
 
         // Initialize Dynamic Web TWAIN
-        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
+        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt@19.4.3/dist/';
         Dynamsoft.DWT.ProductKey = license;
 
         Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {
@@ -1042,10 +1086,11 @@ async function scanBarcode() {
 
         let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
         let pageData = await currentDoc.getPageData(currentPageId);
+        const displaySize = await getPageDisplaySize(pageData);
 
         // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/texttypewriterannotationoptions.html
-        let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / pageData.display.width * pageData.mediaBox.width;
-        let textY = Math.min(points[0].y, points[1].y, points[2].y, points[3].y) / pageData.display.height * pageData.mediaBox.height;
+        let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / displaySize.width * pageData.mediaBox.width;
+        let textY = Math.min(points[0].y, points[1].y, points[2].y, points[3].y) / displaySize.height * pageData.mediaBox.height;
 
         const textTypewriterOptions = {
             x: textX < 0 ? 0 : textX,
@@ -1067,8 +1112,8 @@ async function scanBarcode() {
         const polygonOptions = {
             points: points.map(p => {
                 return {
-                    x: p.x / pageData.display.width * pageData.mediaBox.width,
-                    y: p.y / pageData.display.height * pageData.mediaBox.height
+                    x: p.x / displaySize.width * pageData.mediaBox.width,
+                    y: p.y / displaySize.height * pageData.mediaBox.height
                 }
             }),
             borderColor: "rgb(255,0,0)",
@@ -1310,10 +1355,11 @@ async function recognizeText() {
 
         let currentPageId = currentDoc.pages[editViewer.getCurrentPageIndex()];
         let pageData = await currentDoc.getPageData(currentPageId);
+        const displaySize = await getPageDisplaySize(pageData);
 
         // https://www.dynamsoft.com/document-viewer/docs/api/interface/annotationinterface/texttypewriterannotationoptions.html
-        let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / pageData.display.width * pageData.mediaBox.width;
-        let textY = Math.min(points[0].y, points[1].y, points[2].y, points[3].y) / pageData.display.height * pageData.mediaBox.height;
+        let textX = Math.min(points[0].x, points[1].x, points[2].x, points[3].x) / displaySize.width * pageData.mediaBox.width;
+        let textY = Math.min(points[0].y, points[1].y, points[2].y, points[3].y) / displaySize.height * pageData.mediaBox.height;
 
         const textTypewriterOptions = {
             x: textX < 0 ? 0 : textX,
@@ -1335,8 +1381,8 @@ async function recognizeText() {
         const polygonOptions = {
             points: points.map(p => {
                 return {
-                    x: p.x / pageData.display.width * pageData.mediaBox.width,
-                    y: p.y / pageData.display.height * pageData.mediaBox.height
+                    x: p.x / displaySize.width * pageData.mediaBox.width,
+                    y: p.y / displaySize.height * pageData.mediaBox.height
                 }
             }),
             borderColor: "rgb(0,255,0)",
