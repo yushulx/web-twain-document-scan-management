@@ -83,25 +83,25 @@ const DEMO_FOOTER_STYLE = `  <style>
     .demo-footer {
       flex: 0 0 auto;
       padding: 10px 16px;
-      background: var(--header-bg, #111722);
-      color: #c9d2e3;
+      background: var(--header-bg, #323234);
+      color: #cccccc;
       font-size: 13px;
       text-align: center;
       line-height: 1.6;
     }
     .demo-footer p { margin: 0; }
-    .demo-footer a { color: #8ab4ff; text-decoration: none; }
+    .demo-footer a { color: #DDDDDD; text-decoration: none; }
     .demo-footer a:hover { text-decoration: underline; }
     .demo-footer .demo-footer-cta {
       display: inline-block;
       margin-left: 10px;
       padding: 3px 12px;
       border-radius: 999px;
-      background: #2563eb;
+      background: #FE8E14;
       color: #fff;
       font-weight: 600;
     }
-    .demo-footer .demo-footer-cta:hover { background: #1d4ed8; text-decoration: none; }
+    .demo-footer .demo-footer-cta:hover { background: #e07d0b; text-decoration: none; }
     @media (max-width: 640px) {
       .demo-footer { font-size: 12px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); }
       .demo-footer .demo-footer-cta { margin: 6px 0 0; }
@@ -126,6 +126,12 @@ function codepoolDemoPlugin(assetVersion: string): Plugin {
         html = html.replace(
           /<meta name="description"[\s\S]*?>/,
           `<meta name="description" content="${DEMO_DESCRIPTION}" />`
+        );
+        // The logo is served from `public/`, so its filename carries no content
+        // hash — version it by hand to keep it out of caches across releases.
+        html = html.replace(
+          'src="dynamsoft-logo-white.svg"',
+          `src="dynamsoft-logo-white.svg?v=${assetVersion}"`
         );
         html = html.replace("</head>", `${DEMO_FOOTER_STYLE}${demoHead(assetVersion)}</head>`);
         // GTM noscript right after <body>, footer CTA before </body>.

@@ -89,18 +89,35 @@ export function setDocActionsEnabled(enabled: boolean): void {
   (document.getElementById("btn-detect") as HTMLButtonElement)!.disabled = !enabled;
   (document.getElementById("btn-export") as HTMLButtonElement)!.disabled = !enabled;
   (document.getElementById("btn-gdrive") as HTMLButtonElement)!.disabled = !enabled;
+
+  // A disabled trigger cannot be clicked to dismiss its own open menu, so
+  // close any that is still showing when the document goes away.
+  if (!enabled) {
+    document
+      .querySelectorAll<HTMLElement>(".export-menu.open")
+      .forEach((menu) => menu.classList.remove("open"));
+  }
 }
 
 /* ================================================================== */
 /*  Toolbar wiring                                                    */
 /* ================================================================== */
 
+/**
+ * What the Detect menu can be asked to do on the current page.
+ *
+ *   • "document" — find the page boundary and correct the perspective
+ *   • "barcode"  — decode 1D/2D barcodes
+ *   • "mrz"      — read the machine-readable zone of a passport or ID
+ */
+export type DetectMode = "document" | "barcode" | "mrz";
+
 export interface ToolbarActions {
   onOpen: () => void;
   onRedact: () => void;
   onStamp: () => void;
   onDeletePage: () => void;
-  onDetect: () => void;
+  onDetect: (mode: DetectMode) => void;
   onRefreshScanners: () => void;
   onScan: () => void;
   onCamera: () => void;
@@ -113,7 +130,6 @@ export function wireToolbar(actions: ToolbarActions): void {
   const redact = el("btn-redact");
   const stamp = el("btn-stamp");
   const deletePage = el("btn-delete-page");
-  const detect = el("btn-detect");
   const refreshScanners = el("btn-refresh-scanners");
   const scan = el("btn-scan");
   const camera = el("btn-camera");
@@ -122,61 +138,66 @@ export function wireToolbar(actions: ToolbarActions): void {
   redact.addEventListener("click", actions.onRedact);
   stamp.addEventListener("click", actions.onStamp);
   deletePage.addEventListener("click", actions.onDeletePage);
-  detect.addEventListener("click", actions.onDetect);
   refreshScanners.addEventListener("click", actions.onRefreshScanners);
   scan.addEventListener("click", actions.onScan);
   camera.addEventListener("click", actions.onCamera);
 
-  /* ---- Export dropdown ---- */
-  const exportBtn = el("btn-export");
-  const exportMenu = el("export-menu");
+  /* ---- Dropdown menus (Detect / Drive / Export) ---- */
+  const menus: Array<{ button: HTMLElement; menu: HTMLElement }> = [
+    { button: el("btn-detect"), menu: el("detect-menu") },
+    { button: el("btn-gdrive"), menu: el("gdrive-menu") },
+    { button: el("btn-export"), menu: el("export-menu") },
+  ];
 
-  /* ---- Google Drive dropdown ---- */
-  const gdriveBtn = el("btn-gdrive");
-  const gdriveMenu = el("gdrive-menu");
+  /** Only one dropdown is ever open, so opening one closes the others. */
+  function closeMenus(keepOpen?: HTMLElement): void {
+    for (const entry of menus) {
+      if (entry.menu !== keepOpen) entry.menu.classList.remove("open");
+    }
+  }
 
-  exportBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    gdriveMenu.classList.remove("open");
-    exportMenu.classList.toggle("open");
+  for (const entry of menus) {
+    entry.button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !entry.menu.classList.contains("open");
+      closeMenus(entry.menu);
+      entry.menu.classList.toggle("open", willOpen);
+    });
+  }
+
+  el("detect-menu").querySelectorAll<HTMLButtonElement>("button[data-detect]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      actions.onDetect(btn.getAttribute("data-detect") as DetectMode);
+      closeMenus();
+    });
   });
 
-  gdriveBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    exportMenu.classList.remove("open");
-    gdriveMenu.classList.toggle("open");
-  });
-
-  gdriveMenu.querySelectorAll<HTMLButtonElement>("button[data-gdrive]").forEach((btn) => {
+  el("gdrive-menu").querySelectorAll<HTMLButtonElement>("button[data-gdrive]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const mode = btn.getAttribute("data-gdrive") as "pdf" | "images";
       actions.onGDrive(mode);
-      gdriveMenu.classList.remove("open");
+      closeMenus();
+    });
+  });
+
+  el("export-menu").querySelectorAll<HTMLButtonElement>("button[data-format]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const format = btn.getAttribute("data-format") as ExportFormat;
+      actions.onExport(format);
+      closeMenus();
     });
   });
 
   // Close on outside click / Esc.
   document.addEventListener("click", (e) => {
-    if (!exportMenu.contains(e.target as Node) && !exportBtn.contains(e.target as Node)) {
-      exportMenu.classList.remove("open");
-    }
-    if (!gdriveMenu.contains(e.target as Node) && !gdriveBtn.contains(e.target as Node)) {
-      gdriveMenu.classList.remove("open");
-    }
+    const target = e.target as Node;
+    const inside = menus.some(
+      (entry) => entry.menu.contains(target) || entry.button.contains(target)
+    );
+    if (!inside) closeMenus();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      exportMenu.classList.remove("open");
-      gdriveMenu.classList.remove("open");
-    }
-  });
-
-  exportMenu.querySelectorAll<HTMLButtonElement>("button[data-format]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const format = btn.getAttribute("data-format") as ExportFormat;
-      actions.onExport(format);
-      exportMenu.classList.remove("open");
-    });
+    if (e.key === "Escape") closeMenus();
   });
 
   /* ---- Keyboard shortcuts ---- */

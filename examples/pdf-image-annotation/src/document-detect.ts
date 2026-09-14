@@ -23,13 +23,11 @@
  */
 
 import {
-  CoreModule,
-  LicenseManager,
-  CaptureVisionRouter,
   EnumCapturedResultItemType,
   DetectedQuadResultItem,
 } from "dynamsoft-capture-vision-bundle";
 
+import { capturePage } from "./cv";
 import { EditViewerHandle } from "./ddv";
 import { showToast, setBusy } from "./toolbar";
 
@@ -150,47 +148,7 @@ async function runDetection(
 /* ------------------------------------------------------------------ */
 
 /** Capture Vision preset template that returns the document quadrilateral. */
-const DETECT_TEMPLATE = "DetectDocumentBoundaries_Default";
-
-/** Lazily-created CaptureVisionRouter, configured for full-resolution detection. */
-let routerPromise: Promise<CaptureVisionRouter> | null = null;
-let licenseInitialized = false;
-
-/**
- * Initializes the Dynamsoft Capture Vision license used by the document
- * detector. Call once at startup with the same license key as DDV.
- *
- * The engine's wasm/worker assets are loaded from the jsDelivr CDN. This
- * must be set explicitly: when the SDK is bundled (e.g. by Vite) it cannot
- * infer its own script URL, so without a `rootDirectory` it would request
- * the assets from the app's own origin and receive `index.html` back —
- * surfacing as "Unexpected token '<'".
- */
-export async function initDocumentDetector(license: string): Promise<void> {
-  if (licenseInitialized) return;
-  CoreModule.engineResourcePaths.rootDirectory = "https://cdn.jsdelivr.net/npm/";
-  await LicenseManager.initLicense(license);
-  licenseInitialized = true;
-}
-
-/**
- * Returns the shared CaptureVisionRouter, creating it on first use. The
- * router is configured to process the image at full resolution so the
- * detected quad maps directly onto the original page coordinates.
- */
-async function getRouter(): Promise<CaptureVisionRouter> {
-  if (!routerPromise) {
-    routerPromise = (async () => {
-      const router = await CaptureVisionRouter.createInstance();
-      router.maxImageSideLength = Infinity;
-      const settings = await router.getSimplifiedSettings(DETECT_TEMPLATE);
-      settings.outputOriginalImage = true;
-      await router.updateSettings(DETECT_TEMPLATE, settings);
-      return router;
-    })();
-  }
-  return routerPromise;
-}
+const DETECT_TEMPLATE = "DetectDocumentBoundaries_Default" as const;
 
 /**
  * Detects the document boundary with Dynamsoft Capture Vision's Document
@@ -204,8 +162,7 @@ async function getRouter(): Promise<CaptureVisionRouter> {
  * is found.
  */
 async function detectQuadDCV(blob: Blob): Promise<Quad | null> {
-  const router = await getRouter();
-  const result = await router.capture(blob, DETECT_TEMPLATE);
+  const result = await capturePage(DETECT_TEMPLATE, blob);
 
   const detected = result.items.find(
     (item) => item.type === EnumCapturedResultItemType.CRIT_DETECTED_QUAD
@@ -923,7 +880,7 @@ function showDetectPreview(
         });
         const pts = [s(quad.tl), s(quad.tr), s(quad.br), s(quad.bl)];
 
-        ctx.strokeStyle = "#2563eb";
+        ctx.strokeStyle = "#fe8e14";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
@@ -943,7 +900,7 @@ function showDetectPreview(
         // Draw draggable handles
         for (const p of pts) {
           ctx.fillStyle = "#fff";
-          ctx.strokeStyle = "#2563eb";
+          ctx.strokeStyle = "#fe8e14";
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
