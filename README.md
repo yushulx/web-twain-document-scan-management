@@ -1,6 +1,12 @@
 # Dynamic Web TWAIN Examples
 A collection of quickstart samples demonstrating the [Dynamic Web TWAIN APIs](https://www.dynamsoft.com/web-twain/overview/) for document scanning, uploading, editing, and more.
 
+## Try it online
+
+The `examples/pdf-image-annotation` sample runs as a hosted, no-install demo — open PDFs and images, capture pages from a camera or a TWAIN scanner, detect document edges, read barcodes and MRZ, annotate and redact, then export to PDF or images:
+
+**https://www.dynamsoft.com/codepool/demos/pdf-image-annotation/**
+
 ## Prerequisites
 - [30-day Trial License key](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 - [HTTP Server](https://www.npmjs.com/package/http-server)
