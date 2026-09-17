@@ -12,7 +12,7 @@ import { defineConfig, loadEnv, Plugin } from "vite";
 /* ------------------------------------------------------------------ */
 
 const DEMO_URL = "https://www.dynamsoft.com/codepool/demos/pdf-image-annotation/";
-const DEMO_TITLE = "Online PDF & Image Annotation Studio | Dynamsoft Codepool Demo";
+const DEMO_TITLE = "Free Online PDF & Image Annotation Studio | Dynamsoft Codepool Demo";
 const DEMO_DESCRIPTION =
   "Free online PDF and image annotation studio: open PDFs and images, append scanned pages or camera photos, annotate and redact, then export to PDF, PNG, JPEG or TIFF — all in the browser.";
 const GTM_ID = "GTM-538F83";
@@ -44,7 +44,7 @@ function demoHead(assetVersion: string): string {
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Online PDF & Image Annotation Studio",
+    "name": "Free Online PDF & Image Annotation Studio",
     "url": "${DEMO_URL}",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (web browser)",
@@ -58,6 +58,12 @@ function demoHead(assetVersion: string): string {
       "Export to editable or flattened PDF, PNG, JPEG or multi-page TIFF"
     ],
     "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free to use on dynamsoft.com/codepool — the hosted demo carries a domain-bound license, so no account, no key and no installation are needed. Self-hosting the code requires your own Dynamsoft license. Nothing you open or upload leaves your device."
+    },
     "publisher": {
       "@type": "Organization",
       "name": "Dynamsoft",
@@ -69,9 +75,15 @@ function demoHead(assetVersion: string): string {
 }
 
 function demoFooter(): string {
+  /* The last sentence matters: the page is free because the Codepool host serves a
+     license bound to dynamsoft.com. Someone who clones this example and runs it
+     elsewhere gets no bound license, so say so where the "Built with" line already
+     puts the SDK in a reuser's field of view. */
   return `  <footer class="demo-footer">
     <p>
       Built with <a href="https://www.dynamsoft.com/document-viewer/overview/" data-demo-cta="document-viewer">Dynamsoft Document Viewer</a>.
+      This page is free because it activates a Codepool license bound to dynamsoft.com; the sample
+      code on GitHub is a separate thing and needs your own license to run.
       <a href="${TUTORIAL_URL}" data-demo-cta="tutorial">Read the tutorial</a>
       <a class="demo-footer-cta" href="${TRIAL_URL}" data-demo-cta="trial">Get a 30-day free trial license</a>
     </p>
@@ -108,6 +120,20 @@ const DEMO_FOOTER_STYLE = `  <style>
     }
   </style>
 `;
+
+/* Cache-busting token for the hand-written tags in demoHead() — currently just
+   ../shared/analytics.js. Keep it in step with the `?v=` on the other
+   demos/<slug>/ pages: the analytics file is shared across every demo, and a page
+   serving a stale token hands some visitors a day-old copy while the rest get the
+   new one. DEMO_ASSET_VERSION overrides it for a one-off build.
+
+   This used to default to a hardcoded date, and because nothing in package.json
+   sets the env var, every `npm run build:demo` silently re-emitted that old value
+   and reverted whatever the deployed page had. Bumping the page by hand and
+   rebuilding therefore did not stick — pass the version on the command line
+   (`DEMO_ASSET_VERSION=... npm run build:demo`) or change this constant, but do
+   not rely on a manual edit of the built index.html. */
+const DEMO_ASSET_VERSION = process.env.DEMO_ASSET_VERSION || "20260917l";
 
 function codepoolDemoPlugin(assetVersion: string): Plugin {
   return {
@@ -151,7 +177,7 @@ export default defineConfig(({ mode }) => {
       outDir: isDemo ? "dist-demo" : "dist",
       emptyOutDir: true,
     },
-    plugins: isDemo ? [codepoolDemoPlugin(env.DEMO_ASSET_VERSION || "20260909a")] : [],
+    plugins: isDemo ? [codepoolDemoPlugin(DEMO_ASSET_VERSION)] : [],
     // VITE_DDVR_LICENSE / VITE_DWT_LICENSE / VITE_GDRIVE_CLIENT_ID are
     // available via import.meta.env automatically — no define needed.
   };
