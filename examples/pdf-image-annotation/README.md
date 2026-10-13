@@ -27,6 +27,8 @@ A browser-based document workbench for opening PDFs/images, appending more files
 
   Barcode and MRZ results are outlined on the page — a polygon around each hit plus a label chip — and listed in a results dialog with the decoded values and parsed fields, ready to copy. Repeated Detect runs replace the previous overlays instead of stacking them.
 - **Google Drive upload**: sign in with Google and upload all pages as a single PDF or as individual PNG images directly to Google Drive.
+- **Bundled sample on boot**: the demo loads `public/sample/document-sample.pdf` automatically once the engine is up, so a fresh visit lands on a document with a real text layer — the search panel always has something to find. Many real-world PDFs (scans, design-tool exports with outlined fonts) have no text layer at all, which is why a clean sample matters. The empty state offers a one-click reload of the sample after you delete all pages.
+- **Full-text search**: the canvas toolbar's search switch (or Ctrl/Cmd+F while the canvas has focus) opens DDV's native search panel — type a term to highlight every match in the document, jump between hits with the prev/next buttons or the clickable results list, and narrow the search with case-sensitive and whole-word options. On phones the panel becomes a bottom sheet over the canvas.
 - **Native DDV annotation toolbar**: page navigation, display/fit mode, zoom, rotate, crop, image filters, undo/redo, and page-level delete — plus DDV's full annotation set (shapes, text, ink, stamps) and redaction tools.
 - **Quick Redact**: creates a real redaction annotation, selects it, and leaves it movable/resizable before applying it from DDV's redaction toolbar.
 - **Approval stamp**: adds a movable `REVIEWED <date>` text stamp.

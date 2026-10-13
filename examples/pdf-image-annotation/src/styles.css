@@ -789,6 +789,200 @@ button {
 }
 
 /* ================================================================== */
+/*  DDV native full-text search panel (.ddv-search)                    */
+/* ================================================================== */
+/*  DDV renders the entire panel — search input, case-sensitive /       */
+/*  whole-word checkboxes, match count, prev/next and a clickable       */
+/*  results list — and binds Ctrl/Cmd+F to it by itself. The panel is   */
+/*  a flex sibling of MainView inside the body row and stays            */
+/*  display:none until the header switch opens it, so it costs the      */
+/*  canvas no width while hidden. ddv.css ships dark defaults (#ddd     */
+/*  background, black text) that fight this light workspace, so the     */
+/*  DDV search variables are re-pointed at the app's design tokens.     */
+/*  Selectors carry the #ddv-container prefix because ddv.css lands     */
+/*  after this file in the bundle and would win equal-specificity ties. */
+
+#ddv-container .ddv-search {
+  --ddv-search-background: var(--surface);
+  --ddv-search-border: 1px solid var(--border-strong);
+  --ddv-search-font-color: var(--text-2);
+  --ddv-search-focus-color: var(--primary);
+  --ddv-search-focus-background: var(--primary-soft);
+  --ddv-search-item-background: var(--surface);
+  --ddv-search-item-font-color: var(--text);
+  --ddv-shadow: var(--shadow-sm);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  font-family: var(--font);
+  padding: 12px 0;
+  width: 300px;
+}
+
+/* Narrow desktops: keep more of the canvas beside the open panel. */
+@media (max-width: 1200px) {
+  #ddv-container .ddv-search {
+    width: 260px;
+  }
+}
+
+/* ---- Header block: input row + the two option checkboxes ---- */
+#ddv-container .ddv-search-header {
+  padding: 0 15px;
+}
+
+/* No document open yet — DDV flags the header with .ddv-disable and
+   empties the input; keep the whole block visibly inert. */
+#ddv-container .ddv-search-header.ddv-disable {
+  opacity: .45;
+  pointer-events: none;
+}
+
+#ddv-container .ddv-search-input-container {
+  height: 34px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#ddv-container .ddv-search-input-container:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(254, 142, 20, .18);
+}
+
+#ddv-container .ddv-search-input-container .ddv-icon-search {
+  color: var(--text-3);
+  font-size: 15px;
+}
+
+#ddv-container .ddv-search-input {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+}
+
+#ddv-container .ddv-search-input::placeholder {
+  color: var(--text-3);
+}
+
+/* Case sensitive / Whole word */
+#ddv-container .ddv-search-header label {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+#ddv-container .ddv-search-header label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Thin rule between the options and the results */
+#ddv-container .ddv-search-split-line {
+  background: var(--border);
+  margin: 12px 15px 0;
+}
+
+/* ---- Results list ---- */
+#ddv-container .ddv-search-result-container-header {
+  margin-top: 12px;
+  padding: 0 15px;
+  align-items: center;
+}
+
+#ddv-container .ddv-search-result-count {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+#ddv-container .ddv-search-result-prev,
+#ddv-container .ddv-search-result-next {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+#ddv-container .ddv-search-result-prev:hover,
+#ddv-container .ddv-search-result-next:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-hover);
+}
+
+#ddv-container .ddv-search-result-container-body {
+  padding: 0 15px;
+}
+
+/* "Page N" separator between the hits of consecutive pages */
+#ddv-container .ddv-search-result-split {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  margin-top: 10px;
+}
+
+#ddv-container .ddv-search-result-item {
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+#ddv-container .ddv-search-result-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* The matched term inside a hit's context */
+#ddv-container .ddv-search-result-item > span {
+  background: rgba(254, 142, 20, .28);
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* The hit the viewer is currently on */
+#ddv-container .ddv-search-result-item-selected {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+/* ---- Phones: bottom sheet over the canvas ---- */
+/*  ddv.css ships these rules scoped under .ddv-edit-viewer-mobile, a    */
+/*  class this app's custom column does not use, so they are ported      */
+/*  here. The sheet anchors to the column (.ddv-layout is positioned).   */
+@media (max-width: 900px) {
+  #ddv-container .ddv-edit-viewer-search-mobile {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 60%;
+    border: 0;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    box-shadow: 0 -8px 24px rgba(16, 24, 40, .18);
+    z-index: 12;
+    padding-top: 0;
+  }
+}
+
+/* ================================================================== */
 /*  Empty state                                                       */
 /* ================================================================== */
 .empty-state {
@@ -907,6 +1101,33 @@ button {
 .empty-note svg {
   width: 14px;
   height: 14px;
+}
+
+/* Reload-sample entry: a quiet text-style button under the two main CTAs,
+   plus the one-line reason it exists (search needs a text layer). */
+.empty-sample {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 16px;
+  margin-bottom: 10px;
+  border: none;
+  background: transparent;
+  color: var(--primary-hover);
+  font: 600 13px/34px var(--font);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.empty-sample:hover {
+  background: var(--primary-soft);
+}
+
+.empty-sample-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 22px;
 }
 
 /* ================================================================== */

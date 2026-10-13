@@ -1,0 +1,91 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 1531 >>
+stream
+BT /F1 18 Tf 0.13 0.16 0.22 rg 72.0 708.0 Td (Dynamsoft Document Viewer) Tj ET
+0.996 0.557 0.078 rg 72 686.0 46 2.5 re f 0 rg
+BT /F1 12 Tf 0.45 0.47 0.52 rg 72.0 662.0 Td (Sample document -- a real text layer) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 628.0 Td (This sample exists so you can try full-text search without hunting for a) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 611.0 Td (suitable PDF first. Every glyph on these pages is a real text object drawn) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 594.0 Td (with the Helvetica font, so any PDF viewer -- and the annotation studio) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 577.0 Td (hosting this sample -- can extract and index every word.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 550.0 Td (Try it now: click the magnifier in the canvas toolbar \(or press Ctrl+F\) and) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 533.0 Td (search for the word annotation. You should find three matches across this) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 516.0 Td (document, and the viewer jumps to each one as you step through them.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 489.0 Td (You can also search for: search, text, OCR, redaction, sample.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 462.0 Td (Nothing here leaves your machine: the file is bundled with the demo, loaded) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 445.0 Td (locally, and parsed by the WebAssembly engine in your browser tab.) Tj ET
+BT /F1 9 Tf 0.45 0.47 0.52 rg 72.0 52.0 Td (Dynamsoft Codepool sample -- page 1 of 3) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1717 >>
+stream
+BT /F1 18 Tf 0.13 0.16 0.22 rg 72.0 708.0 Td (Why some PDFs cannot be searched) Tj ET
+0.996 0.557 0.078 rg 72 686.0 46 2.5 re f 0 rg
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 652.0 Td (A PDF can store letters in two very different ways. A text layer stores) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 635.0 Td (each character as a character with a font reference -- that is what search) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 618.0 Td (reads. An outlined or scanned page stores shapes: the letters are vector) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 601.0 Td (curves or pixels, and no search engine can find a word in them.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 574.0 Td (If a document produces zero results in the search panel, it almost certainly) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 557.0 Td (has no text layer. Standard extraction tools return zero characters for) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 540.0 Td (such files. OCR is the only way to recover searchable text from them -- the) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 523.0 Td (letters must be recognized back into characters before they can be indexed.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 496.0 Td (The word annotation appears on this page too -- by design.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 469.0 Td (Tip: files exported from design tools with fonts converted to outlines, or) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 452.0 Td (stamped and flattened through certain pipelines, lose their text layer the) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 435.0 Td (same way a scan does. Rendering still looks perfect; search finds nothing.) Tj ET
+BT /F1 9 Tf 0.45 0.47 0.52 rg 72.0 52.0 Td (Dynamsoft Codepool sample -- page 2 of 3) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 1195 >>
+stream
+BT /F1 18 Tf 0.13 0.16 0.22 rg 72.0 708.0 Td (What to try in this demo) Tj ET
+0.996 0.557 0.078 rg 72 686.0 46 2.5 re f 0 rg
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 652.0 Td (*  Search the full text \(Ctrl+F\) -- try annotation, search or redaction.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 635.0 Td (*  Annotate with the native toolbar: shapes, ink, text boxes and stamps.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 618.0 Td (*  Mark a region for redaction, then export a flattened PDF to burn it away.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 601.0 Td (*  Export the pages to PNG, JPEG or a multi-page TIFF archive.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 574.0 Td (Every feature runs locally in your browser. The document never leaves your) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 557.0 Td (machine -- open, annotate, redact and export all happen inside this tab.) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 530.0 Td (This sample reloads fresh every time you restart the demo, so it is always) Tj ET
+BT /F1 11 Tf 0.08 0.08 0.1 rg 72.0 513.0 Td (a clean starting point for trying the next feature.) Tj ET
+BT /F1 9 Tf 0.45 0.47 0.52 rg 72.0 52.0 Td (Dynamsoft Codepool sample -- page 3 of 3) Tj ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000350 00000 n 
+0000001933 00000 n 
+0000002059 00000 n 
+0000003828 00000 n 
+0000003954 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+5201
+%%EOF

@@ -8,6 +8,7 @@
  * Key responsibilities:
  *   • create the EditViewer with a clean, single in-canvas toolbar
  *   • host DDV's native thumbnail component in our left rail
+ *   • host DDV's native full-text search panel (right rail / bottom sheet)
  *   • track the current document + page, and emit app-level events
  */
 
@@ -36,14 +37,16 @@ export interface EditViewerHandle {
 /*  In-canvas EditViewer toolbar                                       */
 /* ------------------------------------------------------------------ */
 /*  Deliberately minimal: page navigation + the native annotation set  */
-/*  (which itself exposes shapes, ink, text, stamps, redaction).       */
+/*  (which itself exposes shapes, ink, text, stamps, redaction) plus   */
+/*  DDV's native full-text search panel.                              */
 /*  File open / export / quick actions live in our app header instead. */
 /*                                                                     */
 /*  Desktop: one header row with everything.                           */
-/*  Phones + tablets: navigation + zoom stay in the header, while       */
-/*           rotate/crop/filter/undo/delete and the annotation sets     */
-/*           move to DDV's mobile bottom toolbar so no tool is hidden   */
-/*           off-screen.                                               */
+/*  Phones + tablets: navigation + zoom + search stay in the header,   */
+/*           while rotate/crop/filter/undo/delete and the annotation   */
+/*           sets move to DDV's mobile bottom toolbar so no tool is    */
+/*           hidden off-screen. The search panel becomes a bottom      */
+/*           sheet over the canvas on phones.                          */
 /* ------------------------------------------------------------------ */
 
 /* Below this width the full toolbar cannot fit in one row. */
@@ -74,9 +77,10 @@ function buildUiConfig(): UiConfig {
   const mobile = isMobileViewport();
 
   /*  View controls stay in the header on every width: page navigation, fit mode,
-      zoom, and Pan — the hand tool for dragging the page around when it is
-      zoomed past the viewport. It sits with the other view controls rather than
-      with the editing tools, which is where DDV's own default layout puts it. */
+      zoom, Pan — the hand tool for dragging the page around when it is
+      zoomed past the viewport — and the search switch. It sits with the other
+      view controls rather than with the editing tools, which is where DDV's own
+      default layout puts it. */
   const header = {
     type: DDV.Elements.Layout,
     className: "ddv-edit-viewer-header",
@@ -86,6 +90,13 @@ function buildUiConfig(): UiConfig {
       DDV.Elements.FitMode,
       DDV.Elements.Zoom,
       DDV.Elements.Pan,
+      DDV.Elements.SeparatorLine,
+      // Toggles the search panel (Ctrl/Cmd+F does the same while the canvas
+      // has focus — DDV binds that itself). Disabled until a document opens.
+      {
+        type: DDV.Elements.TextSearchPanelSwitch,
+        tooltip: "Search text (Ctrl+F)",
+      },
       ...(mobile ? [] : [DDV.Elements.SeparatorLine, ...editingTools()]),
     ],
   };
@@ -94,7 +105,14 @@ function buildUiConfig(): UiConfig {
     type: DDV.Elements.Layout,
     flexDirection: "row",
     className: "ddv-edit-viewer-body",
-    children: [DDV.Elements.MainView],
+    children: [
+      DDV.Elements.MainView,
+      // DDV's native full-text search: input with case-sensitive / whole-word
+      // options, match count, prev/next, and a clickable results list. It is
+      // display:none until the header switch opens it, so it costs the canvas
+      // no width while hidden. On phones it is a bottom sheet instead (below).
+      ...(mobile ? [] : [DDV.Elements.TextSearchPanel]),
+    ],
   };
 
   const children: unknown[] = [header, body];
@@ -104,6 +122,13 @@ function buildUiConfig(): UiConfig {
       type: DDV.Elements.Layout,
       className: "ddv-edit-viewer-footer-mobile",
       children: editingTools(),
+    });
+    // Phones: the search panel slides over the canvas as a bottom sheet.
+    // styles.css ports DDV's own `.ddv-edit-viewer-search-mobile` rules,
+    // which ddv.css only ships under DDV's default mobile layout class.
+    children.push({
+      type: DDV.Elements.TextSearchPanel,
+      className: "ddv-edit-viewer-search-mobile",
     });
   }
 

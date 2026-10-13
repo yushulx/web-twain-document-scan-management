@@ -178,6 +178,41 @@ function waitForLicense(): Promise<string> {
 
 let viewerHandle: EditViewerHandle | null = null;
 
+/**
+ * The bundled sample document (public/sample/document-sample.pdf) is loaded
+ * automatically once the engine is up, so a fresh visit lands on something
+ * annotatable AND searchable — many people drag in a scanned or outlined PDF
+ * whose pages are shapes, and no text search can find a word in those. The
+ * sample carries a real text layer, so Ctrl+F always has something to find.
+ */
+const SAMPLE_URL = "./sample/document-sample.pdf";
+
+/**
+ * Set while the boot sample is loading so the "Pages added." toast does not
+ * fire for a document the visitor did not add themselves.
+ */
+let suppressOpenToast = false;
+
+/**
+ * Best-effort boot sample. Any failure (an offline mirror without the asset,
+ * a file:// quirk) just leaves the empty state in place.
+ */
+async function loadSampleDocument(): Promise<void> {
+  if (!viewerHandle) return;
+  try {
+    const res = await fetch(SAMPLE_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const file = new File([blob], "sample-document.pdf", { type: "application/pdf" });
+    suppressOpenToast = true;
+    await openFile(viewerHandle, file, askPassword);
+  } catch (err: any) {
+    console.warn("[demo] Sample document unavailable:", err?.message ?? err);
+  } finally {
+    suppressOpenToast = false;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Bootstrap                                                          */
 /* ------------------------------------------------------------------ */
@@ -244,6 +279,7 @@ async function bootstrap(): Promise<void> {
 
   document.getElementById("empty-open")!.addEventListener("click", openFilePicker);
   document.getElementById("empty-drop")!.addEventListener("click", openFilePicker);
+  document.getElementById("empty-sample")!.addEventListener("click", () => loadSampleDocument());
 
   /* ---- Drag-and-drop ---- */
   wireDragDrop();
@@ -255,7 +291,7 @@ async function bootstrap(): Promise<void> {
     if (viewerHandle) updatePageStatus(viewerHandle);
     // Re-apply layout fix after document opens (DDV may re-render DOM)
     requestAnimationFrame(() => fixViewerLayout("ddv-container"));
-    showToast("Pages added.", "success");
+    if (!suppressOpenToast) showToast("Pages added.", "success");
   });
 
   document.addEventListener("app:document-closed", () => {
@@ -267,6 +303,9 @@ async function bootstrap(): Promise<void> {
   document.addEventListener("app:page-changed", () => {
     if (viewerHandle) updatePageStatus(viewerHandle);
   });
+
+  /* ---- Boot with the searchable sample document ---- */
+  loadSampleDocument();
 }
 
 function openFilePicker(): void {

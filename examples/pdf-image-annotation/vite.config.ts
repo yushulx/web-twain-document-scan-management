@@ -14,7 +14,7 @@ import { defineConfig, loadEnv, Plugin } from "vite";
 const DEMO_URL = "https://www.dynamsoft.com/codepool/demos/pdf-image-annotation/";
 const DEMO_TITLE = "Free Online PDF & Image Annotation Studio | Dynamsoft Codepool Demo";
 const DEMO_DESCRIPTION =
-  "Free online PDF and image annotation studio: open PDFs and images, append scanned pages or camera photos, annotate and redact, then export to PDF, PNG, JPEG or TIFF — all in the browser.";
+  "Free online PDF and image annotation studio: open PDFs and images, append scanned pages or camera photos, search text across pages, annotate and redact, then export to PDF, PNG, JPEG or TIFF — all in the browser.";
 const GTM_ID = "GTM-538F83";
 const TUTORIAL_URL =
   "https://www.dynamsoft.com/codepool/build-pdf-image-annotation-document-viewer.html";
@@ -55,6 +55,7 @@ function demoHead(assetVersion: string): string {
       "Capture pages from a camera or a TWAIN/WIA/SANE scanner",
       "Detect document edges and correct perspective",
       "Annotate, stamp and redact with the Dynamsoft Document Viewer toolbar",
+      "Search the full text of a PDF with case-sensitive and whole-word options",
       "Export to editable or flattened PDF, PNG, JPEG or multi-page TIFF"
     ],
     "isAccessibleForFree": true,
@@ -133,7 +134,7 @@ const DEMO_FOOTER_STYLE = `  <style>
    rebuilding therefore did not stick — pass the version on the command line
    (`DEMO_ASSET_VERSION=... npm run build:demo`) or change this constant, but do
    not rely on a manual edit of the built index.html. */
-const DEMO_ASSET_VERSION = process.env.DEMO_ASSET_VERSION || "20260917l";
+const DEMO_ASSET_VERSION = process.env.DEMO_ASSET_VERSION || "20261012a";
 
 function codepoolDemoPlugin(assetVersion: string): Plugin {
   return {
