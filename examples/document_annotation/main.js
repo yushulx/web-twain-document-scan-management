@@ -643,7 +643,7 @@ async function activate(license) {
         await Dynamsoft.License.LicenseManager.initLicense(license, true);
         await Dynamsoft.Core.CoreModule.loadWasm(["dbr", "ddn", "dlr"]);
 
-        // NOTE: as of Dynamsoft Capture Vision 3.6 / dynamsoft-capture-vision-data@1.2,
+        // NOTE: as of Dynamsoft Capture Vision 3.6 / dynamsoft-capture-vision-data@1.2.2,
         // "AAMVA_DL_ID_WITH_MAG_STRIPE" has been merged into "AAMVA_DL_ID" (loaded below).
         await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
         await Dynamsoft.DCP.CodeParserModule.loadSpec("SOUTH_AFRICA_DL");
