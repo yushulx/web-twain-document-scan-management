@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Index - Web TWAIN Full-Text Search Demo</title>
+  <meta name="description" content="A light foundation for your next frontend project based on webpack.">
+  <style>
+  </style>
+</head>
+<body>
+  <h2>Full-Text Search Demo</h2>
+  <div>
+    <div>List of scanned documents:</div>
+    <ul class="documents">
+    </ul>
+    <div>
+      <button onclick="NewDocument()">New Document</button>
+    </div>
+    <div>
+      <input type="text" id="query"/>
+      <button class="search-btn">Search</button>  
+    </div>
+  </div>
+</body>
+<script>
+  function NewDocument(){
+    window.open("document.html","_blank");
+  }
+</script>
+</html>

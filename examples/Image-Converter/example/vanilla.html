@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Converter</title>
+  </head>
+  <body>
+    <h1>Image Converter</h1>
+    <div id="app">
+    </div>
+    <script type="module">
+      import { ImageConverter } from '../dist/image-converter.js';
+      window.onload = function(){
+        let container = document.querySelector('#app');
+        new ImageConverter({container:container});
+      }
+    </script>
+    <link href="../dist/style.css" rel="stylesheet">
+  </body>
+</html>

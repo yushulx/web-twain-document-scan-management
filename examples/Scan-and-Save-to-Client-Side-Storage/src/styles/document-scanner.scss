@@ -1,0 +1,56 @@
+$body-color: slateblue;
+
+body {
+  color: $body-color;
+  font-family: sans-serif;
+}
+
+select {
+  max-width: 200px;
+}
+
+#close-button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 20px;
+}
+
+#capture-button {
+  position: absolute;
+  right: 0;
+  top: 20px;
+  height: 20px;
+}
+
+camera-preview {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 999;
+  background: white;
+}
+
+#document-viewer {
+  width: 300px;
+  height: 360px;
+  border: 1px solid #ccc;
+  overflow: auto;
+}
+
+.page {
+  width: calc(100% - 20px);
+  padding: 5px;
+}
+
+.page.selected {
+  padding: 4px;
+  border: 1px solid #fe8e14;
+}
+
+.page:hover {
+  padding: 4px;
+  border: 1px solid #fea543;
+}

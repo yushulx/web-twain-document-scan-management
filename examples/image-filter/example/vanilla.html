@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="/dynamsoft-document-viewer@5.0.1/dist/ddv.js"></script>
+    <link rel="stylesheet" href="/dynamsoft-document-viewer@5.0.1/dist/ddv.css">
+    <title>Image Filter</title>
+    <style>
+      .imageContainer {
+        overflow: auto;
+      }
+
+      #image {
+        max-width: 50%;
+      }
+
+      #imageHidden {
+        display: none;
+      }
+
+      #canvasHidden {
+        display: none;
+      }
+
+      #container {
+        display: none;
+        width: 100%;
+        height: 450px;
+    }
+    </style>
+    <script type="module">
+      import { ImageFilterHandler, BlackwhiteFilter, InvertFilter, GrayscaleFilter, SepiaFilter } from '../dist/image-filter.js';
+      window["GrayscaleFilter"] = GrayscaleFilter;
+      window["SepiaFilter"] = SepiaFilter;
+      window["InvertFilter"] = InvertFilter;
+      window["BlackwhiteFilter"] = BlackwhiteFilter;
+      window["ImageFilterHandler"] = ImageFilterHandler;
+    </script>
+  </head>
+  <body>
+    <div class="home">
+      <h2>Image Filter</h2>
+      <button id="loadFileButton">Load a File</button>
+      <input style="display:none;" type="file" id="file" onchange="loadImageFromFile();" accept=".jpg,.jpeg,.png,.bmp" />
+      <label>
+        Effect:
+        <select id="effectSelect">
+          <option>Sepia</option>
+          <option>Grayscale</option>
+          <option>Invert</option>
+          <option>Black & White (50% Threshold)</option>
+          <option>Black & White (OTSU)</option>
+        </select>
+      </label>
+      <button id="convertButton">Convert</button>
+      <button id="downloadButton">Download</button>
+      <button id="toggleButton">Toggle Dynamsoft Document Viewer</button>
+      <div class="imageContainer">
+        <img id="image"/>
+        <img id="imageHidden"/>
+      </div>
+      <canvas id="canvasHidden"></canvas>
+      <div id="container"></div>
+    </div>
+    
+    <script>
+      let cvs = document.getElementById("canvasHidden");
+      let grayscaleFilter;
+      let sepiaFilter;
+      let blackwhiteFilter;
+      let invertFilter;
+      let editViewer;
+
+      window.onload = function (){
+        grayscaleFilter = new GrayscaleFilter(cvs);
+        sepiaFilter = new SepiaFilter(cvs);
+        blackwhiteFilter = new BlackwhiteFilter(cvs);
+        invertFilter = new InvertFilter(cvs);
+        initDDV();
+      }
+
+      async function initDDV(){
+        Dynamsoft.DDV.Core.license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9"; // Public trial license which is valid for 24 hours
+        Dynamsoft.DDV.Core.engineResourcePath = "/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+        await Dynamsoft.DDV.Core.loadWasm();
+        await Dynamsoft.DDV.Core.init(); 
+        let filterHandler = new ImageFilterHandler();
+        // Configure image filter feature
+        Dynamsoft.DDV.setProcessingHandler("imageFilter", filterHandler);
+        // Create an edit viewer
+        editViewer = new Dynamsoft.DDV.EditViewer({
+          container: "container",
+        });
+      }
+
+      document.getElementById("loadFileButton").addEventListener("click",function(){
+        document.getElementById("file").click();
+      })
+
+      document.getElementById("toggleButton").addEventListener("click",function(){
+        if (!editViewer) {
+          alert("Dynamsoft Document Viewer is still loading.");
+          return;
+        }
+        let container = document.getElementById("container");
+        if (container.style.display === "none" || container.style.display === "") {
+          container.style.display = "block";
+        }else{
+          container.style.display = "none";
+        }
+      })
+
+      document.getElementById("convertButton").addEventListener("click",function(){
+        const img = document.getElementById("imageHidden");
+        let effectIndex = document.getElementById("effectSelect").selectedIndex;
+        if (effectIndex === 0) {
+          sepiaFilter.process(img);
+        }else if (effectIndex === 1){
+          grayscaleFilter.process(img);
+        }else if (effectIndex === 2){
+          invertFilter.process(img);
+        }else if (effectIndex === 3){
+          blackwhiteFilter.setThreshold(127);
+          blackwhiteFilter.setOTSUEnabled(false);
+          let threshold = blackwhiteFilter.process(img);
+          console.log("Threshold: "+threshold);
+        }else{
+          blackwhiteFilter.setOTSUEnabled(true);
+          let threshold = blackwhiteFilter.process(img);
+          console.log("Threshold: "+threshold);
+        }
+        document.getElementById("image").src = cvs.toDataURL();
+      })
+
+      document.getElementById("downloadButton").addEventListener("click",async function(){
+        const src = document.getElementById("image").src;
+        if (!src) {
+          return;
+        }
+        const link = document.createElement('a');
+        const response = await fetch(src);
+        const blob = await response.blob();
+        link.href = URL.createObjectURL(blob);
+        link.target = "_blank";
+        link.download = 'grayscale.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      })
+
+      
+      function loadImageFromFile(){
+        let fileInput = document.getElementById("file");
+        let files = fileInput.files;
+        if (files.length == 0) {
+          return;
+        }
+        document.getElementById("image").style.filter = "";
+        let file = files[0];
+        fileReader = new FileReader();
+        fileReader.onload = function(e){
+          document.getElementById("image").src = e.target.result;
+          document.getElementById("imageHidden").src = e.target.result;
+        };
+        fileReader.onerror = function () {
+          console.warn('oops, something went wrong.');
+        };
+        fileReader.readAsDataURL(file);
+      }
+    </script>
+  </body>
+</html>

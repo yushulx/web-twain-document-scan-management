@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TIFF Viewer Example</title>
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    .tiff-viewer {
+      width: 270px;
+      height: 360px;
+      border: 1px solid gray;
+      overflow-y: auto;
+    }
+
+    .tiff-viewer img {
+      width: calc(100% - 20px);
+      padding: 10px;
+    }
+
+    ol {
+      padding-left: 1em;
+    }
+  </style>
+</head>
+<body>
+  <ol>
+    <li>
+      <label>
+        Select a TIFF file to load:
+        <input type="file" id="file" onchange="tiffSelected();" accept=".tiff,.tif"/>
+      </label>
+    </li>
+    <li>
+      <input type="text" id="url" value="ycbcr.tif"/>
+      <button onclick="loadRemoteImage();">Load a remote image</button>
+      <span id="status"></span>
+    </li>
+  </ol>
+  <div class="tiff-viewer"></div>
+  <script type="text/javascript">
+    let DWObject;
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.Containers = [];
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    Dynamsoft.DWT.UseLocalService = false;
+    init();
+    function init(){
+      Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          console.log(obj);
+          DWObject = obj;
+        },
+        function(err) {
+          console.log(err);
+        }
+      );
+    }
+
+    function tiffSelected(){
+      let files = document.getElementById("file").files;
+      if (files.length>0 && DWObject) {
+        let file = files[0];
+        loadTiff(file);
+      }
+    }
+
+    function loadTiff(file){
+      DWObject.RemoveAllImages();
+      DWObject.LoadImageFromBinary(file,
+        function () {
+          console.log("success");
+          displayImagesInBuffer();
+        },
+        function (errorCode, errorString) {
+          console.log(errorString);
+        }
+      );
+    }
+
+    async function displayImagesInBuffer(){
+      let viewer = document.getElementsByClassName("tiff-viewer")[0];
+      viewer.innerHTML = "";
+      for (let index = 0; index < DWObject.HowManyImagesInBuffer; index++) {        
+        let dataURL = await getImageAsDataURL(index);
+        let img = document.createElement("img");
+        img.src = dataURL;
+        viewer.appendChild(img);
+      }
+    }
+
+    function getImageAsDataURL(index){
+      return new Promise(async (resolve, reject) => {
+        await ConvertToGrayScaleIfBW(index);
+        DWObject.ConvertToBase64(
+          [index],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_JPG,
+          function (result, indices, type) {
+            resolve("data:image/jpeg; base64,"+result.getData(0, result.getLength()))
+          },
+          function (errorCode, errorString) {
+            reject(errorString);
+          }
+        );
+      })
+    }
+
+    async function ConvertToGrayScaleIfBW(index) {
+      return new Promise((resolve, reject) => {
+        //Check if the image is B&W. 1 is B&W, 8 is Gray, 24 is RGB
+        if (DWObject.GetImageBitDepth(index) == 1) {
+          //If so, convert the image to gray since only 24-bit true color bmp and 8-bit gray-scaled image are supported for JPEG compression.
+          DWObject.ConvertToGrayScale(index,
+          function(){
+            resolve();
+          },
+          function(errorCode,errorString){
+            reject(errorString);
+          });  
+        }else{
+          resolve();
+        } 
+      })
+    }
+
+    function loadRemoteImage(){
+      let status = document.getElementById("status");
+      if (status.innerText) {
+        return;
+      }
+      status.innerText = "Downloading...";
+      let xhr = new XMLHttpRequest();
+      xhr.responseType = 'arraybuffer';
+      xhr.open('GET', document.getElementById("url").value);
+      xhr.onload = function (e) {
+        status.innerText = "";
+        loadTiff(xhr.response);
+      };
+      xhr.onerror = function(){
+        status.innerText = "Error";
+      }
+      xhr.send();
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+#app {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+}
+
+#container {
+  max-width: 80%;
+  width: 1280px;
+  height: 480px;
+}

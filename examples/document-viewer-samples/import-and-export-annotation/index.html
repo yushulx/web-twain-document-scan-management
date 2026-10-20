@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DDV - HelloWorld</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/ddv.css">
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/ddv.js"></script>
+</head>
+<style>
+  #app {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    flex-direction: column;
+  }
+
+  #container {
+    width: 90%;
+    height: 640px;
+  }
+
+  .buttons {
+    display: flex;
+  }
+</style>
+<body>
+  <div id="app">
+    <h2>Document Viewer Demo - Annotations Import and Export</h2>
+    <div class="buttons">
+      <button class="exportButton">Export Annotations to JSON</button>
+      <button class="importButton">Import Annotations from JSON</button>
+      <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="annotationFileSelected()">
+    </div>
+    <div id="container"></div>
+  </div>
+</body>
+<script>
+  let editViewer;
+  init();
+  async function init(){
+    // Public trial license which is valid for 24 hours
+    // You can request a 30-day trial key from https://www.dynamsoft.com/customer/license/trialLicense/?product=ddv
+    Dynamsoft.DDV.Core.license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+    Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/engine";
+    // Preload DDV Resource
+    Dynamsoft.DDV.Core.loadWasm();
+    await Dynamsoft.DDV.Core.init();
+    editViewer = new Dynamsoft.DDV.EditViewer({
+      container: "container"
+    });
+    document.getElementsByClassName("exportButton")[0].addEventListener("click", exportAnnotations);
+    document.getElementsByClassName("importButton")[0].addEventListener("click", selectAnnotationFile);
+  }
+
+  async function exportAnnotations(){
+    const exportedAnnotationsOfPages = [];
+    const pages = editViewer.currentDocument.pages;
+    for (let index = 0; index < pages.length; index++) {
+      const exportedAnnotationsOfPage = [];
+      const page = pages[index];
+      const annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByPage(page);
+      for (let j = 0; j < annotations.length; j++) {
+        const annotation = annotations[j];
+        console.log(annotation);
+        if (annotation.type === "unknown" || annotation.type === "incomplete") {
+          console.warn("Unknown or incomplete annotation type found, skipping export for this annotation.");
+          continue; // Skip unknown annotations
+        }
+        const exportedAnnotation = {
+          type: annotation.type,
+          options: annotation.getOptions()
+        };
+        await convertBlobInOptionsToDataURL(exportedAnnotation.options);
+        exportedAnnotationsOfPage.push(exportedAnnotation);
+      }
+      exportedAnnotationsOfPages.push(exportedAnnotationsOfPage);
+    }
+    downloadAnnotationsAsJSON(exportedAnnotationsOfPages);
+  }
+
+  function convertBlobInOptionsToDataURL(options) {
+    if (options.stamp && options.stamp instanceof Blob) {
+      const reader = new FileReader();
+      reader.readAsDataURL(options.stamp);
+      return new Promise((resolve) => {
+        reader.onloadend = () => {
+          options.stamp = reader.result;
+          resolve(options);
+        };
+      });
+    }
+    return Promise.resolve(options);
+  }
+
+  function downloadAnnotationsAsJSON(exportedAnnotationsOfPages){
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportedAnnotationsOfPages, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "annotations.json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  }
+
+  function selectAnnotationFile(){
+    document.getElementById("fileInput").click();
+  }
+
+  function annotationFileSelected(){
+    let files = document.getElementById("fileInput").files;
+    if (files.length > 0) {
+      let file = files[0];
+      let reader = new FileReader();
+      reader.onload = async function(event) {
+        try {
+          const exportedAnnotationsOfPages = JSON.parse(event.target.result);
+          console.log(exportedAnnotationsOfPages);
+          await importAnnotations(exportedAnnotationsOfPages);
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  async function importAnnotations(exportedAnnotationsOfPages) {
+    const pages = editViewer.currentDocument.pages;
+    for (let i = 0; i < exportedAnnotationsOfPages.length; i++) {
+      const pageUid = pages[i];
+      const annotations = exportedAnnotationsOfPages[i];
+      for (let j = 0; j < annotations.length; j++) {
+        const annotation = annotations[j];
+        let newAnnotation;
+        console.log("create annotation");
+        if (annotation.type === "stamp") {
+          if (annotation.options.stamp.indexOf("data:") != -1) {
+            annotation.options.stamp = convertDataURLToBlob(annotation.options.stamp); //convert data URL to Blob
+          }
+          newAnnotation = await Dynamsoft.DDV.annotationManager.createAnnotation(pageUid, annotation.type, annotation.options);
+        }else{
+          newAnnotation = Dynamsoft.DDV.annotationManager.createAnnotation(pageUid, annotation.type, annotation.options);
+        }
+        console.log(annotation)
+      }
+    }
+  }
+
+  function convertDataURLToBlob(dataURL) {
+    const byteString = atob(dataURL.split(',')[1]);
+    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  }
+</script>
+</html>

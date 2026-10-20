@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Compressor</title>
+  <script src="https://unpkg.com/pdfobject"></script>
+  <style>
+    img {
+      max-width: 480px;
+      max-height: 480px;
+    }
+
+    #canvas {
+      display: none;
+    }
+
+    .comparison {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .original {
+      margin-right: 1em;
+    }
+
+    .modal {
+      display: flex;
+      align-items: flex-start;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 250px;
+      min-height: 150px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 99;
+      padding: 10px;
+      visibility: hidden;
+    }
+
+    .progress-modal {
+      align-items: center;
+      text-align: center;
+      justify-content: center;
+      min-height: 50px;
+      max-height: 100px;
+    }
+
+    .progress-modal.active {
+      visibility: inherit;
+    }
+
+    #viewer {
+      width: 100%;
+      height: 480px;
+    }
+  </style>
+</head>
+<body>
+  <div class="home">
+    <h2>Image Compressor</h2>
+    <input id="fileInput" type="file" onchange="fileSelected();"/>
+    <div class="options">
+      <label>
+        Color conversion:
+        <select id="colorConversionSelect">
+          <option value="0">No conversion</option>
+          <option value="1">Grayscale</option>
+          <option value="2">Black & white</option>
+        </select>
+      </label>
+      <br/>
+      <label>
+        Max resolution width (px):
+        <input type="number" id="maxResWidthInput"/>
+      </label>
+      <br/>
+      <label>
+        Image format:
+        <select id="imageFormatSelect">
+          <option value="image/png">PNG</option>
+          <option value="image/jpeg">JPG</option>
+          <option value="image/webp">WebP</option>
+          <option value="pdf/jbig2">JBig2</option>
+          <option value="pdf/fax4">Fax4</option>
+          <option value="pdf/jp2000">JP2000</option>
+          <option value="pdf/lzw">LZW</option>
+        </select>
+      </label>
+      <br/>
+      <label>
+        Image quality:
+        <input type="range" id="qualityInput" step="0.1" min="0" max="1" value="1" onchange="updateQualityLabel()"/>
+        <span id="quality">1.0</span>
+      </label>
+    </div>
+    <button id="compressButton">Compress</button>
+    <input id="multipleFileInput" type="file" multiple onchange="multipleFilesSelected();" style="display:none;"/>
+    <button id="batchCompressButton">Batch Compress</button>
+    <button id="testButton">Run Test</button>
+    <div class="comparison">
+      <div class="original">
+        <div>Original:</div>
+        <img alt="" id="image"/>
+      </div>
+      <div class="compressed">
+        <div>Compressed:</div>
+        <div id="pdf"></div>
+        <img alt="" id="imageCompressed"/>
+      </div>
+    </div>
+    <div>
+      Compression Rate:
+      <span id="compressionRate"></span>
+    </div>
+    <div>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div id="testResult"></div>
+    <div id="viewer"></div>
+    <div class="modal progress-modal"></div>
+  </div>
+  <script>
+    let license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+    let doc;
+    let imgBlob;
+    let originalSize = 0;
+    let canvas = document.getElementById("canvas");
+    let img = document.getElementById("image");
+    let editViewer;
+    document.getElementById("compressButton").addEventListener("click",compress);
+    document.getElementById("batchCompressButton").addEventListener("click",triggerMultipleFilesSelection);
+    document.getElementById("testButton").addEventListener("click",test);
+    
+    loadDDV();
+
+    async function getCompressedBlob(imageFormat,quality){
+      let blob;
+      const isPDF = imageFormat.indexOf("pdf") != -1;
+      if (imageFormat === "image/png") {
+        blob = await doc.saveToPng(0,{});
+      }else if (imageFormat === "image/jpeg") {
+        blob = await doc.saveToJpeg(0,{quality: quality*100});
+        console.log({quality: quality*100});
+      }else if (imageFormat === "image/webp") {
+        let pngBlob = await doc.saveToPng(0,{});
+        blob = await convertBlobToWebP(pngBlob,quality);
+      }else if (isPDF) {
+        blob = await doc.saveToPdf([0],{quality: quality*100,compression:imageFormat});
+      }
+      console.log(blob);
+      return blob;
+    }
+
+    function displayCompressedImage(isPDF,blob){
+      console.log(blob);
+      const compressedImg = document.getElementById("imageCompressed");
+      const pdfContainer = document.getElementById("pdf");
+      if (isPDF) {
+        const compressedSize = blob.size;
+        displayCompressionRate(compressedSize);
+        compressedImg.style.display = "none";
+        pdfContainer.style.display = "block";
+        const url = URL.createObjectURL(blob);
+        pdfContainer.style.width = image.clientWidth + "px";
+        pdfContainer.style.height = image.clientHeight + "px";
+        const options = {
+            title: "My embedded PDF",
+            pdfOpenParams: { view: 'Fit', page: '1' }
+        };
+        PDFObject.embed(url, "#pdf", options);
+      }else{
+        const compressedSize = blob.size;
+        displayCompressionRate(compressedSize);
+        compressedImg.style.display = "block";
+        pdfContainer.style.display = "none";
+        const url = URL.createObjectURL(blob);
+        compressedImg.src = url;
+      }
+    }
+
+    async function compress(){
+      if (!img.src) {
+        alert("Please load an image");
+        return;
+      }
+      const blob = await compressImpl();
+      const imageFormat = document.getElementById("imageFormatSelect").selectedOptions[0].value;
+      const isPDF = imageFormat.indexOf("pdf") != -1;
+      displayCompressedImage(isPDF,blob);
+      return blob;
+    }
+
+    async function compressImpl(){
+      doc.deleteAllPages();
+      await doc.loadSource(imgBlob);
+      let maxWidth = document.getElementById("maxResWidthInput").value;
+      if (maxWidth && img.naturalWidth > maxWidth) {
+        let newWidth = maxWidth;
+        let newHeight = img.naturalHeight * maxWidth / img.naturalWidth;
+        await performResize(newWidth, newHeight);
+      }
+      const imageFormat = document.getElementById("imageFormatSelect").selectedOptions[0].value;
+      const quality = parseFloat(document.getElementById("qualityInput").value);
+      const colorConversion = document.getElementById("colorConversionSelect").selectedOptions[0].value;
+
+      if (colorConversion === "1") {
+        await performColorConversion(2);
+      }else if (colorConversion === "2") {
+        await performColorConversion(1);
+      }
+
+      const blob = await getCompressedBlob(imageFormat,quality);
+      return blob;
+    }
+
+    //1.jpg -> 1.webp
+    function getFilenameForDownload(filename){
+      let pureFilename = getFilenameWithoutExtension(filename);
+      let extension = ".pdf";
+      const imageFormatOption = document.getElementById("imageFormatSelect").selectedOptions[0];
+      if (imageFormatOption.value.indexOf("image") != -1) {
+        extension = "."+imageFormatOption.innerText.toLowerCase();
+      }
+      return pureFilename + extension;
+    }
+
+    function getFilenameWithoutExtension(filename){
+      let index = filename.lastIndexOf(".");
+      return filename.substring(0,index);
+    }
+
+    function triggerMultipleFilesSelection(){
+      document.getElementById("multipleFileInput").click();
+    }
+
+    function convertBlobToWebP(blob,quality){
+      console.log("convertBlobToWebP");
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(blob);
+        let tmpImg = document.createElement("img");
+        tmpImg.onload = function(){
+          let width = tmpImg.naturalWidth;
+          let height = tmpImg.naturalHeight;
+          let context = canvas.getContext('2d');
+          canvas.width = width;
+          canvas.height = height;
+          context.drawImage(tmpImg, 0, 0, tmpImg.naturalWidth, tmpImg.naturalHeight, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob)=>{
+            resolve(blob);
+          },"image/webp",quality)
+        }
+        tmpImg.src = url;
+      })
+    }
+
+    async function test(){
+      if (!img.src) {
+        alert("Please load an image");
+        return;
+      }
+      showProgress("Testing...");
+      const data = [];
+      
+      //const qualityArray = [1.0];
+      const imageFormatSelect = document.getElementById("imageFormatSelect");
+      const colorConversionSelect = document.getElementById("colorConversionSelect");
+      for (let i = 0; i < colorConversionSelect.options.length; i++) {
+        const colorConversionOption = colorConversionSelect.options[i];
+        doc.deleteAllPages();
+        await doc.loadSource(imgBlob);
+        if (colorConversionOption.value === "1") {
+          await performColorConversion(2);
+        }else if (colorConversionOption.value === "2") {
+          await performColorConversion(1);
+        }
+        for (let j = 0; j < imageFormatSelect.options.length; j++) {
+          const formatOption = imageFormatSelect.options[j];
+          let qualityArray;
+          if (isQualityNotEffectiveForTheFormat(formatOption.value)) {
+            qualityArray = [1.0];
+          }else{
+            qualityArray = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
+          }
+          for (const quality of qualityArray) {
+            showProgress([formatOption.innerText,quality,colorConversionOption.innerText].join(" "));
+            const startTime = new Date().getTime();
+            const blob = await getCompressedBlob(formatOption.value,quality);
+            const endTime = new Date().getTime();
+            const row = [];
+            row.push(colorConversionOption.innerText);
+            row.push(formatOption.value);
+            row.push(quality);
+            row.push((blob.size / 1000).toFixed(2) + "KB");
+            row.push((endTime - startTime) + "ms");
+            let rate = (blob.size / originalSize * 100).toFixed(2) + "%";
+            row.push(rate);
+            data.push(row);
+          }
+        }
+      }
+      hideProgress();
+      console.log(data);
+      displayTestResult(data);
+    }
+
+    function isQualityNotEffectiveForTheFormat(format){
+      const ineffectiveFormats = ["pdf/lzw","pdf/fax4","pdf/jbig2","image/png"];
+      if (ineffectiveFormats.indexOf(format) != -1) {
+        return true;
+      }else{
+        return false;
+      }
+    }
+
+    function displayTestResult(rows){
+      let rowsHTML = "";
+      rows.forEach(row => {
+        let cells = "";
+        row.forEach(item => {
+          cells += `<td>${item}</td>`
+        });
+        rowsHTML += `<tr>${cells}</tr>`;
+      });
+      let table = `
+      <table>
+        <thead>
+          <tr>
+            <th>Color Conversion</th>
+            <th>Image Format</th>
+            <th>Quality</th>
+            <th>Size</th>
+            <th>Time Elapsed</th>
+            <th>Compression Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>`
+      document.getElementById("testResult").innerHTML = table;
+    }
+
+    async function multipleFilesSelected(){
+      let fileInput = document.getElementById("multipleFileInput");
+      let files = fileInput.files;
+      console.log(files);
+      if (files.length == 0) {
+        return;
+      }
+      for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        await readFileAsBlob(file);
+        const imgURL = URL.createObjectURL(imgBlob);
+        img = await loadImage(imgURL);
+        let compressed = await compressImpl();
+        let filename = getFilenameForDownload(file.name)
+        await download(compressed,filename);
+        sleep(500);
+      }
+    }
+
+    function loadImage(src){
+      return new Promise((resolve, reject) => {
+        let newImage = new Image();
+        newImage.onload = function(){
+          resolve(newImage);
+        }
+        newImage.src = src;
+      })
+    }
+    
+    function readFileAsBlob(file){
+      return new Promise((resolve, reject) => {
+        let fileReader = new FileReader();
+        fileReader.onload = async function(e){
+          let blob = new Blob([fileReader.result]);
+          imgBlob = blob;
+          originalSize = blob.size;
+          resolve(blob);
+        };
+        fileReader.onerror = function () {
+          console.warn('oops, something went wrong.');
+        };
+        fileReader.readAsArrayBuffer(file);
+      })
+    }
+
+    function sleep(time){
+      return new Promise(function(resolve){
+        setTimeout(resolve, time);
+      });
+    }
+
+    async function download(blob,filename){
+      const imageURL = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = imageURL;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(imageURL);
+    }
+
+    function fileSelected(){
+      let fileInput = document.getElementById("fileInput");
+      let files = fileInput.files;
+      if (files.length == 0) {
+        return;
+      }
+      let file = files[0];
+      let fileReader = new FileReader();
+      fileReader.onload = async function(e){
+        let blob = new Blob([fileReader.result]);
+        imgBlob = blob;
+        originalSize = blob.size;
+        let img = document.getElementById("image");
+        const url = URL.createObjectURL(blob);
+        img.src = url;
+      };
+      fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+      };
+      fileReader.readAsArrayBuffer(file);
+    }
+
+    function updateQualityLabel(){
+      document.getElementById("quality").innerText = document.getElementById("qualityInput").value; 
+    }
+
+    function displayCompressionRate(compressedSize){
+      let rate = (compressedSize / originalSize * 100).toFixed(2);
+      console.log(rate);
+      document.getElementById("compressionRate").innerText = rate + "%";
+    }
+
+    function RGBToGrayScale(red,green,blue){
+      //return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+      return (red * 6966 + green * 23436 + blue * 2366) >> 15;
+    }
+
+    //return true if the value should be black. return false if the value should be white
+    function threshold(grayscale){
+      const thresholdValue = 127;
+      if (grayscale < thresholdValue) {
+        return true;
+      }else{
+        return false;
+      }
+    }
+
+    async function loadDDV(){
+      showProgress("Loading Dynamsoft Document Viewer...");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js","text/javascript");
+      await loadStyle("https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css");
+      await initDDV();
+      hideProgress();
+    }
+
+    async function initDDV(){
+      Dynamsoft.DDV.Core.license = license;
+      Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+      await Dynamsoft.DDV.Core.init();
+      const docManager = Dynamsoft.DDV.documentManager;
+      doc = docManager.createDocument();
+      const imageFilter = new Dynamsoft.DDV.ImageFilter();
+      Dynamsoft.DDV.setProcessingHandler("imageFilter", imageFilter);
+      editViewer = new Dynamsoft.DDV.EditViewer({
+        container: document.getElementById("viewer"),
+      });
+      editViewer.openDocument(doc.uid);
+    }
+
+    function loadLibrary(src,type,id,data){
+      return new Promise(function (resolve, reject) {
+        let scriptEle = document.createElement("script");
+        scriptEle.setAttribute("type", type);
+        scriptEle.setAttribute("src", src);
+        if (id) {
+          scriptEle.id = id;
+        }
+        if (data) {
+          for (let key in data) {
+            scriptEle.setAttribute(key, data[key]);
+          }
+        }
+        document.body.appendChild(scriptEle);
+        scriptEle.addEventListener("load", () => {
+          console.log(src+" loaded")
+          resolve(true);
+        });
+        scriptEle.addEventListener("error", (ev) => {
+          console.log("Error on loading "+src, ev);
+          reject(ev);
+        });
+      });
+    }
+
+    async function performColorConversion(type){
+      const pageUid = doc.pages[0];
+      const pageData = await doc.getPageData(pageUid)
+      const imageProcess = Dynamsoft.DDV.Experiments.get("ImageProcess");
+      const result = await imageProcess.process({type:3, data:pageData.display.data}, {type: type/*1: blackAndWhite 2: gray*/, params:{saveInk:false, level:1}});
+      const newImage = new Blob([result.output],{type:result.outputContentType});
+      await doc.updatePage(pageUid, newImage, {});
+    }
+
+    async function performResize(newWidth,newHeight){
+      const pageUid = doc.pages[0];
+      const pageData = await doc.getPageData(pageUid)
+      const imageProcess = Dynamsoft.DDV.Experiments.get("ImageProcess");
+      const result = await imageProcess.process({type:3, data:pageData.display.data}, {type:13/*resize*/, params:{newWidth:newWidth, newHeight:newHeight, mode:2}});
+      const newImage = new Blob([result.output],{type:result.outputContentType});
+      await doc.updatePage(pageUid, newImage, {});
+    }
+
+    function loadStyle(url) {
+      return new Promise(function (resolve, reject) {
+        let linkEle = document.createElement('link')
+        linkEle.type = 'text/css'
+        linkEle.rel = 'stylesheet'
+        linkEle.href = url
+        let head = document.getElementsByTagName('head')[0]
+        head.appendChild(linkEle)
+        linkEle.addEventListener("load", () => {
+          console.log(url+" loaded")
+          resolve(true);
+        });
+        linkEle.addEventListener("error", (ev) => {
+          console.log("Error on loading "+url, ev);
+          reject(ev);
+        });
+      });
+    }
+
+    function showProgress(info){
+      document.getElementsByClassName("progress-modal")[0].classList.add("active");
+      document.getElementsByClassName("progress-modal")[0].innerText = info;
+    }
+
+    function hideProgress(){
+      document.getElementsByClassName("progress-modal")[0].classList.remove("active");
+    }
+  </script>
+</body>
+</html>

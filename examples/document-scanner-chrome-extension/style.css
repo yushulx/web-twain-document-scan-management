@@ -1,0 +1,40 @@
+.dwt-modal {
+  position:fixed;
+  left: 20px;
+  top: 20px;
+  width: calc(100% - 40px);
+  height: calc(100% - 40px);
+  border: 1px solid gray;
+  border-radius: 5px;
+  background: white;
+  z-index: 9998;
+}
+
+.dwt-header {
+  height: 25px;
+}
+
+.dwt-close-btn {
+  float: right;
+  margin-right: 5px;
+}
+
+.dwt-body {
+  text-align: center;
+  height: calc(100% - 25px);
+}
+
+.dwt-controls {
+  text-align: center;
+  height: 50px;
+}
+
+.dwt-controls button {
+  border: 1px solid black;
+  background-color: rgb(240, 240, 240);
+}
+
+#dwtcontrolContainer {
+  width: 100%;
+  height: calc(100% - 50px);
+}

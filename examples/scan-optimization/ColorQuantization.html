@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Scan Documents in Different Color Modes</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+    <style>
+      #dwtcontrolContainer {
+        width: 360px;
+        height: 480px;
+      }
+      table {
+        border-collapse: collapse;  
+      }
+      table,th,td {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div>
+        <label>
+          Scanner:
+          <select class="scanner"></select>
+        </label>
+        <label>
+          Pixel Type:
+          <select class="pixelType">
+            <option>Black & White</option>
+            <option>Gray</option>
+            <option>Color</option>
+          </select>
+        </label>
+        <div>
+          <input class="scanButton" type="button" value="Scan" onclick="AcquireImage();" />
+          <input class="saveButton" type="button" value="Save" onclick="Save();" />
+          <input class="testButton" type="button" value="Test" onclick="SizeTest();" />
+        </div>
+      </div>
+      <div id="dwtcontrolContainer"></div>
+      <div id="testResult"></div>
+    </div>
+    <script>
+      let DWObject;
+      let devices;
+      Dynamsoft.DWT.AutoLoad = false;
+      Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+      init();
+
+      function init(){
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer',Width: 270, Height: 350 }];
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+          console.log("ready");
+          DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+          DWObject.Viewer.width = "100%";
+          DWObject.Viewer.height = "100%";
+          DWObject.SetViewMode(2,2);
+          LoadScanners();
+        });
+        Dynamsoft.DWT.Load();
+      }
+
+      function AcquireImage(){
+        if (DWObject) {
+          let selectedScanner = devices[document.getElementsByClassName("scanner")[0].selectedIndex];
+          let resolution = 300;
+          let pixelType = document.getElementsByClassName("pixelType")[0].selectedIndex;
+          DWObject.SelectDeviceAsync(selectedScanner).then(function () {
+            return DWObject.AcquireImageAsync({IfFeederEnabled:false,IfShowUI:false,PixelType:pixelType,Resolution:resolution});
+          })
+          .catch(function (e) {
+            console.log(e);
+          });
+        }
+      }
+
+      async function LoadScanners(){
+        let scannerSelect = document.getElementsByClassName("scanner")[0];
+        scannerSelect.innerHTML = "";
+        devices = await DWObject.GetDevicesAsync();
+        for (let index = 0; index < devices.length; index++) {
+          const device = devices[index];
+          scannerSelect.appendChild(new Option(device.name,index));
+        }
+        if (devices.length>0) {
+          scannerSelect.selectedIndex = 0;
+        }
+      }
+
+      function Save() {
+        if (DWObject) {
+          DWObject.SaveAllAsPDF("Scannd.pdf");
+        }
+      }
+
+      async function SizeTest(){
+        let testContainer = document.getElementById("testResult");
+        testContainer.innerHTML = "";
+        let selectedScanner = devices[document.getElementsByClassName("scanner")[0].selectedIndex];
+        let pixelTypes = [0,1,2];
+        let rows = [];
+        for (let index = 0; index < pixelTypes.length; index++) {
+          const pixelType = pixelTypes[index];
+          await DWObject.SelectDeviceAsync(selectedScanner);
+          await DWObject.AcquireImageAsync({IfFeederEnabled:false,IfShowUI:false,Resolution:300,PixelType:pixelType});
+          let imageIndex = DWObject.HowManyImagesInBuffer - 1;
+          let width = DWObject.GetImageWidth(imageIndex);
+          let height = DWObject.GetImageHeight(imageIndex);
+          let size = (DWObject.GetImageSize(imageIndex,width,height)/1024).toFixed(2)+"KB";
+          let bitdepth = DWObject.GetImageBitDepth(imageIndex);
+          let row = [];
+          row.push(getPixelTypeName(pixelType));
+          row.push(width+"x"+height);
+          row.push(bitdepth);
+          row.push(size);
+          rows.push(row);
+        }
+        let heads =["Pixel Type"," Resolution","Bitdepth","Size"];
+        testContainer.appendChild(buildTable(heads,rows));
+      }
+
+      function buildTable(heads,rows) {
+        let table = document.createElement("table");
+        let thead = document.createElement("thead");
+        let headRow = document.createElement("tr");
+        for (let index = 0; index < heads.length; index++) {
+          const head = heads[index];
+          let cell = document.createElement("th");
+          cell.innerText = head;
+          headRow.appendChild(cell);
+        }
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+        let tbody = document.createElement("tbody");
+        for (let index = 0; index < rows.length; index++) {
+          const row = rows[index];
+          let tableRow = document.createElement("tr");
+          for (let j = 0; j < row.length; j++) {
+            const column = row[j];
+            let cell = document.createElement("td");
+            cell.innerText = column;
+            tableRow.appendChild(cell);
+          }
+          tbody.append(tableRow);
+        }
+        table.appendChild(tbody);
+        return table;
+      }
+
+      function getPixelTypeName(index){
+        if (index === 0) {
+          return "B&W";
+        }else if (index === 1) {
+          return "Gray";
+        }else{
+          return "Color";
+        }
+        
+      }
+    </script>
+  </body>
+</html>

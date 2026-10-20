@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scan and Annotate Documents</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <style>
+    .scanner {
+      display: flex;
+    }
+
+    .options {
+      flex-basis: 30%;
+    }
+
+    .viewer {
+      flex-basis: 70%;
+    }
+    
+    .navbar {
+      display: flex;
+      align-items: center;
+      height: 50px;
+      background: black;
+      width: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    .fullwidth {
+      width: 100%;
+    }
+
+    .title {
+      margin-left: 8px;
+      text-decoration: none;
+      color: white;
+      font-family: sans-serif;
+      font-size: larger;
+      text-transform: uppercase;
+    }
+
+    .options {
+      background: #F0EDE9;
+    }
+
+    .scanner {
+      height: calc(100vh - 50px);
+    }
+
+    .section {
+      padding: 8px;
+    }
+
+    .viewer .section {
+      height: calc(100% - 16px);
+    }
+
+    .tab-content select {
+      width: 100%;
+      height: 30px;
+    }
+
+    .tab-content div {
+      margin-bottom: 10px;
+    }
+
+    .d-primary-btn {
+      display: inline-block;
+      background-color: #fe8e14;
+      color: #fff;
+      text-align: center;
+      cursor: pointer;
+      transition: ease-in .2s all;
+      font-family: "sans-serif";
+      white-space: nowrap;
+    }
+
+    .d-secondary-btn {
+      display: inline-block;
+      background-color: transparent;
+      color: #fe8e14;
+      text-align: center;
+      cursor: pointer;
+      font-family: "sans-serif"
+    }
+
+    @media(any-hover:hover){
+      .d-primary-btn:hover {
+        box-shadow: -4px 4px 0 0 #000;
+        transform: translate(4px,-4px);
+      }
+      .d-secondary-btn:hover {
+        color: #fea543;
+      }
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      height: 40px;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .actions .d-primary-btn {
+      padding: 5px 10px;
+      margin-right: 5px;
+    }
+
+    #container {
+      height: calc(100% - 40px);
+    }
+
+    #fullscreenContainer {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      visibility: hidden;
+      overflow: hidden;
+    }
+
+    #fullscreenContainer.active {
+      visibility: visible;
+    }
+
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid gray;
+      margin-bottom: 10px;
+    }
+
+    .tab-item {
+      padding: 10px 5px;
+      margin-bottom: 0;
+      margin-right: 10px;
+      border: 1px solid transparent;
+    }
+
+    .tab-item.active {
+      margin-bottom: -1px;
+      border: 1px solid gray;
+      border-top-left-radius: .25rem;
+      border-top-right-radius: .25rem;
+      background: #F0EDE9;
+      border-bottom: 1px solid #F0EDE9;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .modal {
+      display: flex;
+      align-items: flex-start;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 250px;
+      min-height: 150px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 99;
+      padding: 10px;
+      visibility: hidden;
+    }
+
+    .progress-modal {
+      align-items: center;
+      text-align: center;
+      justify-content: center;
+      min-height: 50px;
+      max-height: 100px;
+    }
+
+    .progress-modal.active {
+      visibility: inherit;
+    }
+
+    .input-modal {
+      min-height: auto;
+    }
+
+    .input-modal.active {
+      visibility: inherit;
+    }
+
+    .redact-modal.active {
+      visibility: inherit;
+    }
+
+    .pdf-import-modal.active {
+      visibility: inherit;
+    }
+
+    .input-modal input {
+      width: calc(100% - 10px);
+    }
+
+    @media screen and (max-device-width: 600px){
+      .tabs-header {
+        display: none;
+      }
+
+      .scanner {
+        flex-wrap: wrap;
+      }
+
+      .options {
+        flex-basis: 100%;
+      }
+
+      .viewer {
+        flex-basis: 100%;
+      }
+
+      .scanner {
+        height: auto;
+      }
+
+      .actions {
+        height: auto;
+        flex-wrap: wrap;
+      }
+
+      #container {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="title" href="#">Scan and Annotate</a>
+  </nav>
+  <div class="container">
+    <div class="scanner">
+      <div class="options">
+        <div class="section">
+          <div class="tabs">
+            <div class="tabs-header">
+              <div class="tab-item active" data-tab-name="camera">Camera</div>
+              <div class="tab-item" data-tab-name="scanner">Scanner</div>
+            </div>
+            <div class="tab-content active" data-tab-name="camera">
+              <div>
+                <label>
+                  Camera:
+                  <select id="select-camera"></select>
+                </label>
+              </div>
+              <div>
+                <label>
+                  Resolution:
+                  <select id="select-camera-resolution">
+                    <option value="1280x720">1280x720</option>
+                    <option value="1920x1080" selected>1920x1080</option>
+                    <option value="3840x2160">3840x2160</option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <input type="checkbox" id="enableAutoDetection" onchange="toggleAutoDetection()"/>
+                <label for="enableAutoDetection">
+                  Enable Auto Detection
+                </label>
+              </div>
+            </div>
+            <div class="tab-content" data-tab-name="scanner">
+              <div>
+                <label>
+                  Scanner:
+                  <select id="select-scanner"></select>
+                </label>
+              </div>
+              <div>
+                <label>
+                  Resolution:
+                  <select id="select-resolution">
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="300" selected>300</option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <label>
+                  Pixel Type:
+                  <select id="select-pixeltype">
+                    <option>Black & White</option>
+                    <option>Gray</option>
+                    <option selected>Color</option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <input type="checkbox" id="showUI"/>
+                <label for="showUI">
+                  Show Scanner UI
+                </label>
+              </div>
+              <div>
+                <input type="checkbox" id="useADF"/>
+                <label for="useADF">
+                  Auto Document Feeder
+                </label>
+              </div>
+              <div>
+                <input type="checkbox" id="useDuplex"/>
+                <label for="useDuplex">
+                  2-side Scan
+                </label>
+              </div>
+            </div>
+          </div>
+          <a onclick="scan();" class="d-primary-btn fullwidth" style="padding-top:5px;padding-bottom:5px;">Scan</a>
+          <a onclick="loadImages();" class="d-secondary-btn fullwidth" style="margin-top:5px;">Import Local Image</a>
+          <input type="file" id="files" name="files" style="display: none;" multiple onchange="filesSelected()"/>
+          <div style="margin-top:2em;">
+            Based on <a target="_blank" href="https://www.dynamsoft.com/">Dynamsoft SDKs</a>.
+          </div>
+        </div>
+      </div>
+      <div class="viewer">
+        <div class="section" >
+          <div id="container"></div>
+          <div class="actions">
+            <a class="d-primary-btn" onclick="annotate();">Annotate</a>
+            <a class="d-primary-btn" onclick="showRedactModal();">Redact</a>
+            <a class="d-primary-btn" onclick="save();">Save as PDF</a>
+            <label>
+              Output type:
+              <select id="outputTypeSelect">
+                <option value="annotation" selected>Keep Annotations</option>
+                <option value="flatten">Flatten</option>
+                <option value="image">Save annotations as images</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="fullscreenContainer"></div>
+  <div class="modal progress-modal"></div>
+  <div class="modal input-modal">
+    <div>
+      <div>
+        Please input your licenses (<a href="https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform" target="_blank">apply</a> or use the one-day trial):
+      </div>
+      <br/>
+      <label>
+        License:
+      </label>
+      <br/>
+      <input type="text" id="license"/>
+      <br/>
+      <button id="saveLicenseBtn" onclick="saveLicense();">Save</button>
+    </div>
+  </div>
+  <div class="modal redact-modal">
+    <div>
+      <div>
+        Please input the words to redact for the current image:
+      </div>
+      <br/>
+      <label>
+        Words:
+      </label>
+      <br/>
+      <input type="text" id="words"/>
+      <br/>
+      <button id="redactBtn" onclick="redact();">Redact</button>
+      <button onclick="hideRedactModal();">Cancel</button>
+    </div>
+  </div>
+  <div class="modal pdf-import-modal">
+    <div>
+      <div>
+        Please set how to read the PDF file:
+      </div>
+      <br/>
+      <label>
+        Convert mode:
+        <select id="convertMode">
+          <option value="cm/auto" selected>Auto</option>
+          <option value="cm/renderall">Render all</option>
+          <option value="cm/imageonly">Image-only</option>
+        </select>
+      </label>
+      <br/>
+      <label>
+        Annotation mode:
+        <select id="annotationMode">
+          <option value="loadAnnotations" selected>Load annotations</option>
+          <option value="noAnnotations">NO annotations</option>
+          <option value="renderAnnotations">Render annotations</option>
+        </select>
+      </label>
+      <br/>
+      <button id="confirmPDFBtn" onclick="confirmPDF();">Okay</button>
+    </div>
+  </div>
+  <script type="text/javascript">
+    let DWObject;
+    let router;
+    let scanners = [];
+    let cameras = [];
+    let doc;
+    let browseViewer;
+    let editViewer;
+    let captureViewer;
+    let perspectiveViewer;
+    let license = "";
+    let touchedPoint;
+    let oneDayTrial = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+    let tessWorker;
+    showInputModal();
+
+    document.getElementsByClassName("tabs-header")[0].addEventListener("click",function(e){
+      switchTab(e.target.dataset.tabName);
+      loadDWTIfSwitched(e.target.dataset.tabName);
+    })
+
+    async function init(){
+      await loadDDV();
+      await initCamScanner();
+    }
+
+    async function initCamScanner(){
+      await requestCameraPermission();
+      listCameras();
+      initCaptureViewer();
+      initPerspectiveViewer();
+      initEditViewer();
+      registerEventsForViewers();
+    }
+
+    function registerEventsForViewers(){
+      // Register an event in `captureViewer` to show the perspective viewer
+      captureViewer.on("showPerspectiveViewer",() => {
+        switchViewer(0,1,0);
+      });
+
+      captureViewer.on("close",() => {
+        captureViewer.stop();
+        closeViewers();
+      });
+      
+            
+      // Register an event in `perspectiveViewer` to go back the capture viewer
+      perspectiveViewer.on("backToCaptureViewer",() => {
+        switchViewer(1,0,0);
+        captureViewer.play().catch(err => {alert(err.message)});
+      });
+
+      // Register an event in `perspectiveViewer` to show the edit viewer
+      perspectiveViewer.on("showEditViewer",() => {
+        switchViewer(0,0,1)
+      });
+            
+      // Register an event in `editViewer` to go back the perspective viewer
+      editViewer.on("backToPerspectiveViewer",() => {
+        switchViewer(0,1,0);
+      });
+
+      editViewer.on("close",() => {
+        closeViewers();
+      });
+    }
+
+    function closeViewers(){
+      switchViewer(1,0,0);
+      captureViewer.hide();
+      hideFullscreenContainer();
+    }
+
+    // Define a function to control the viewers' visibility
+    function switchViewer (c,p,e) {
+      captureViewer.hide();
+      perspectiveViewer.hide();
+      editViewer.hide();
+
+      if(c) {
+        captureViewer.show();
+      } else {
+        captureViewer.stop();
+      }
+            
+      if(p) perspectiveViewer.show();
+      if(e) editViewer.show();
+    }
+
+    function initCaptureViewer(){
+      const captureViewerUiConfig = {
+        type: Dynamsoft.DDV.Elements.Layout,
+        flexDirection: "column",
+        children: [
+            {
+                type: Dynamsoft.DDV.Elements.Layout,
+                className: "ddv-capture-viewer-header-mobile",
+                children: [
+                    {
+                        type: "CameraResolution",
+                        className: "ddv-capture-viewer-resolution",
+                    },
+                    Dynamsoft.DDV.Elements.Flashlight,
+                    {
+                        // Bind click event to "ImagePreview" element
+                        // The event will be registered later.
+                        type: Dynamsoft.DDV.Elements.Close,
+                        events:{ 
+                            click: "close"
+                        }
+                    },
+                ],
+            },
+            Dynamsoft.DDV.Elements.MainView,
+            {
+                type: Dynamsoft.DDV.Elements.Layout,
+                className: "ddv-capture-viewer-footer-mobile",
+                children: [
+                    Dynamsoft.DDV.Elements.AutoDetect,
+                    Dynamsoft.DDV.Elements.AutoCapture,
+                    {
+                        type: "Capture",
+                        className: "ddv-capture-viewer-captureButton",
+                    },
+                    {
+                        // Bind click event to "ImagePreview" element
+                        // The event will be registered later.
+                        type: Dynamsoft.DDV.Elements.ImagePreview,
+                        events:{ 
+                            click: "showPerspectiveViewer"
+                        }
+                    },
+                    Dynamsoft.DDV.Elements.CameraConvert,
+                ],
+            },
+        ],
+      };
+      captureViewer = new Dynamsoft.DDV.CaptureViewer({
+        container: "fullscreenContainer",
+        uiConfig: captureViewerUiConfig,
+        viewerConfig: {
+          acceptedPolygonConfidence: 60,
+          enableAutoDetect: false,
+        }
+      });
+      captureViewer.hide();
+      captureViewer.openDocument(doc.uid);
+    }
+
+    function initPerspectiveViewer(){
+      const perspectiveUiConfig = {
+          type: Dynamsoft.DDV.Elements.Layout,
+          flexDirection: "column",
+          children: [
+              {
+                  type: Dynamsoft.DDV.Elements.Layout,
+                  className: "ddv-perspective-viewer-header-mobile",
+                  children: [
+                      {
+                          // Add a "Back" button in perspective viewer's header and bind the event to go back to capture viewer.
+                          // The event will be registered later.
+                          type: Dynamsoft.DDV.Elements.Button,
+                          className: "ddv-button-back",
+                          events:{
+                              click: "backToCaptureViewer"
+                          }
+                      },
+                      Dynamsoft.DDV.Elements.Pagination,
+                      {   
+                          // Bind event for "PerspectiveAll" button to show the edit viewer
+                          // The event will be registered later.
+                          type: Dynamsoft.DDV.Elements.PerspectiveAll,
+                          events:{
+                              click: "showEditViewer"
+                          }
+                      },
+                  ],
+              },
+              Dynamsoft.DDV.Elements.MainView,
+              {
+                  type: Dynamsoft.DDV.Elements.Layout,
+                  className: "ddv-perspective-viewer-footer-mobile",
+                  children: [
+                      Dynamsoft.DDV.Elements.FullQuad,
+                      Dynamsoft.DDV.Elements.RotateLeft,
+                      Dynamsoft.DDV.Elements.RotateRight,
+                      Dynamsoft.DDV.Elements.DeleteCurrent,
+                      Dynamsoft.DDV.Elements.DeleteAll,
+                  ],
+              },
+          ],
+      };
+            
+      // Create a perspective viewer
+      perspectiveViewer = new Dynamsoft.DDV.PerspectiveViewer({
+          container: "fullscreenContainer",
+          groupUid: captureViewer.groupUid,
+          uiConfig: perspectiveUiConfig,
+          viewerConfig: {
+              scrollToLatest: true,
+          }
+      });
+
+      perspectiveViewer.hide();
+    }
+
+    function initEditViewer(){
+      const editViewerUiConfig = {
+          type: Dynamsoft.DDV.Elements.Layout,
+          flexDirection: "column",
+          className: "ddv-edit-viewer-mobile",
+          children: [
+              {
+                  type: Dynamsoft.DDV.Elements.Layout,
+                  className: "ddv-edit-viewer-header-mobile",
+                  children: [
+                      {
+                          // Add a "Back" buttom to header and bind click event to go back to the perspective viewer
+                          // The event will be registered later.
+                          type: Dynamsoft.DDV.Elements.Button,
+                          className: "ddv-button-back",
+                          events:{
+                              click: "backToPerspectiveViewer"
+                          }
+                      },
+                      Dynamsoft.DDV.Elements.Pagination,
+                      {
+                          type: Dynamsoft.DDV.Elements.Button,
+                          className: "ddv-button-done",
+                          events:{
+                              click: "close"
+                          }
+                      }
+                  ],
+              },
+              Dynamsoft.DDV.Elements.MainView,
+              {
+                  type: Dynamsoft.DDV.Elements.Layout,
+                  className: "ddv-edit-viewer-footer-mobile",
+                  children: [
+                      Dynamsoft.DDV.Elements.DisplayMode,
+                      Dynamsoft.DDV.Elements.RotateLeft,
+                      Dynamsoft.DDV.Elements.Crop,
+                      Dynamsoft.DDV.Elements.Filter,
+                      Dynamsoft.DDV.Elements.Undo,
+                      Dynamsoft.DDV.Elements.Delete,
+                      Dynamsoft.DDV.Elements.AnnotationSet
+                  ],
+              },
+          ],
+      };
+
+      // Create an edit viewer
+      editViewer = new Dynamsoft.DDV.EditViewer({
+          container: "fullscreenContainer",
+          groupUid: captureViewer.groupUid,
+          uiConfig: editViewerUiConfig
+      });
+      // Configure image filter feature which is in edit viewer
+      Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
+      editViewer.hide();
+    }
+
+    async function loadDWTIfSwitched(tabName){
+      if (tabName === "scanner" && !DWObject) {
+        await loadLibrary("https://cdn.jsdelivr.net/npm/dwt/dist/dynamsoft.webtwain.min.js","text/javascript");
+        initDWT();
+      }
+    }
+
+    async function loadDDV(){
+      showProgress("Loading Dynamsoft Document Viewer...");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js","text/javascript");
+      await loadStyle("https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css");
+      await initDDV();
+      hideProgress();
+    }
+
+    async function initDDV(){
+      Dynamsoft.DDV.Core.license = license;
+      Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+      await Dynamsoft.DDV.Core.init();
+      Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
+      browseViewer = new Dynamsoft.DDV.BrowseViewer({
+        container: document.getElementById("container"),
+      });
+      const docManager = Dynamsoft.DDV.documentManager;
+      doc = docManager.createDocument();
+      browseViewer.openDocument(doc.uid);
+      if (screen.width < 600) {
+        browseViewer.setRowAndColumn(1,1);
+      }
+      document.getElementsByClassName("ddv-canvas-container")[0].addEventListener("touchstart",function(e) {
+        touchedPoint = e.touches[0];
+      }, true);
+      document.getElementsByClassName("ddv-canvas-container")[0].addEventListener("touchmove",function(e) {
+        let scrollTop = document.getElementsByClassName("ddv-scroll-container")[0].scrollTop;
+        let scrollEnd = document.getElementsByClassName("ddv-scroll-container")[0].scrollTop+document.getElementsByClassName("ddv-scroll-container")[0].clientHeight;
+        let offset = Math.ceil(scrollEnd) - document.getElementsByClassName("ddv-scroll-container")[0].scrollHeight;
+        let offsetY = touchedPoint.pageY - e.touches[0].pageY;
+        if (offset >= 0 || scrollTop === 0) { //reach bottom or top
+          window.scrollBy(0,offsetY);
+        }
+      }, true);
+    }
+
+    function switchTab(tabName){
+      if (tabName) {
+        document.querySelectorAll(".tab-item").forEach(element => {
+          console.log(element);
+          console.log(element.dataset.tabName);
+          if (element.dataset.tabName === tabName) {
+            element.classList.add("active");
+          }else{
+            element.classList.remove("active")
+          }
+        });
+        document.querySelectorAll(".tab-content").forEach(element => {
+          if (element.dataset.tabName === tabName) {
+            element.classList.add("active");
+          }else{
+            element.classList.remove("active")
+          }
+        });
+      }
+    }
+
+    function initDWT(){
+      Dynamsoft.DWT.AutoLoad = false;
+      Dynamsoft.DWT.Containers = [];
+      Dynamsoft.DWT.ResourcesPath =
+        "https://cdn.jsdelivr.net/npm/dwt/dist";
+      Dynamsoft.DWT.ServiceInstallerLocation =
+        "https://unpkg.com/dwt/dist/dist/";
+      Dynamsoft.DWT.ProductKey = license;
+      Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          DWObject = obj;
+          loadScanners();
+        },
+        function(err) {
+          console.log(err);
+        }
+      );
+    }
+
+    async function loadScanners(){
+      scanners = await DWObject.GetDevicesAsync();
+      console.log(scanners);
+      let selScanners = document.getElementById("select-scanner");
+      selScanners.innerHTML = "";
+      for (let index = 0; index < scanners.length; index++) {
+        const scanner = scanners[index];
+        let option = new Option(scanner.displayName,index);
+        selScanners.appendChild(option);
+      }
+    }
+
+    async function scan(){
+      if (document.querySelector(".tab-item.active").dataset.tabName === "scanner") {
+        const selectedIndex = document.getElementById("select-scanner").selectedIndex;
+        const options = {
+          IfShowUI:document.getElementById("showUI").checked,
+          PixelType:document.getElementById("select-pixeltype").selectedIndex,
+          Resolution:document.getElementById("select-resolution").selectedOptions[0].value,
+          IfFeederEnabled:document.getElementById("useADF").checked,
+          IfDuplexEnabled:document.getElementById("useDuplex").checked
+        };
+        console.log(options)
+        console.log(scanners[selectedIndex]);
+        await DWObject.SelectDeviceAsync(scanners[selectedIndex]);
+        await DWObject.OpenSourceAsync();
+        await DWObject.AcquireImageAsync(options);
+        await DWObject.CloseSourceAsync();
+        LoadScannedDocumentsToDDV();
+      }else{
+        toggleBackButtonInEditViewer(true);
+        let selectedCamera = cameras[document.getElementById("select-camera").selectedIndex];
+        await captureViewer.selectCamera(selectedCamera.deviceId);
+        let selectedResolution = document.getElementById("select-camera-resolution").selectedOptions[0].value;
+        let width = parseInt(selectedResolution.split("x")[0]);
+        let height = parseInt(selectedResolution.split("x")[1]);
+        showFullscreenContainer();
+        captureViewer.show();
+        captureViewer.play({
+          resolution: [width,height],
+        }).catch(err => {
+          alert(err.message)
+        });
+      }
+    }
+
+    function toggleBackButtonInEditViewer(show){
+      if (show) {
+        document.querySelector(".ddv-edit-viewer-header-mobile .ddv-button-back").style.visibility = "inherit";
+      }else{
+        document.querySelector(".ddv-edit-viewer-header-mobile .ddv-button-back").style.visibility = "hidden";
+      }
+    }
+
+    async function LoadScannedDocumentsToDDV(){
+      while (DWObject.HowManyImagesInBuffer > 0) {
+        const blob = await ConvertDocImageToBlob(0);
+        DWObject.RemoveImage(0);
+        await doc.loadSource(blob); 
+      }
+    }
+
+    function ConvertDocImageToBlob(index){
+      return new Promise((resolve, reject) => {
+        DWObject.ConvertToBlob(
+          [index],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          function (result, indices, type) {
+            resolve(result);
+          },
+          function (errorCode, errorString) {
+            reject(errorString)
+          }
+        );
+      })
+    }
+
+    function annotate(){
+      toggleBackButtonInEditViewer(false);
+      switchViewer(0,0,1);
+      showFullscreenContainer();
+    }
+
+    async function save(){
+      showProgress("Saving...");
+      let outputType = document.getElementById("outputTypeSelect").selectedOptions[0].value;
+      const pdfSettings = {
+        saveAnnotation:outputType
+      };
+      console.log(pdfSettings);
+      const blob = await doc.saveToPdf(pdfSettings);
+      downloadBlob(blob);
+      hideProgress();
+    }
+
+    function downloadBlob(blob){
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob);
+      link.download = "scanned.pdf";
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href);
+    }
+
+    async function filesSelected(){
+      let filesInput = document.getElementById("files");
+      let files = filesInput.files;
+      let containsPDF = false;
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        if (file.type === "application/pdf") {
+          containsPDF = true;
+          break;
+        }
+      }
+      if (containsPDF) {
+        showPDFImportModel();
+      }else{
+        loadFiles();
+      }
+    }
+
+    function showPDFImportModel(){
+      document.getElementsByClassName("pdf-import-modal")[0].classList.add("active");
+    }
+
+    function hidePDFImportModel(){
+      document.getElementsByClassName("pdf-import-modal")[0].classList.remove("active");
+    }
+
+    function confirmPDF(){
+      hidePDFImportModel();
+      loadFiles();
+    }
+
+    async function loadFiles(){
+      let filesInput = document.getElementById("files");
+      let files = filesInput.files;
+      showProgress("Importing...");
+      try {
+        for (let index = 0; index < files.length; index++) {
+          const file = files[index];
+          const blob = await readFileAsBlob(file);
+          if (file.type === "application/pdf") {
+            let pdfSource = {
+              convertMode:document.getElementById("convertMode").selectedOptions[0].value,
+              fileData:blob,
+              renderOptions:{
+                renderAnnotations:document.getElementById("annotationMode").selectedOptions[0].value
+              }
+            }
+            console.log(pdfSource);
+            await doc.loadSource(pdfSource); // load pdf
+          }else{
+            await doc.loadSource(blob); // load image
+          }
+        }
+      } catch (error) {
+        alert(Dynamsoft.DDV.lastError.cause.message);
+      }
+      filesInput.value = "";
+      hideProgress();
+    }
+
+    function readFileAsBlob(file){
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        fileReader.onload = async function(e){
+          const response = await fetch(e.target.result);
+          const blob = await response.blob();
+          resolve(blob);
+        };
+        fileReader.onerror = function () {
+          reject('oops, something went wrong.');
+        };
+        fileReader.readAsDataURL(file); 
+      })
+    }
+
+    function removeDataURLHead(dataURL){
+      return dataURL.substring(dataURL.indexOf(",")+1,dataURL.length);
+    }
+
+    function loadImages(){
+      document.getElementById("files").click();
+    }
+
+    function loadLibrary(src,type,id,data){
+      return new Promise(function (resolve, reject) {
+        let scriptEle = document.createElement("script");
+        scriptEle.setAttribute("type", type);
+        scriptEle.setAttribute("src", src);
+        if (id) {
+          scriptEle.id = id;
+        }
+        if (data) {
+          for (let key in data) {
+            scriptEle.setAttribute(key, data[key]);
+          }
+        }
+        document.body.appendChild(scriptEle);
+        scriptEle.addEventListener("load", () => {
+          console.log(src+" loaded")
+          resolve(true);
+        });
+        scriptEle.addEventListener("error", (ev) => {
+          console.log("Error on loading "+src, ev);
+          reject(ev);
+        });
+      });
+    }
+
+    function loadStyle(url) {
+      return new Promise(function (resolve, reject) {
+        let linkEle = document.createElement('link')
+        linkEle.type = 'text/css'
+        linkEle.rel = 'stylesheet'
+        linkEle.href = url
+        let head = document.getElementsByTagName('head')[0]
+        head.appendChild(linkEle)
+        linkEle.addEventListener("load", () => {
+          console.log(url+" loaded")
+          resolve(true);
+        });
+        linkEle.addEventListener("error", (ev) => {
+          console.log("Error on loading "+url, ev);
+          reject(ev);
+        });
+      });
+    }
+
+    function showProgress(info){
+      document.getElementsByClassName("progress-modal")[0].classList.add("active");
+      document.getElementsByClassName("progress-modal")[0].innerText = info;
+    }
+
+    function hideProgress(){
+      document.getElementsByClassName("progress-modal")[0].classList.remove("active");
+    }
+
+    function hideFullscreenContainer(){
+      document.getElementsByClassName("container")[0].style.display = "block";
+      document.getElementById("fullscreenContainer").classList.remove("active");
+    }
+
+    function showFullscreenContainer(){
+      document.getElementsByClassName("container")[0].style.display = "none";
+      document.getElementById("fullscreenContainer").classList.add("active");
+    }
+
+    async function listCameras(){
+      let cameraSelect = document.getElementById("select-camera");
+      let allDevices = await navigator.mediaDevices.enumerateDevices();
+      for (let i = 0; i < allDevices.length; i++){
+        let device = allDevices[i];
+        if (device.kind == 'videoinput'){
+          cameras.push(device);
+          cameraSelect.appendChild(new Option(device.label,device.deviceId));
+        }
+      }
+    }
+
+    async function requestCameraPermission() {
+      try {
+        const constraints = {video: true, audio: false};
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        closeStream(stream);
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
+    }
+
+    function closeStream(stream){
+      if (stream) {
+        const tracks = stream.getTracks();
+        for (let i=0;i<tracks.length;i++) {
+          const track = tracks[i];
+          track.stop();  // stop the opened tracks
+        }
+      }
+    }
+
+    async function toggleAutoDetection(){
+      let enabled = document.getElementById("enableAutoDetection").checked;
+      if (!router) {
+        await loadDDN();
+      }
+      if (enabled) {
+        captureViewer.enableAutoDetect = true;
+        captureViewer.enableAutoCapture = false;
+      }else{
+        captureViewer.enableAutoDetect = false;
+        captureViewer.enableAutoCapture = false;
+      }
+    }
+
+    async function loadDDN(){
+      showProgress("Loading Dynamsoft Document Normalizer...");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-core@3.0.30/dist/core.js","text/javascript");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-license@3.0.20/dist/license.js","text/javascript");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-document-normalizer@2.0.20/dist/ddn.js","text/javascript");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-router@2.0.30/dist/cvr.js","text/javascript");
+      await initDDN();
+      hideProgress();
+    }
+
+    async function initDDN(){
+      Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
+      await Dynamsoft.License.LicenseManager.initLicense(
+        license,
+        true
+      );
+      router = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+      await router.initSettings("{\"CaptureVisionTemplates\": [{\"Name\": \"Default\"},{\"Name\": \"DetectDocumentBoundaries_Default\",\"ImageROIProcessingNameArray\": [\"roi-detect-document-boundaries\"]},{\"Name\": \"DetectAndNormalizeDocument_Default\",\"ImageROIProcessingNameArray\": [\"roi-detect-and-normalize-document\"]},{\"Name\": \"NormalizeDocument_Binary\",\"ImageROIProcessingNameArray\": [\"roi-normalize-document-binary\"]},  {\"Name\": \"NormalizeDocument_Gray\",\"ImageROIProcessingNameArray\": [\"roi-normalize-document-gray\"]},  {\"Name\": \"NormalizeDocument_Color\",\"ImageROIProcessingNameArray\": [\"roi-normalize-document-color\"]}],\"TargetROIDefOptions\": [{\"Name\": \"roi-detect-document-boundaries\",\"TaskSettingNameArray\": [\"task-detect-document-boundaries\"]},{\"Name\": \"roi-detect-and-normalize-document\",\"TaskSettingNameArray\": [\"task-detect-and-normalize-document\"]},{\"Name\": \"roi-normalize-document-binary\",\"TaskSettingNameArray\": [\"task-normalize-document-binary\"]},  {\"Name\": \"roi-normalize-document-gray\",\"TaskSettingNameArray\": [\"task-normalize-document-gray\"]},  {\"Name\": \"roi-normalize-document-color\",\"TaskSettingNameArray\": [\"task-normalize-document-color\"]}],\"DocumentNormalizerTaskSettingOptions\": [{\"Name\": \"task-detect-and-normalize-document\",\"SectionImageParameterArray\": [{\"Section\": \"ST_REGION_PREDETECTION\",\"ImageParameterName\": \"ip-detect-and-normalize\"},{\"Section\": \"ST_DOCUMENT_DETECTION\",\"ImageParameterName\": \"ip-detect-and-normalize\"},{\"Section\": \"ST_DOCUMENT_NORMALIZATION\",\"ImageParameterName\": \"ip-detect-and-normalize\"}]},{\"Name\": \"task-detect-document-boundaries\",\"TerminateSetting\": {\"Section\": \"ST_DOCUMENT_DETECTION\"},\"SectionImageParameterArray\": [{\"Section\": \"ST_REGION_PREDETECTION\",\"ImageParameterName\": \"ip-detect\"},{\"Section\": \"ST_DOCUMENT_DETECTION\",\"ImageParameterName\": \"ip-detect\"},{\"Section\": \"ST_DOCUMENT_NORMALIZATION\",\"ImageParameterName\": \"ip-detect\"}]},{\"Name\": \"task-normalize-document-binary\",\"StartSection\": \"ST_DOCUMENT_NORMALIZATION\",   \"ColourMode\": \"ICM_BINARY\",\"SectionImageParameterArray\": [{\"Section\": \"ST_REGION_PREDETECTION\",\"ImageParameterName\": \"ip-normalize\"},{\"Section\": \"ST_DOCUMENT_DETECTION\",\"ImageParameterName\": \"ip-normalize\"},{\"Section\": \"ST_DOCUMENT_NORMALIZATION\",\"ImageParameterName\": \"ip-normalize\"}]},  {\"Name\": \"task-normalize-document-gray\",   \"ColourMode\": \"ICM_GRAYSCALE\",\"StartSection\": \"ST_DOCUMENT_NORMALIZATION\",\"SectionImageParameterArray\": [{\"Section\": \"ST_REGION_PREDETECTION\",\"ImageParameterName\": \"ip-normalize\"},{\"Section\": \"ST_DOCUMENT_DETECTION\",\"ImageParameterName\": \"ip-normalize\"},{\"Section\": \"ST_DOCUMENT_NORMALIZATION\",\"ImageParameterName\": \"ip-normalize\"}]},  {\"Name\": \"task-normalize-document-color\",   \"ColourMode\": \"ICM_COLOUR\",\"StartSection\": \"ST_DOCUMENT_NORMALIZATION\",\"SectionImageParameterArray\": [{\"Section\": \"ST_REGION_PREDETECTION\",\"ImageParameterName\": \"ip-normalize\"},{\"Section\": \"ST_DOCUMENT_DETECTION\",\"ImageParameterName\": \"ip-normalize\"},{\"Section\": \"ST_DOCUMENT_NORMALIZATION\",\"ImageParameterName\": \"ip-normalize\"}]}],\"ImageParameterOptions\": [{\"Name\": \"ip-detect-and-normalize\",\"BinarizationModes\": [{\"Mode\": \"BM_LOCAL_BLOCK\",\"BlockSizeX\": 0,\"BlockSizeY\": 0,\"EnableFillBinaryVacancy\": 0}],\"TextDetectionMode\": {\"Mode\": \"TTDM_WORD\",\"Direction\": \"HORIZONTAL\",\"Sensitivity\": 7}},{\"Name\": \"ip-detect\",\"BinarizationModes\": [{\"Mode\": \"BM_LOCAL_BLOCK\",\"BlockSizeX\": 0,\"BlockSizeY\": 0,\"EnableFillBinaryVacancy\": 0,\"ThresholdCompensation\" : 7}],\"TextDetectionMode\": {\"Mode\": \"TTDM_WORD\",\"Direction\": \"HORIZONTAL\",\"Sensitivity\": 7},\"ScaleDownThreshold\" : 512},{\"Name\": \"ip-normalize\",\"BinarizationModes\": [{\"Mode\": \"BM_LOCAL_BLOCK\",\"BlockSizeX\": 0,\"BlockSizeY\": 0,\"EnableFillBinaryVacancy\": 0}],\"TextDetectionMode\": {\"Mode\": \"TTDM_WORD\",\"Direction\": \"HORIZONTAL\",\"Sensitivity\": 7}}]}");
+      setProcessingHandler();
+    }
+
+    function compress(
+        imageData,
+        imageWidth,
+        imageHeight,
+        newWidth,
+        newHeight,
+    ) {
+      let source = null;
+      try {
+          source = new Uint8ClampedArray(imageData);
+      } catch (error) {
+          source = new Uint8Array(imageData);
+      }
+
+      const scaleW = newWidth / imageWidth;
+      const scaleH = newHeight / imageHeight;
+      const targetSize = newWidth * newHeight * 4;
+      const targetMemory = new ArrayBuffer(targetSize);
+      let distData = null;
+
+      try {
+          distData = new Uint8ClampedArray(targetMemory, 0, targetSize);
+      } catch (error) {
+          distData = new Uint8Array(targetMemory, 0, targetSize);
+      }
+
+      const filter = (distCol, distRow) => {
+          const srcCol = Math.min(imageWidth - 1, distCol / scaleW);
+          const srcRow = Math.min(imageHeight - 1, distRow / scaleH);
+          const intCol = Math.floor(srcCol);
+          const intRow = Math.floor(srcRow);
+
+          let distI = (distRow * newWidth) + distCol;
+          let srcI = (intRow * imageWidth) + intCol;
+
+          distI *= 4;
+          srcI *= 4;
+
+          for (let j = 0; j <= 3; j += 1) {
+              distData[distI + j] = source[srcI + j];
+          }
+      };
+
+      for (let col = 0; col < newWidth; col += 1) {
+          for (let row = 0; row < newHeight; row += 1) {
+              filter(col, row);
+          }
+      }
+
+      return distData;
+    }
+
+    function setProcessingHandler(){
+      const DDV = Dynamsoft.DDV;
+      class DDNNormalizeHandler extends DDV.DocumentDetect {
+        async detect(image, config) {
+          if (!router) {
+            return Promise.resolve({
+              success: false
+            });
+          };
+
+          let width = image.width;
+          let height = image.height;
+          let ratio = 1;
+          let data;
+
+          if (height > 720) {
+            ratio = height / 720;
+            height = 720;
+            width = Math.floor(width / ratio);
+            data = compress(image.data, image.width, image.height, width, height);
+          } else {
+            data = image.data.slice(0);
+          }
+
+
+          // Define DSImage according to the usage of DDN
+          const DSImage = {
+            bytes: new Uint8Array(data),
+            width,
+            height,
+            stride: width * 4, //RGBA
+            format: 10 // IPF_ABGR_8888
+          };
+
+          // Use DDN normalized module
+          const results = await router.capture(DSImage, 'DetectDocumentBoundaries_Default');
+
+          // Filter the results and generate corresponding return values
+          if (results.items.length <= 0) {
+            return Promise.resolve({
+              success: false
+            });
+          };
+
+          const quad = [];
+          results.items[0].location.points.forEach((p) => {
+            quad.push([p.x * ratio, p.y * ratio]);
+          });
+
+          const detectResult = this.processDetectResult({
+            location: quad,
+            width: image.width,
+            height: image.height,
+            config
+          });
+          return Promise.resolve(detectResult);
+        }
+      }
+      DDV.setProcessingHandler('documentBoundariesDetect', new DDNNormalizeHandler())
+    }
+
+    function saveLicense(){
+      let inputLicense = document.getElementById("license").value;
+      if (!inputLicense) {
+        license = oneDayTrial;
+      }else{
+        license = inputLicense;
+      }
+      localStorage.setItem("license",license);
+      hideInputModal();
+      init();
+    }
+
+    function showInputModal(){
+      let storedLicense = localStorage.getItem("license");
+      if (!storedLicense) {
+        license = oneDayTrial;
+      }else{
+        license = storedLicense;
+      }
+      document.getElementById("license").value = license;
+      document.getElementsByClassName("input-modal")[0].classList.add("active");
+    }
+
+    function hideInputModal(){
+      document.getElementsByClassName("input-modal")[0].classList.remove("active");
+    }
+
+    function showRedactModal() {
+      document.getElementsByClassName("redact-modal")[0].classList.add("active");
+    }
+
+    function hideRedactModal(){
+      document.getElementsByClassName("redact-modal")[0].classList.remove("active");
+    }
+
+    async function redact(){
+      hideRedactModal();
+      showProgress("Processing...");
+      if (!tessWorker) {
+        await loadLibrary("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","text/javascript");
+        worker = await Tesseract.createWorker('eng', 1, {
+          logger: m => console.log(m),
+        });
+      }
+      let wordsToRedact = document.getElementById("words").value.split(" ");
+      let index = browseViewer.getCurrentPageIndex();
+      if (index >= 0) {
+        const blob = await doc.saveToJpeg(index);
+        const ret = await worker.recognize(blob);
+        const words = ret.data.words;
+        console.log(words);
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          for (let j = 0; j < wordsToRedact.length; j++) {
+            const wordToRedact = wordsToRedact[j];
+            if (word.text.toLowerCase() == wordToRedact.toLowerCase()){
+              addRedactAnnotation(index,word.bbox)
+              break;
+            }
+          }
+        }
+      }
+      hideProgress();
+    }
+
+    async function addRedactAnnotation(pageIndex,bbox){
+      //bbox:x0: 46, y0: 42, x1: 112, y1: 57
+      const pageUid = editViewer.indexToUid(pageIndex);
+      const pageData = await doc.getPageData(pageUid);
+      const scaleX = pageData.mediaBox.width / pageData.raw.width;
+      const scaleY = pageData.mediaBox.height / pageData.raw.height;
+      const options = {
+        x: bbox.x0*scaleX,
+        y: bbox.y0*scaleY,
+        width: (bbox.x1 - bbox.x0)*scaleX,
+        height: (bbox.y1 - bbox.y0)*scaleY,
+        borderColor: "black",
+        background: "black"
+        //flags:{readOnly:true} //enable read only if you do not need to interact with the annotation
+      }
+      const rect = Dynamsoft.DDV.annotationManager.createAnnotation(pageUid, "rectangle",options);
+    }
+  </script>
+</body>
+</html>

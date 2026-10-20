@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PDF Encryption</title>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css">
+  <style>
+    .container {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    .container h2 {
+      text-align: center;
+    }
+
+    #viewer {
+      width: 320px;
+      height: 480px;
+    }
+
+    .modal {
+      display: flex;
+      align-items: flex-start;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 250px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 9999;
+      padding: 10px;
+      visibility: hidden;
+    }
+
+    .input-modal.active {
+      visibility: inherit;
+    }
+
+    #password {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>PDF Encyption</h2>
+    <label>
+      Select the PDF to load:
+      <br/>
+      <input type="file" id="files" name="files" accept=".pdf" onchange="filesSelected()"/>
+    </label>
+    <div id="viewer"></div>
+    <div >
+      <button onclick="deleteSelected()">Delete Selected</button>
+      <button onclick="saveAsPDF()">Save as PDF</button>
+      <div>
+        <label>Set a password:
+          <input type="password" id="newPassword"/>
+        </label>
+      </div> 
+    </div>
+    <div class="modal input-modal">
+      <div>
+        <label>
+          Please input the password:
+        </label>
+        <br/>
+        <input type="password" id="password"/>
+        <br/>
+        <button id="okayBtn">Okay</button>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+let doc;
+let browseViewer;
+let blob;
+init();
+async function init(){
+  Dynamsoft.DDV.Core.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+  
+  Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+  await Dynamsoft.DDV.Core.init();
+  Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
+  browseViewer = new Dynamsoft.DDV.BrowseViewer({
+    container: document.getElementById("viewer"),
+  });
+  const docManager = Dynamsoft.DDV.documentManager;
+  doc = docManager.createDocument();
+  browseViewer.openDocument(doc.uid);
+  document.getElementById("okayBtn").addEventListener("click",async function(){
+    document.getElementsByClassName("input-modal")[0].classList.remove("active");
+    try {
+      await doc.loadSource({fileData:blob,password:document.getElementById("password").value});  
+    } catch (error) {
+      alert(error);
+    }
+  })
+}
+
+async function filesSelected(){
+  let filesInput = document.getElementById("files");
+  let files = filesInput.files;
+  if (files.length>0) {
+    const file = files[0];
+    blob = await readFileAsBlob(file);
+    filesInput.value = "";
+    try {
+      await doc.loadSource(blob);    
+    } catch (error) {
+      if (error.cause.code === -80202) {
+        askForPassword();
+      }
+    }
+  }
+}
+
+function askForPassword(){
+  document.getElementById("password").value = ""; //clear previous password
+  document.getElementsByClassName("input-modal")[0].classList.add("active");
+}
+
+function readFileAsBlob(file){
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.onload = async function(e){
+      console.log(e);
+      const response = await fetch(e.target.result);
+      const blob = await response.blob();
+      resolve(blob);
+    };
+    fileReader.onerror = function () {
+      reject('oops, something went wrong.');
+    };
+    fileReader.readAsDataURL(file); 
+  })
+}
+
+function deleteSelected() {
+  const indices = browseViewer.getSelectedPageIndices();
+  doc.deletePages(indices);
+}
+
+async function saveAsPDF(){
+  console.log("saveAsPDF");
+  let newPassword = document.getElementById("newPassword").value;
+  let blob;
+  if (newPassword) {
+    blob = await doc.saveToPdf({password:newPassword});
+  }else{
+    blob = await doc.saveToPdf();
+  }
+  downloadBlob(blob);
+}
+
+function downloadBlob(blob){
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'doc.pdf';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+</script>
+</html>

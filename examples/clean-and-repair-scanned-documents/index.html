@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Clean up and Repair Documents</title>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css">
+  <script type="text/javascript" src="inpaint.js"></script>
+  <script type="text/javascript" src="heapqueue.js"></script>
+  <style>
+    .container {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    .container h2 {
+      text-align: center;
+    }
+  
+    #viewer {
+      max-width: 1024px;
+      width: 100%;
+      height: 600px;
+    }
+  
+    .save-icon {
+      background-image: url("./save.svg");
+      background-position: center;
+      background-size: contain;
+      background-repeat: no-repeat;
+      height: 1.5em !important;
+      filter: invert(1);
+    }
+
+    @media screen and (max-device-width: 600px){
+      #viewer {
+        width: 100%;
+        height: 480px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Clean up and Repair Scanned Documents</h2>
+    <label>
+      Select an image:
+      <br/>
+      <input type="file" id="files" name="files" onchange="filesSelected()"/>
+    </label>
+    <div id="viewer"></div>
+  </div>
+</body>
+<script>
+let doc;
+let editViewer;
+init();
+let hoverOnUndoRedo = false;
+async function init(){
+  let oneDayTrialLicense = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+  Dynamsoft.DDV.Core.license = oneDayTrialLicense;
+  Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+  await Dynamsoft.DDV.Core.init();
+  Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
+  let uiConfig = {
+    type: "Layout",
+    flexDirection: "column",
+    className: "ddv-edit-viewer-desktop",
+    children: [
+      {
+        type: "Layout",
+        className: "ddv-edit-viewer-header-desktop",
+        children: [
+          {
+            type: "Layout",
+            children: [
+              "ThumbnailSwitch",
+              "Zoom",
+              "FitMode",
+              "DisplayMode",
+              "RotateLeft",
+              "RotateRight",
+              "Crop",
+              "Filter",
+              "Undo",
+              "Redo",
+              "DeleteCurrent",
+              "DeleteAll",
+              "Pan",
+              "SeparatorLine",
+              "InkAnnotation",
+              {
+                type: Dynamsoft.DDV.Elements.Button,
+                className: "save-icon",
+                events: {
+                  click: "saveOperations",
+                },
+              },
+            ],
+            enableScroll: true
+          },
+          {
+            type: "Layout",
+            children: [
+              {
+                "type": "Pagination",
+                "className": "ddv-edit-viewer-pagination-desktop"
+              },
+              "Download"
+            ]
+          }
+        ]
+      },
+      "MainView"
+    ]
+  }
+  editViewer = new Dynamsoft.DDV.EditViewer({
+    uiConfig: uiConfig,
+    container: document.getElementById("viewer")
+  });
+  editViewer.on("saveOperations",e => {
+    console.log("save");
+    saveOperations();
+  });
+  addInpaintingModeCheckbox();
+  const docManager = Dynamsoft.DDV.documentManager;
+  doc = docManager.createDocument();
+  editViewer.openDocument(doc.uid);
+  Dynamsoft.DDV.annotationManager.on("annotationsAdded",(e) => {
+    console.log(e)
+    if (document.getElementById("inpainingMode").checked && hoverOnUndoRedo === false) {
+      inpaint(e.annotationUids[0]);
+    }
+  })
+  document.getElementsByClassName("ddv-redo-page")[0].addEventListener("mouseenter",function(){
+    hoverOnUndoRedo = true;
+  })
+  document.getElementsByClassName("ddv-undo-page")[0].addEventListener("mouseenter",function(){
+    hoverOnUndoRedo = true;
+  })
+  document.getElementsByClassName("ddv-undo-page")[0].addEventListener("mouseleave",function(){
+    hoverOnUndoRedo = false;
+  })
+  document.getElementsByClassName("ddv-redo-page")[0].addEventListener("mouseleave",function(){
+    hoverOnUndoRedo = false;
+  })
+}
+
+async function saveOperations(){
+  editViewer.saveOperations();
+  const index = editViewer.getCurrentPageIndex();
+  const result = await doc.saveToPng(index,{saveAnnotation:true});
+  //download(result);
+  doc.deletePages([index]);
+  await doc.loadSource(result, index);
+}
+
+function download(blob){
+  const imageURL = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = imageURL;
+  link.download = 'image.png';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function addInpaintingModeCheckbox(){
+  const html = `
+  <div class="ddv-palette-mode-panel" style="width: 85%;">
+    <label>
+      Inpainting mode
+      <input type="checkbox" id="inpainingMode">
+    </label>
+  </div>
+  `
+  let container = document.createElement("div");
+  document.getElementById("viewer").getElementsByClassName("ddv-palette-box")[0].appendChild(container);
+  container.outerHTML = html;
+}
+
+async function inpaint(uid) {
+  let annotation = Dynamsoft.DDV.annotationManager.getAnnotationsByUids([uid])[0];
+  console.log(annotation);
+  let options = annotation.getOptions();
+  let pointsOfStrokes = options.points;
+  if (!pointsOfStrokes) { //not ink annotation
+    return;
+  }
+  Dynamsoft.DDV.annotationManager.deleteAnnotations([uid]);
+  let borderWidth = options.borderWidth;
+  let rect = await getRectForInpainting(pointsOfStrokes,borderWidth);
+  let {scaleX,scaleY} = await getScale();
+  let rectInPixels = {x:rect.x / scaleX,y:rect.y / scaleY,width:rect.width / scaleX,height:rect.height / scaleY};
+  let srcImageCanvas = await getSourceImageForInpainting(rectInPixels);
+  let maskImageCanvas = getMaskImageForInpainting(pointsOfStrokes,borderWidth,rect,rectInPixels,scaleX,scaleY);
+  //document.body.appendChild(srcImageCanvas);
+  //document.body.appendChild(maskImageCanvas);
+  let srcCtx = srcImageCanvas.getContext("2d");
+  let maskCtx = maskImageCanvas.getContext("2d");
+  let srcImageData = srcCtx.getImageData(0, 0, srcImageCanvas.width, srcImageCanvas.height);
+  let maskImageData = maskCtx.getImageData(0, 0, maskImageCanvas.width, maskImageCanvas.height);
+
+  let width = srcImageData.width;
+  let height = srcImageData.height;
+  let mask_u8 = new Uint8Array(width * height);
+
+  for(let i = 0; i < maskImageData.data.length / 4; i++){
+    let r = maskImageData.data[4 * i];
+    let g = maskImageData.data[4 * i + 1];
+    let b = maskImageData.data[4 * i + 2];
+    if(r > 0 || g > 0 || b > 0){
+      let rad = 6
+      for(let dx = -rad; dx <= rad; dx++){
+        for(let dy = -rad; dy <= rad; dy++){
+          if(dx * dx + dy * dy <= rad * rad){
+            mask_u8[i + dx + dy * width] = 1;
+          }
+        }
+      }
+    }
+  }
+  let img_u8 = new Uint8Array(width * height)
+  for(let channel = 0; channel < 3; channel++){
+    for(let n = 0; n < srcImageData.data.length; n+=4){
+      img_u8[n / 4] = srcImageData.data[n + channel]
+    }
+    InpaintTelea(width, height, img_u8, mask_u8)
+    for(let i = 0; i < img_u8.length; i++){
+      srcImageData.data[4 * i + channel] = img_u8[i]
+    }  
+  }
+
+  // render result back to canvas
+  for(let i = 0; i < img_u8.length; i++){
+    srcImageData.data[4 * i + 3] = 255;
+  }
+  
+  let output = document.createElement("canvas");
+  output.width = rectInPixels.width;
+  output.height = rectInPixels.height;
+  let ctx = output.getContext("2d");
+  ctx.putImageData(srcImageData, 0, 0);
+  //document.body.appendChild(output);
+  output.toBlob(
+    (blob) => {
+      insertInpaintedImage(blob,rect);
+    },
+    "image/png"
+  );
+}
+
+async function insertInpaintedImage(blob,rect){
+  const pageIndex = editViewer.getCurrentPageIndex();
+  const pageUid = editViewer.indexToUid(pageIndex);
+  const options = {
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    stamp: blob 
+  }
+  const stamp = await Dynamsoft.DDV.annotationManager.createAnnotation(pageUid, "stamp", options);
+}
+
+function getSourceImageForInpainting(rect){
+  return new Promise(async (resolve, reject) => {
+    const result = await doc.saveToJpeg(editViewer.getCurrentPageIndex(),{quality:100,saveAnnotation:true});
+    const canvas = document.createElement("canvas");
+    const img = document.createElement("img");
+    const url = URL.createObjectURL(result);
+    img.onload = function(){
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      let ctx = canvas.getContext("2d");
+      ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+      resolve(canvas);
+    }
+    img.src = url;
+  })
+}
+
+function getMaskImageForInpainting(pointsOfStrokes,stroke,rect,rectInPixels,scaleX,scaleY){
+  let canvas = document.createElement("canvas");
+  canvas.width = rectInPixels.width;
+  canvas.height = rectInPixels.height;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "black";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  for (let i = 0; i < pointsOfStrokes.length; i++) {
+    const pointsOfStroke = pointsOfStrokes[i];
+    ctx.beginPath();
+    for (let j = 0; j < pointsOfStroke.length; j++) {
+      const point = pointsOfStroke[j];
+      const x = (point.x - rect.x) / scaleX;
+      const y = (point.y - rect.y) / scaleY;
+      if (j === 0) {
+        ctx.moveTo(x, y);
+      }else{
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = stroke / scaleX;
+    ctx.stroke();
+  }
+  return canvas;
+}
+
+async function getScale(){
+  const pageIndex = editViewer.getCurrentPageIndex();
+  const pageUid = editViewer.indexToUid(pageIndex);
+  const pageData = await doc.getPageData(pageUid);
+  const scaleX = pageData.mediaBox.width / pageData.raw.width;
+  const scaleY = pageData.mediaBox.height / pageData.raw.height;
+  return {scaleX:scaleX,scaleY:scaleY};
+}
+
+async function getRectForInpainting(pointsOfStrokes,borderWidth){
+  const pageIndex = editViewer.getCurrentPageIndex();
+  const pageUid = editViewer.indexToUid(pageIndex);
+  const pageData = await doc.getPageData(pageUid);
+  let halfLineWidth = borderWidth/2;
+  let minX,minY,maxX,maxY;
+  maxX = 0;
+  maxY = 0;
+  console.log(pointsOfStrokes);
+  for (let i = 0; i < pointsOfStrokes.length; i++) {
+    const pointsOfStroke = pointsOfStrokes[i];
+    for (let j = 0; j < pointsOfStroke.length; j++) {
+      const point = pointsOfStroke[j];
+      if (!minX) {
+        minX = point.x;
+      }else{
+        minX = Math.min(minX,point.x);
+      }
+      if (!minY) {
+        minY = point.y;
+      }else{
+        minY = Math.min(minY,point.y);
+      }
+      maxX = Math.max(maxX,point.x);
+      maxY = Math.max(maxY,point.y);
+    }
+  }
+  maxX = maxX + halfLineWidth;
+  maxY = maxY + halfLineWidth;
+  let x = minX - halfLineWidth;
+  let y = minY - halfLineWidth;
+  //add padding
+  x = Math.max(x - borderWidth, 0) 
+  y = Math.max(y - borderWidth, 0)
+  maxX = Math.min(maxX + borderWidth*2, pageData.mediaBox.width);
+  maxY = Math.min(maxY + borderWidth*2, pageData.mediaBox.height);
+  let width = maxX - minX + halfLineWidth;
+  let height = maxY - minY + halfLineWidth;
+  return {x:x,y:y,width:width,height:height};
+}
+
+async function filesSelected(){
+  let filesInput = document.getElementById("files");
+  let files = filesInput.files;
+  if (files.length>0) {
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      const blob = await readFileAsBlob(file);
+      console.log(blob);
+      await doc.loadSource(blob);  
+    }    
+  }
+}
+
+function readFileAsBlob(file){
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.onload = async function(e){
+      //const blob = window.dataURLtoBlob(e.target.result);
+      const response = await fetch(e.target.result);
+      const blob = await response.blob();
+      resolve(blob);
+    };
+    fileReader.onerror = function () {
+      reject('oops, something went wrong.');
+    };
+    fileReader.readAsDataURL(file); 
+  })
+}
+</script>
+</html>

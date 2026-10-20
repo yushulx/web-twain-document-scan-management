@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Scan to WebDAV</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    #dwtcontrolContainer {
+      width: 360px;
+      height: 480px;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <input class="scanButton" type="button" value="Scan" onclick="AcquireImage();" />
+    <input class="sendButton" type="button" value="Send" onclick="convertAndUpload();" />
+    <span id="status"></span>
+    <div>
+      <div>
+        <label>
+          Server URL:
+          <input type="text" id="URL" value="http://127.0.0.1:8080/remote.php/dav/files/admin/"/>
+        </label>
+      </div>
+      <div>
+        <label>
+          Username:
+          <input type="text" id="username"/>
+        </label>
+      </div>
+      <div>
+        <label>
+          Password:
+          <input type="password" id="password"/>
+        </label>
+      </div>
+      <div>
+        <label>
+          Path:
+          <input type="text" id="filepath" value="scanned.pdf"/>
+        </label>
+      </div>
+    </div>
+    <div id="dwtcontrolContainer"></div>
+  </div>
+  <script type="text/javascript">
+    let DWObject;
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    init();
+
+    function init(){
+      Dynamsoft.DWT.Containers = [{ ContainerId: "dwtcontrolContainer",Width: 270, Height: 350 }];
+      Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
+        console.log("ready");
+        DWObject = Dynamsoft.DWT.GetWebTwain("dwtcontrolContainer");
+        DWObject.Viewer.width = "100%";
+        DWObject.Viewer.height = "100%";
+        DWObject.SetViewMode(2,2);
+      });
+      Dynamsoft.DWT.Load();
+    }
+
+    async function AcquireImage() {
+      if (DWObject) {
+        if (Dynamsoft.Lib.env.bMobile) {
+          DWObject.Addon.Camera.scanDocument();
+        }else{
+          const index = await DWObject.SelectSourceAsync();
+          DWObject.AcquireImageAsync({SelectSourceByIndex:index});
+        }
+      }
+    }
+
+    function convertAndUpload(){
+      if (DWObject) {
+        DWObject.ConvertToBase64(
+          getIndices(),
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF,
+          function (result, indices, type) {
+            var base64 = result.getData(0, result.getLength());
+            upload(base64);
+          },
+          function (errorCode, errorString) {
+            console.log(errorString);
+          }
+        );
+      }
+    }
+
+    function getIndices(){
+      var indices = [];
+      for (let index = 0; index < DWObject.HowManyImagesInBuffer; index++) {
+        indices.push(index);
+      }
+      return indices;
+    }
+
+    function upload(base64){
+      document.getElementById("status").innerText = "Uploading...";
+      let xhr = new XMLHttpRequest();
+      let pay_load = {};
+      pay_load["URL"] = document.getElementById("URL").value;
+      pay_load["username"] = document.getElementById("username").value;
+      pay_load["password"] = document.getElementById("password").value;
+      pay_load["filepath"] = document.getElementById("filepath").value;
+      pay_load["base64"] = base64;
+      console.log(pay_load);
+      xhr.open("POST", "/uploadfile");
+      xhr.setRequestHeader("content-type", "application/json"); 
+
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4){
+          if (xhr.status === 200) {
+            document.getElementById("status").innerText = "";
+            var status = JSON.parse(xhr.responseText)["status"];
+            alert(status);
+          }else{
+            onerror();
+          }
+        }
+      }
+
+      xhr.onerror = onerror;
+
+      xhr.send(JSON.stringify(pay_load));
+    }
+
+    function onerror(){
+      document.getElementById("status").innerText = "";
+      alert("Failed");
+    }
+
+  </script>
+</body>
+
+</html>

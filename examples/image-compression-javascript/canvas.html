@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Compressor</title>
+  <script src="https://unpkg.com/pdfobject"></script>
+  <style>
+    img {
+      max-width: 480px;
+      max-height: 480px;
+    }
+
+    #canvas {
+      display: none;
+    }
+
+    .comparison {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .original {
+      margin-right: 1em;
+    }
+
+    .modal {
+      display: flex;
+      align-items: flex-start;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 250px;
+      min-height: 150px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 99;
+      padding: 10px;
+      visibility: hidden;
+    }
+
+    .progress-modal {
+      align-items: center;
+      text-align: center;
+      justify-content: center;
+      min-height: 50px;
+      max-height: 100px;
+    }
+
+    .progress-modal.active {
+      visibility: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="home">
+    <h2>Image Compressor</h2>
+    <input id="fileInput" type="file" onchange="fileSelected();"/>
+    <div class="options">
+      <label>
+        Color conversion:
+        <select id="colorConversionSelect">
+          <option value="0">No conversion</option>
+          <option value="1">Grayscale</option>
+          <option value="2">Black & white</option>
+        </select>
+      </label>
+      <br/>
+      <label>
+        Max resolution width (px):
+        <input type="number" id="maxResWidthInput"/>
+      </label>
+      <br/>
+      <label>
+        Image format:
+        <select id="imageFormatSelect">
+          <option value="image/png">PNG</option>
+          <option value="image/jpeg">JPG</option>
+          <option value="image/webp">WebP</option>
+          <option value="pdf/jbig2">JBig2</option>
+          <option value="pdf/fax4">Fax4</option>
+          <option value="pdf/jp2000">JP2000</option>
+          <option value="pdf/lzw">LZW</option>
+        </select>
+      </label>
+      <br/>
+      <label>
+        Image quality:
+        <input type="range" id="qualityInput" step="0.1" min="0" max="1" value="1" onchange="updateQualityLabel()"/>
+        <span id="quality">1.0</span>
+      </label>
+    </div>
+    <button id="compressButton">Compress</button>
+    <button id="testButton">Run Test</button>
+    <div class="comparison">
+      <div class="original">
+        <div>Original:</div>
+        <img alt="" id="image"/>
+      </div>
+      <div class="compressed">
+        <div>Compressed:</div>
+        <div id="pdf"></div>
+        <img alt="" id="imageCompressed"/>
+      </div>
+    </div>
+    <div>
+      Compression Rate:
+      <span id="compressionRate"></span>
+    </div>
+    <div>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div id="testResult"></div>
+    <div class="modal progress-modal"></div>
+  </div>
+  <script>
+    let license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+    let doc;
+    let originalSize = 0;
+    let canvas = document.getElementById("canvas");
+    let img = document.getElementById("image");
+    document.getElementById("compressButton").addEventListener("click",compress)
+    document.getElementById("testButton").addEventListener("click",test)
+    
+    function drawImageWithColorConverted(colorConversion){
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+      let context = canvas.getContext('2d');
+      let maxWidth = document.getElementById("maxResWidthInput").value;
+      if (maxWidth && img.naturalWidth > maxWidth) {
+        width = maxWidth;
+        height = img.naturalHeight * maxWidth / img.naturalWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      
+      context.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
+      
+      if (colorConversion != "0") {
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data; //[r,g,b,a,...]
+        for (var i = 0; i < pixels.length; i += 4) {
+          const red = pixels[i];
+          const green = pixels[i + 1];
+          const blue = pixels[i + 2];
+          const grayscale = RGBToGrayScale(red, green, blue)
+          if (colorConversion === "1") {
+            pixels[i] = grayscale;
+            pixels[i + 1] = grayscale;
+            pixels[i + 2] = grayscale;
+          }else{
+            if (threshold(grayscale)) {
+              pixels[i] = 0;
+              pixels[i + 1] = 0;
+              pixels[i + 2] = 0;
+            }else{
+              pixels[i] = 255;
+              pixels[i + 1] = 255;
+              pixels[i + 2] = 255;
+            }
+          }
+        }
+        context.putImageData(imageData, 0, 0);
+      }
+    }
+
+    function getCompressedBlob(imageFormat,quality){
+      return new Promise((resolve, reject) => {
+        if (imageFormat.indexOf("pdf")!= -1) {
+          canvas.toBlob(async (blob) => {
+            const pdfBlob = await compressUsingDDV(blob,imageFormat,quality);
+            resolve(pdfBlob);
+          }, "image/png", 1.0);
+        }else{
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, imageFormat, quality);
+        }
+      })
+    }
+
+    function displayCompressedImage(isPDF,blob){
+      const compressedImg = document.getElementById("imageCompressed");
+      const pdfContainer = document.getElementById("pdf");
+      if (isPDF) {
+        const compressedSize = blob.size;
+        displayCompressionRate(compressedSize);
+        compressedImg.style.display = "none";
+        pdfContainer.style.display = "block";
+        const url = URL.createObjectURL(blob);
+        pdfContainer.style.width = image.clientWidth + "px";
+        pdfContainer.style.height = image.clientHeight + "px";
+        const options = {
+            title: "My embedded PDF",
+            pdfOpenParams: { view: 'Fit', page: '1' }
+        };
+        PDFObject.embed(url, "#pdf", options);
+      }else{
+        const compressedSize = blob.size;
+        displayCompressionRate(compressedSize);
+        compressedImg.style.display = "block";
+        pdfContainer.style.display = "none";
+        const url = URL.createObjectURL(blob);
+        compressedImg.src = url;
+      }
+    }
+
+    async function compress(){
+      if (!img.src) {
+        alert("Please load an image");
+        return;
+      }
+      const imageFormat = document.getElementById("imageFormatSelect").selectedOptions[0].value;
+      const quality = parseFloat(document.getElementById("qualityInput").value);
+      const colorConversion = document.getElementById("colorConversionSelect").selectedOptions[0].value;
+      drawImageWithColorConverted(colorConversion);
+      const blob = await getCompressedBlob(imageFormat,quality);
+      const isPDF = imageFormat.indexOf("pdf") != -1;
+      displayCompressedImage(isPDF,blob);
+    }
+
+    async function test(){
+      if (!img.src) {
+        alert("Please load an image");
+        return;
+      }
+      if (!doc) {
+        await loadDDV();
+      }
+      showProgress("Testing...");
+      const data = [];
+      
+      //const qualityArray = [1.0];
+      const imageFormatSelect = document.getElementById("imageFormatSelect");
+      const colorConversionSelect = document.getElementById("colorConversionSelect");
+      for (let i = 0; i < colorConversionSelect.options.length; i++) {
+        const colorConversionOption = colorConversionSelect.options[i];
+        drawImageWithColorConverted(colorConversionOption.value);
+        for (let j = 0; j < imageFormatSelect.options.length; j++) {
+          const formatOption = imageFormatSelect.options[j];
+          let qualityArray;
+          if (isQualityNotEffectiveForTheFormat(formatOption.value)) {
+            qualityArray = [1.0];
+          }else{
+            qualityArray = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
+          }
+          for (const quality of qualityArray) {
+            showProgress([formatOption.innerText,quality,colorConversionOption.innerText].join(" "));
+            const startTime = new Date().getTime();
+            const blob = await getCompressedBlob(formatOption.value,quality);
+            const endTime = new Date().getTime();
+            const row = [];
+            row.push(colorConversionOption.innerText);
+            row.push(formatOption.value);
+            row.push(quality);
+            row.push((blob.size / 1000).toFixed(2) + "KB");
+            row.push((endTime - startTime) + "ms");
+            let rate = (blob.size / originalSize * 100).toFixed(2) + "%";
+            row.push(rate);
+            data.push(row);
+          }
+        }
+      }
+      hideProgress();
+      console.log(data);
+      displayTestResult(data);
+    }
+
+    function isQualityNotEffectiveForTheFormat(format){
+      const ineffectiveFormats = ["pdf/lzw","pdf/fax4","pdf/jbig2","image/png"];
+      if (ineffectiveFormats.indexOf(format) != -1) {
+        return true;
+      }else{
+        return false;
+      }
+    }
+
+    function displayTestResult(rows){
+      let rowsHTML = "";
+      rows.forEach(row => {
+        let cells = "";
+        row.forEach(item => {
+          cells += `<td>${item}</td>`
+        });
+        rowsHTML += `<tr>${cells}</tr>`;
+      });
+      let table = `
+      <table>
+        <thead>
+          <tr>
+            <th>Color Conversion</th>
+            <th>Image Format</th>
+            <th>Quality</th>
+            <th>Size</th>
+            <th>Time Elapsed</th>
+            <th>Compression Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>`
+      document.getElementById("testResult").innerHTML = table;
+    }
+
+    async function compressUsingDDV(blob,imageFormat,quality){
+      if (!doc) {
+        await loadDDV();
+      }
+      doc.deleteAllPages()
+      await doc.loadSource(blob);
+      return await doc.saveToPdf([0],{compression:imageFormat,quality:quality*100});
+    }
+
+
+    function fileSelected(){
+      let fileInput = document.getElementById("fileInput");
+      let files = fileInput.files;
+      if (files.length == 0) {
+        return;
+      }
+      let file = files[0];
+      let fileReader = new FileReader();
+      fileReader.onload = function(e){
+        let blob = new Blob([fileReader.result]);
+        originalSize = blob.size;
+        let img = document.getElementById("image");
+        const url = URL.createObjectURL(blob);
+        img.src = url;
+      };
+      fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+      };
+      fileReader.readAsArrayBuffer(file);
+    }
+
+    function updateQualityLabel(){
+      document.getElementById("quality").innerText = document.getElementById("qualityInput").value; 
+    }
+
+    function displayCompressionRate(compressedSize){
+      let rate = (compressedSize / originalSize * 100).toFixed(2);
+      console.log(rate);
+      document.getElementById("compressionRate").innerText = rate + "%";
+    }
+
+    function RGBToGrayScale(red,green,blue){
+      //return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+      return (red * 6966 + green * 23436 + blue * 2366) >> 15;
+    }
+
+    //return true if the value should be black. return false if the value should be white
+    function threshold(grayscale){
+      const thresholdValue = 127;
+      if (grayscale < thresholdValue) {
+        return true;
+      }else{
+        return false;
+      }
+    }
+
+    async function loadDDV(){
+      showProgress("Loading Dynamsoft Document Viewer...");
+      await loadLibrary("https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js","text/javascript");
+      await loadStyle("https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css");
+      await initDDV();
+      hideProgress();
+    }
+
+    async function initDDV(){
+      Dynamsoft.DDV.Core.license = license;
+      Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+      await Dynamsoft.DDV.Core.init();
+      const docManager = Dynamsoft.DDV.documentManager;
+      doc = docManager.createDocument();
+    }
+
+    function loadLibrary(src,type,id,data){
+      return new Promise(function (resolve, reject) {
+        let scriptEle = document.createElement("script");
+        scriptEle.setAttribute("type", type);
+        scriptEle.setAttribute("src", src);
+        if (id) {
+          scriptEle.id = id;
+        }
+        if (data) {
+          for (let key in data) {
+            scriptEle.setAttribute(key, data[key]);
+          }
+        }
+        document.body.appendChild(scriptEle);
+        scriptEle.addEventListener("load", () => {
+          console.log(src+" loaded")
+          resolve(true);
+        });
+        scriptEle.addEventListener("error", (ev) => {
+          console.log("Error on loading "+src, ev);
+          reject(ev);
+        });
+      });
+    }
+
+    function loadStyle(url) {
+      return new Promise(function (resolve, reject) {
+        let linkEle = document.createElement('link')
+        linkEle.type = 'text/css'
+        linkEle.rel = 'stylesheet'
+        linkEle.href = url
+        let head = document.getElementsByTagName('head')[0]
+        head.appendChild(linkEle)
+        linkEle.addEventListener("load", () => {
+          console.log(url+" loaded")
+          resolve(true);
+        });
+        linkEle.addEventListener("error", (ev) => {
+          console.log("Error on loading "+url, ev);
+          reject(ev);
+        });
+      });
+    }
+
+    function showProgress(info){
+      document.getElementsByClassName("progress-modal")[0].classList.add("active");
+      document.getElementsByClassName("progress-modal")[0].innerText = info;
+    }
+
+    function hideProgress(){
+      document.getElementsByClassName("progress-modal")[0].classList.remove("active");
+    }
+  </script>
+</body>
+</html>

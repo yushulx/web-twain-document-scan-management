@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TIFF Viewer Example</title>
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    #dwtcontrolContainer {
+      width: 270px;
+      height: 360px;
+    }
+    ol {
+      padding-left: 1em;
+    }
+  </style>
+</head>
+<body>
+  <ol>
+    <li>
+      <label>
+        Select a TIFF file to load:
+        <input type="file" id="file" onchange="tiffSelected();" accept=".tiff,.tif"/>
+      </label>
+    </li>
+    <li>
+      <input type="text" id="url" value="ycbcr.tif"/>
+      <button onclick="loadRemoteImage();">Load a remote image</button>
+      <span id="status"></span>
+    </li>
+  </ol>
+  <div id="dwtcontrolContainer"></div>
+  <button onclick="showEditor();">Edit</button>
+  <script type="text/javascript">
+    let DWObject;
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.Containers = [];
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    Dynamsoft.DWT.UseLocalService = false;
+    init();
+    function init(){
+      Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          console.log(obj);
+          DWObject = obj;
+          DWObject.Viewer.bind(document.getElementById('dwtcontrolContainer'));
+          DWObject.Viewer.show();
+        },
+        function(err) {
+          console.log(err);
+        }
+      );
+    }
+
+    function tiffSelected(){
+      let files = document.getElementById("file").files;
+      if (files.length>0 && DWObject) {
+        let file = files[0];
+        loadTiff(file);
+      }
+    }
+
+    function loadTiff(file){
+      DWObject.RemoveAllImages();
+      DWObject.LoadImageFromBinary(file,
+        function () {
+          console.log("success");
+        },
+        function (errorCode, errorString) {
+          console.log(errorString);
+        }
+      );
+    }
+
+    function loadRemoteImage(){
+      let status = document.getElementById("status");
+      if (status.innerText) {
+        return;
+      }
+      status.innerText = "Downloading...";
+      let xhr = new XMLHttpRequest();
+      xhr.responseType = 'arraybuffer';
+      xhr.open('GET', document.getElementById("url").value);
+      xhr.onload = function (e) {
+        status.innerText = "";
+        loadTiff(xhr.response);
+      };
+      xhr.onerror = function(){
+        status.innerText = "Error";
+      }
+      xhr.send();
+    }
+
+    function showEditor(){
+      var imageEditor = DWObject.Viewer.createImageEditor();
+      imageEditor.show();
+    }
+  </script>
+</body>
+
+</html>

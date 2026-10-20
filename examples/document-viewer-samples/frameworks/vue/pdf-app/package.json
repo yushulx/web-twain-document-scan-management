@@ -1,0 +1,22 @@
+{
+  "name": "pdf-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "ncp node_modules/dynamsoft-document-viewer/dist public/assets/ddv-resources && vite",
+    "build": "ncp node_modules/dynamsoft-document-viewer/dist public/assets/ddv-resources && vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "dynamsoft-document-viewer": "^5.0.1",
+    "vue": "^3.5.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "ncp": "^2.0.0",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.8",
+    "vue-tsc": "^2.1.6"
+  }
+}

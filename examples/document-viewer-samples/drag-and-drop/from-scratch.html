@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Browse Viewer</title>
+  <script src="drag-drop-touch.esm.min.js?autoload" type="module"></script>
+</head>
+<style>
+  :root {
+	  --thumbnail-width: 140px;
+	}
+  .container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+  
+  .container h2 {
+    text-align: center;
+  }
+
+  #viewer {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    width: 320px;
+    height: 480px;
+    overflow: auto;
+    background: lightgray;
+    border: 1px solid black;
+  }
+
+  .thumbnail {
+    display: inline-flex;
+    width: var(--thumbnail-width);
+    height: 200px;
+    padding: 5px;
+    margin: 5px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .thumbnail:hover {
+    background: gray;
+  }
+
+  .thumbnail.selected {
+    background: gray;
+  }
+
+  .thumbnail.selected img {
+    border: 1px solid orange;
+  }
+
+  .thumbnail img {
+    width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid transparent;
+  }
+
+  .dragHover {
+    opacity: 0.5;
+  }
+</style>
+<body>
+  <div class="container">
+    <h2>Drag and Drop</h2>
+    <label>
+      Select images to load:
+      <br/>
+      <input type="file" id="files" name="files" multiple onchange="filesSelected()"/>
+    </label>
+    <div id="viewer"></div>
+    <div>
+      <label>
+        Multiple selection by tapping:
+        <input type="checkbox" value="false" id="tapToMultiSelect"/>
+      </label>
+    </div>
+    <button onclick="deleteSelected()">Deleted Selected</button>
+  </div>
+</body>
+<script>
+let doc;
+let lastSelectedIndex = -1;
+let targetImg;
+
+async function filesSelected(){
+  let filesInput = document.getElementById("files");
+  let files = filesInput.files;
+  if (files.length>0) {
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      const blob = await readFileAsBlob(file);
+      const url = URL.createObjectURL(blob);
+      appendImage(url);
+    }
+    updateWidthBaseOnScrollBar();
+  }
+}
+
+function updateWidthBaseOnScrollBar(){
+  let viewer = document.getElementById("viewer");
+  if (viewer.scrollHeight>viewer.clientHeight) {
+    let scrollBarWidth = viewer.offsetWidth - viewer.clientWidth;
+    let width = 140 - Math.ceil(scrollBarWidth/2);
+    document.documentElement.style.setProperty('--thumbnail-width', width + "px");
+  }else{
+    document.documentElement.style.setProperty('--thumbnail-width', "140px");
+  }
+}
+
+function appendImage(url){
+  let viewer = document.getElementById("viewer");
+  let thumbnailContainer = document.createElement("div");
+  thumbnailContainer.className = "thumbnail";
+  let img = document.createElement("img");
+  
+  img.src = url;
+  img.onload = function(){
+    let height = 130/(img.naturalWidth/img.naturalHeight);
+    img.style.height = Math.floor(height) + "px";
+  }
+
+  thumbnailContainer.appendChild(img);
+  img.addEventListener("dragenter",function(){
+    img.classList.add("dragHover");
+    targetImg = img;
+  })
+  img.addEventListener("dragover",function(e){
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  })
+  img.addEventListener("dragleave",function(){
+    img.classList.remove("dragHover");
+  })
+  img.addEventListener("dragend",function(){
+    img.classList.remove("dragHover");
+    if (img.classList.contains("selected") === false) {
+      reorder();
+    }
+  })
+  viewer.appendChild(thumbnailContainer);
+  thumbnailContainer.addEventListener("click",function(){
+    const isMultiSelect = event.ctrlKey || event.metaKey || document.getElementById("tapToMultiSelect").checked;
+    const isRangeSelect = event.shiftKey;
+    const index = getIndex(thumbnailContainer);
+    if (isMultiSelect) {
+      toggleSelection(thumbnailContainer);
+    } else if (isRangeSelect && lastSelectedIndex !== -1) {
+      const firstSelectedIndex = getFirstSelectedIndex();
+      if (firstSelectedIndex != -1) {
+        selectRange(firstSelectedIndex, index);
+      }else{
+        selectRange(lastSelectedIndex, index);
+      }
+    } else {
+      clearSelection();
+      selectOne(thumbnailContainer);
+    }
+    lastSelectedIndex = index;
+  })
+}
+
+function reorder(){
+  console.log("reorder");
+  const targetThumbnailContainer = targetImg.parentNode;
+  targetImg.classList.remove("dragHover");
+  const thumbnails = document.getElementsByClassName("thumbnail");
+  const selected = [];
+  let targetIndex = -1;
+  let selectedIndex = -1;
+  for (let index = thumbnails.length - 1; index >=0 ; index--) {
+    const item = thumbnails[index];
+    if (item.classList.contains("selected")) {
+      selected.push(item);
+      selectedIndex = index;
+      if (item === targetThumbnailContainer) { //abort if the target image is also selected
+        return;
+      }
+    }
+    if (item === targetThumbnailContainer) {
+      targetIndex = index;
+    }
+  }
+  console.log(selected);
+  const viewer = document.getElementById("viewer");
+  if (selectedIndex>targetIndex) {
+    selected.reverse();
+  }
+  selected.forEach(function(one) {
+    console.log(one);
+    console.log(targetThumbnailContainer);
+    if (selectedIndex<targetIndex) {
+      viewer.insertBefore(one,targetThumbnailContainer.nextSibling);
+    }else{
+      viewer.insertBefore(one,targetThumbnailContainer);
+    }
+  })
+}
+
+function getFirstSelectedIndex(){
+  const thumbnails = document.getElementsByClassName("thumbnail");
+  for (let index = 0; index < thumbnails.length; index++) {
+    const item = thumbnails[index];
+    if (item.classList.contains("selected")) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function getIndex(thumbnail){
+  const thumbnails = document.getElementsByClassName("thumbnail");
+  for (let index = 0; index < thumbnails.length; index++) {
+    const item = thumbnails[index];
+    if (item === thumbnail) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function readFileAsBlob(file){
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.onload = async function(e){
+      //const blob = window.dataURLtoBlob(e.target.result);
+      const response = await fetch(e.target.result);
+      const blob = await response.blob();
+      resolve(blob);
+    };
+    fileReader.onerror = function () {
+      reject('oops, something went wrong.');
+    };
+    fileReader.readAsDataURL(file); 
+  })
+}
+
+function deleteSelected(){
+  let viewer = document.getElementById("viewer");
+  let thumbnails = document.getElementsByClassName("thumbnail");
+  for (let index = thumbnails.length - 1; index >= 0; index--) {
+    const thumbnail = thumbnails[index];
+    if (thumbnail.classList.contains("selected")) {
+      viewer.removeChild(thumbnail);
+    }
+  }
+  updateWidthBaseOnScrollBar();
+}
+
+function toggleSelection(thumbnail) {
+  thumbnail.classList.toggle('selected');
+  if (thumbnail.classList.contains('selected')) {
+    thumbnail.getElementsByTagName("img")[0].setAttribute("draggable",true);
+  }else{
+    thumbnail.getElementsByTagName("img")[0].setAttribute("draggable",false);
+  }
+}
+
+function selectOne(thumbnail) {
+  thumbnail.classList.add('selected');
+  thumbnail.getElementsByTagName("img")[0].setAttribute("draggable",true);
+}
+
+function clearSelection() {
+  let thumbnails = document.querySelectorAll(".thumbnail");
+  thumbnails.forEach(thumbnail => {
+    thumbnail.classList.remove('selected')
+    thumbnail.getElementsByTagName("img")[0].setAttribute("draggable",false);
+  });
+}
+
+function selectRange(start, end) {
+  let thumbnails = document.querySelectorAll(".thumbnail");
+  clearSelection();
+  const [startIndex, endIndex] = start < end ? [start, end] : [end, start];
+  console.log("range selection");
+  console.log(startIndex);
+  console.log(endIndex);
+  for (let i = startIndex; i <= endIndex; i++) {
+    selectOne(thumbnails[i]);
+  }
+}
+
+</script>
+</html>

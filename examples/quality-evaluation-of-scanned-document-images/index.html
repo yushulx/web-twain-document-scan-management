@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quality Evaluation of Scanned Documents</title>
+  <style>
+    .main {
+      display: flex;
+    }
+
+    #dwtcontrolContainer {
+      width: 240px;
+      height: 320px;
+    }
+
+    .scanner {
+      padding-right: 1em;
+    }
+
+    #hiddenImage{
+      display: none;
+    }
+
+    #results {
+      margin-top: 1em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table,
+    table td,
+    table th {
+      border: 1px solid #000000;
+    }
+  </style>
+</head>
+<body>
+  <div class="home">
+    <h2>Quality Evaluation of Scanned Documents</h2>
+    <div class="main">
+      <div class="scanner">
+        <button id="scanButton">Scan</button>
+        <button id="loadButton">Load Files</button>
+        <button id="editButton">Edit</button>
+        <div id="dwtcontrolContainer"></div>
+      </div>
+      <div class="evaluation">
+        <div class="DWTStatus status">Loading Dynamic Web TWAIN...</div>
+        <div class="OpenCVStatus status">Loading OpenCV...</div>
+        <div class="TesseractStatus status">Loading Tesseract...</div>
+        <img id="hiddenImage"/>
+        <label>
+          Expected Document Type:
+          <select id="documentType">
+            <option value="">None</option>
+            <option value="2480x3508">A4</option>
+            <option value="1013x638">ID Card</option>
+          </select>
+        </label>
+        <button id="evaluateButton">Evaluate Selected Image</button>
+        <div id="results"></div>
+      </div>
+    </div>
+  </div>
+  <!--<script src="/dwt/dist/dynamsoft.webtwain.min.js"></script>-->
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+  <script>
+    let DWObject;
+    let worker;
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; //one-day trial
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist" //"/dwt/dist";
+    
+    window.onload = function(){
+      initDWT();
+      initTesseract();
+      document.getElementById("scanButton").addEventListener("click",function(){
+        AcquireImage();
+      });
+      document.getElementById("loadButton").addEventListener("click",function(){
+        LoadFile();
+      });
+      document.getElementById("editButton").addEventListener("click",function(){
+        let imageEditor = DWObject.Viewer.createImageEditor();
+        imageEditor.show();
+      });
+      
+      document.getElementById("evaluateButton").addEventListener("click",function(){
+        Evaluate();
+      });
+    }
+
+    var Module = {
+      // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
+      onRuntimeInitialized() {
+        document.getElementsByClassName("OpenCVStatus")[0].innerText = 'OpenCV.js is ready.';
+      }
+    };
+
+
+    function LoadFile(){
+      if (DWObject) {
+        DWObject.IfShowFileDialog = true;
+        // PDF Rasterizer Addon is used here to ensure PDF support
+        DWObject.Addon.PDF.SetResolution(200);
+        DWObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
+        DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+      }
+    }
+
+    function AcquireImage() {
+      if (DWObject) {
+        DWObject.SelectSourceAsync()
+        .then(function () {
+          return DWObject.AcquireImageAsync({
+            IfDisableSourceAfterAcquire: true,
+          });
+        })
+        .then(function (result) {
+          console.log(result);
+        })
+        .catch(function (exp) {
+          console.error(exp.message);
+        })
+        .finally(function () {
+          DWObject.CloseSourceAsync().catch(function (e) {
+            console.error(e);
+          });
+        });
+      }
+    }
+
+    function initDWT(){
+      return new Promise((resolve, reject) => {
+        let title = document.querySelector("h2").innerText;
+        Dynamsoft.DWT.CreateDWTObjectEx(
+          {
+            WebTwainId: 'dwtcontrol'
+          },
+          function(obj) {
+            document.getElementsByClassName("DWTStatus")[0].innerText = "Web TWAIN is Ready.";
+            DWObject = obj;
+            DWObject.Viewer.bind(document.getElementById('dwtcontrolContainer'));
+            DWObject.Viewer.height = "100%";
+            DWObject.Viewer.width = "100%";
+            DWObject.Viewer.show();
+            resolve();
+          },
+          function(err) {
+            console.log(err);
+            document.getElementsByClassName("DWTStatus")[0].innerText = "Failed to load Dynamic Web TWAIN";
+            reject(err);
+          }
+        );
+      })
+    }
+
+    async function initTesseract(){
+      worker = await Tesseract.createWorker("eng", 1, {
+        logger: function(m){console.log(m);}
+      });
+      document.getElementsByClassName("TesseractStatus")[0].innerText = 'Tesseract is ready.';
+    }
+
+    async function Evaluate(){
+      let evaluateButton = document.getElementById("evaluateButton");
+      let originalText = evaluateButton.innerText;
+      if (originalText === "Evaluating...") {
+        return;
+      }
+      try {
+        let results = document.getElementById("results");
+        results.innerHTML = "";
+        evaluateButton.innerText = "Evaluating...";
+        let img = await LoadImage();
+        let OCRConfidence = await getOCRConfidence(img);
+        let isBlurry = DetectBlur(img);
+        let isOverexposed = DetectOverExposure(img);
+        let isSkewed = await DetectSkewness();
+        let isAspectRatioIncorrect = DetectIfAspectRatioIncorrect(img);
+        let overallScore = 0;
+        overallScore = overallScore + (isBlurry ? 0 : 1) * 20;
+        overallScore = overallScore + (isOverexposed ? 0 : 1) * 20;
+        overallScore = overallScore + (isAspectRatioIncorrect ? 0 : 1) * 20;
+        overallScore = overallScore + (isSkewed ? 0 : 1) * 20;
+        overallScore = overallScore + OCRConfidence * 0.2;
+        let data = {
+          "Blurry":isBlurry,
+          "Overexposed":isOverexposed,
+          "Incorrect Aspect Ratio":isAspectRatioIncorrect,
+          "Skewed":isSkewed,
+          "OCR Confidence":OCRConfidence,
+          "Score":overallScore
+        }
+        DisplayResults(data);
+      } catch (error) {
+        console.log(error);
+      }
+      evaluateButton.innerText = originalText;
+    }
+
+    function LoadImage(){
+      return new Promise((resolve, reject) => {
+        let img = document.getElementById("hiddenImage");
+        img.onload = function(){
+          resolve(img);
+        }
+        DWObject.ConvertToBase64(
+          [DWObject.SelectedImagesIndices[0]],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          function(result, indices, type) {
+            img.src = "data:image/png;base64,"+result.getData(0, result.getLength());
+          },
+          function(errorCode, errorString) {
+            console.log(errorString);
+            reject(errorString);
+          }
+        );
+      })
+    }
+
+    function DetectBlur(src){
+      let img = cv.imread(src);
+
+      let gray = new cv.Mat();
+      cv.cvtColor(img, gray, cv.COLOR_RGBA2GRAY);
+
+      let laplacianMat = new cv.Mat();
+      cv.Laplacian(gray, laplacianMat, cv.CV_64F);
+      let mean = new cv.Mat(1, 4, cv.CV_64F);
+      let standardDeviationMat = new cv.Mat(1, 4, cv.CV_64F);
+      cv.meanStdDev(laplacianMat, mean, standardDeviationMat);
+
+      let standardDeviation = standardDeviationMat.doubleAt(0, 0);
+      let variance = standardDeviation * standardDeviation;
+      console.log(variance);
+      let threshold = 200;
+      let isBlurry = variance < threshold;
+      img.delete();
+      gray.delete();
+      laplacianMat.delete();
+      mean.delete();
+      standardDeviationMat.delete();
+      return isBlurry;
+    }
+
+    function DetectOverExposure(src){
+      let img = cv.imread(src);
+      cv.cvtColor(img, img, cv.COLOR_RGBA2GRAY, 0);
+      let srcVec = new cv.MatVector();
+      srcVec.push_back(img);
+      let accumulate = false;
+      let channels = [0];
+      let histSize = [256];
+      let ranges = [0, 255];
+      let hist = new cv.Mat();
+      let mask = new cv.Mat();
+      let color = new cv.Scalar(255, 255, 255);
+      let scale = 2;
+      // You can try more different parameters
+      cv.calcHist(srcVec, channels, mask, hist, histSize, ranges, accumulate);
+      let result = cv.minMaxLoc(hist, mask);
+      console.log(result);
+      if (result.maxLoc.y > 240) {
+        let data = hist.data32F
+        let darkPixels = 0;
+        for (let index = 0; index <= 200; index++) {
+          const pixels = data[index];
+          darkPixels = darkPixels + pixels;
+        }
+        let totalPixels = src.naturalHeight * src.naturalWidth;
+        let percent = darkPixels/totalPixels;
+        hist.delete();
+        img.delete();
+        console.log(percent);
+        if (percent < 0.2) {
+          return true;
+        } else {
+          return false;
+        }
+      }else{
+        hist.delete();
+        img.delete();
+        return false;
+      }
+    }
+
+    async function getOCRConfidence(img){
+      const result = await worker.recognize(img);
+      const data = result.data;
+      console.log(data);
+      let size = data.lines.length;
+      let totalConfidence = 0;
+      data.lines.forEach(line => {
+        totalConfidence = line.confidence + totalConfidence;
+      });
+      let confidence = parseInt(totalConfidence/size);
+      console.log(confidence);
+      return confidence;
+    }
+
+    function DetectIfAspectRatioIncorrect(img){
+      let documentSize = document.getElementById("documentType").selectedOptions[0].value;
+      if (documentSize) {
+        let width = documentSize.split("x")[0];
+        let height = documentSize.split("x")[1];
+        let ratio = width / height;
+        let imgRatio = img.naturalWidth / img.naturalHeight;
+        let percent = Math.max(ratio,imgRatio) / Math.min(ratio,imgRatio);
+        if (percent > 1.1) {
+          console.log(percent);
+          return true;
+        }else{
+          return false;
+        }
+      }else{
+        return false;
+      }
+    }
+
+    function DetectSkewness(){
+      return new Promise((resolve, reject) => {
+        DWObject.GetSkewAngle(
+          DWObject.SelectedImagesIndices[0],
+          function(angle) {
+            console.log("skew angle: " + angle);
+            if (Math.abs(angle)>1) {
+              resolve(true);
+            }else{
+              resolve(false);
+            }
+          },
+          function(errorCode, errorString) {
+            console.log(errorString);
+            reject(errorString);
+          }
+        );
+      })
+    }
+
+    function DisplayResults(data){
+      let results = document.getElementById("results");
+      let table = document.createElement("table");
+      let thead = document.createElement('thead');
+      let tbody = document.createElement('tbody');
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+        
+      var headers = ["Metrics","Value"];
+      let headRow = document.createElement('tr');
+      for (var i =0;i<headers.length;i++){
+        let cell = document.createElement('th');
+        cell.innerHTML = headers[i];
+        headRow.appendChild(cell);
+      }
+      thead.appendChild(headRow);
+      for (let index = 0; index < Object.keys(data).length; index++) {
+        let key = Object.keys(data)[index];
+        let value = data[key];
+        let row = document.createElement('tr');
+        let keyCell = document.createElement('td');
+        let valueCell = document.createElement('td');
+        keyCell.innerText = key;
+        valueCell.innerText = value;
+        row.appendChild(keyCell);
+        row.appendChild(valueCell);
+        tbody.appendChild(row);
+      }
+      results.appendChild(table);
+    }
+  </script>
+  <script async src="https://docs.opencv.org/4.8.0/opencv.js" type="text/javascript"></script>
+  <!--<script async src="/opencv.js/opencv.js" type="text/javascript"></script>-->
+</body>
+</html>

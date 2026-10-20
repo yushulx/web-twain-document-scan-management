@@ -1,0 +1,56 @@
+{
+  "name": "opencv-document-scanner",
+  "private": false,
+  "version": "1.2.2",
+  "type": "module",
+  "main": "./dist/opencv-document-scanner.umd.cjs",
+  "module": "./dist/opencv-document-scanner.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/opencv-document-scanner.js"
+    },
+    "require": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/opencv-document-scanner.umd.cjs"
+    }
+  },
+  "files": [
+    "dist/*.css",
+    "dist/*.js",
+    "dist/*.cjs",
+    "dist/*.d.ts"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": "https://github.com/tony-xlh/opencvjs-document-scanner",
+  "author": "xulihang <xulihanghai@gmail.com> (https://github.com/xulihang)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tony-xlh/opencvjs-document-scanner/issues"
+  },
+  "homepage": "https://github.com/tony-xlh/opencvjs-document-scanner#readme",
+  "keywords": [
+    "document",
+    "opencv",
+    "scanning",
+    "correction",
+    "detection",
+    "dynamsoft"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.8",
+    "dynamsoft-document-viewer": "^5.0.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^3.7.0"
+  }
+}

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convert an Image to Black and White with JavaScript</title>
+  <style>
+  .imageContainer {
+    overflow: auto;
+  }
+
+  #image {
+    max-width: 50%;
+  }
+
+  #imageHidden {
+    display: none;
+  }
+
+  #canvasHidden {
+    display: none;
+  }
+  </style>
+</head>
+<body>
+  <div class="home">
+    <h2>Convert an Image to Black and White</h2>
+    <button id="loadFileButton">Load a File</button>
+    <input style="display:none;" type="file" id="file" onchange="loadImageFromFile();" accept=".jpg,.jpeg,.png,.bmp" />
+    <label>
+      Method:
+      <select id="methodSelect">
+        <option>Canvas</option>
+        <option>Dynamic Web TWAIN</option>
+      </select>
+    </label>
+    <div class="thresholdControls" style="display:inline">
+      <label>
+        Threshold (0-255):
+        <input id="threshold" type="number" min="0" max="255" value="127">
+        <button id="otsuButton">OTSU</button>
+      </label>
+    </div>
+    
+    <button id="convertButton">Convert</button>
+    <button id="downloadButton">Download</button>
+    <div class="imageContainer">
+      <img id="image"/>
+      <img id="imageHidden"/>
+    </div>
+    <canvas id="canvasHidden"></canvas>
+  </div>
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <script src="./otsu.js"></script>
+  <script>
+    let DWObject;
+    
+    try {
+      Dynamsoft.DWT.AutoLoad = false;
+      Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; //one-day trial
+      Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    } catch(e){
+      console.log(e);
+    }
+   
+    document.getElementById("loadFileButton").addEventListener("click",function(){
+      document.getElementById("file").click();
+    })
+
+    document.getElementById("convertButton").addEventListener("click",function(){
+      if (document.getElementById("methodSelect").selectedIndex === 0){
+        convertWithCanvas();
+      }else{
+        convertWithDWT();
+      }
+    })
+
+    document.getElementById("otsuButton").addEventListener("click",function(){
+      calculateThresholdWithOTSU();
+    })
+
+    document.getElementById("downloadButton").addEventListener("click",async function(){
+      const src = document.getElementById("image").src;
+      if (!src) {
+        return;
+      }
+      const link = document.createElement('a');
+      const response = await fetch(src);
+      const blob = await response.blob();
+      link.href = URL.createObjectURL(blob);
+      link.target = "_blank";
+      link.download = 'bw.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    })
+
+    
+    function loadImageFromFile(){
+      let fileInput = document.getElementById("file");
+      let files = fileInput.files;
+      if (files.length == 0) {
+        return;
+      }
+      document.getElementById("image").style.filter = "";
+      let file = files[0];
+      fileReader = new FileReader();
+      fileReader.onload = function(e){
+        document.getElementById("image").src = e.target.result;
+        document.getElementById("imageHidden").src = e.target.result;
+      };
+      fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+      };
+      fileReader.readAsDataURL(file);
+    }
+
+    function calculateThresholdWithOTSU(){
+      const image = document.getElementById("imageHidden");
+      const canvas = document.getElementById("canvasHidden");
+      const width = image.naturalWidth;
+      const height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(image, 0, 0);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data; //[r,g,b,a,...]
+      const grayscaleValues = [];
+      for (var i = 0; i < pixels.length; i += 4) {
+        const red = pixels[i];
+        const green = pixels[i + 1];
+        const blue = pixels[i + 2];
+        const grayscale = RGBToGrayScale(red, green, blue)
+        grayscaleValues.push(grayscale);
+      }
+      document.getElementById("threshold").value = otsu(grayscaleValues);
+    }
+
+    function convertWithCanvas(){
+      const image = document.getElementById("imageHidden");
+      const canvas = document.getElementById("canvasHidden");
+      const width = image.naturalWidth;
+      const height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(image, 0, 0);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data; //[r,g,b,a,...]
+      for (var i = 0; i < pixels.length; i += 4) {
+        const red = pixels[i];
+        const green = pixels[i + 1];
+        const blue = pixels[i + 2];
+        const grayscale = RGBToGrayScale(red, green, blue)
+        if (threshold(grayscale)) {
+          pixels[i] = 0;
+          pixels[i + 1] = 0;
+          pixels[i + 2] = 0;
+        }else{
+          pixels[i] = 255;
+          pixels[i + 1] = 255;
+          pixels[i + 2] = 255;
+        }
+      }
+      context.putImageData(imageData, 0, 0);
+      document.getElementById("image").src = canvas.toDataURL();
+    }
+
+    //https://github.com/image-js/image-js/blob/9ab86a86f6c13a9a7d14c62566c1396c3c6f54f4/src/image/transform/greyAlgorithms.js
+    function RGBToGrayScale(red,green,blue){
+      //return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+      return (red * 6966 + green * 23436 + blue * 2366) >> 15;
+    }
+
+    //return true if the value should be black. return false if the value should be white
+    function threshold(grayscale){
+      const thresholdValue = parseInt(document.getElementById("threshold").value);
+      if (grayscale < thresholdValue) {
+        return true;
+      }else{
+        return false;
+      }
+    }
+
+    async function convertWithDWT(){
+      if (!DWObject) {
+        await initDWT();
+      }
+      DWObject.RemoveAllImages();
+      let response = await fetch(document.getElementById("imageHidden").src);
+      let buffer = await response.arrayBuffer();
+      DWObject.LoadImageFromBinary(buffer,
+      function(){
+        const convert = async () => {
+          if (isWindows()) {
+            const thresholdValue = parseInt(document.getElementById("threshold").value);
+            await DWObject.RunCommandAsync({command:"convertToBW",parameter:{index:0,threshold:thresholdValue}});
+            document.getElementById("image").src = DWObject.GetImageURL(0);
+          }else{
+            DWObject.ConvertToBW(0,
+            function(){
+              document.getElementById("image").src = DWObject.GetImageURL(0);
+            },
+            function(errorCode, errorString){
+              console.log(errorString);
+            });
+          }
+        }
+        convert();
+      },
+      function(errorCode, errorString){
+        console.log(errorString);
+      })
+    }
+
+    function isWindows() { 
+      return /windows|win32/i.test(navigator.userAgent);
+    }; 
+
+    function initDWT(){
+      return new Promise((resolve, reject) => {
+        const title = document.querySelector("h2").innerText;
+        document.querySelector("h2").innerText = "Loading Dynamic Web TWAIN...";
+        Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          DWObject = obj;
+          document.querySelector("h2").innerText = title;
+          resolve();
+        },
+        function(err) {
+          console.log(err);
+          document.querySelector("h2").innerText = "Failed to load Dynamic Web TWAIN";
+          reject(err);
+        }
+      );
+      })
+    }
+  </script>
+</body>
+</html>

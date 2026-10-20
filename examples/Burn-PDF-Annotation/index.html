@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Burn PDF Annotation</title>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css">
+  <style>
+    .app {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    .app h2 {
+      text-align: center;
+    }
+  
+    #viewer {
+      width: 80%;
+    }
+
+    #annotations {
+      width: 20%;
+      padding: 10px;
+      border: 1px solid black;
+    }
+
+    #list .selected {
+      background: lightblue;
+    }
+
+    .container {
+      display: flex;
+      height: 600px;
+      min-width: 960px;
+    }
+
+    .modal {
+      display: flex;
+      align-items: flex-start;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 250px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 9999;
+      padding: 20px 10px;
+      visibility: hidden;
+    }
+
+    .modal.active {
+      visibility: inherit;
+    }
+
+    @media screen and (max-device-width: 600px){
+      #viewer {
+        width: 100%;
+        height: 480px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h2>Burn Annotations</h2>
+    <label>
+      Select an image:
+      <br/>
+      <input type="file" id="files" name="files" onchange="filesSelected()"/>
+    </label>
+    <div class="container">
+      <div id="viewer"></div>
+      <div id="annotations">
+        <strong>Annotations</strong>
+        <ol id="list"></ol>
+      </div>
+    </div>
+    <div class="modal">
+      <label>
+        How to save annotations:
+        <select id="annotationOptionSelect">
+          <option value="none">Discard</option>
+          <option value="image">Draw onto the image</option>
+          <option value="annotation">Keep annotations</option>
+          <option value="flatten">Flatten</option>
+        </select>
+      </label>
+      <button id="okayBtn">Okay</button>
+      <button id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+</body>
+<script>
+let doc;
+let editViewer;
+let annotations = [];
+init();
+async function init(){
+  let oneDayTrialLicense = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+  Dynamsoft.DDV.Core.license = oneDayTrialLicense;
+  Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";// Lead to a folder containing the distributed WASM files
+  await Dynamsoft.DDV.Core.init();
+  Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
+  let uiConfig = {
+    type: "Layout",
+    flexDirection: "column",
+    className: "ddv-edit-viewer-desktop",
+    children: [
+      {
+        type: "Layout",
+        className: "ddv-edit-viewer-header-desktop",
+        children: [
+          {
+            type: "Layout",
+            children: [
+              "ThumbnailSwitch",
+              "FitMode",
+              "DisplayMode",
+              "RotateLeft",
+              "Crop",
+              "Filter",
+              "Undo",
+              "Redo",
+              "DeleteCurrent",
+              "DeleteAll",
+              "Pan",
+              "SeparatorLine",
+              "AnnotationSet"
+            ],
+            enableScroll: true
+          },
+          {
+            type: "Layout",
+            children: [
+              {
+                "type": "Pagination",
+                "className": "ddv-edit-viewer-pagination-desktop"
+              },
+              {
+                type: Dynamsoft.DDV.Elements.Button,
+                className: "ddv-button-download",
+                events: {
+                  click: "exportPDFWithOptions",
+                },
+              },
+            ]
+          }
+        ]
+      },
+      "MainView"
+    ]
+  }
+  editViewer = new Dynamsoft.DDV.EditViewer({
+    uiConfig: uiConfig,
+    container: document.getElementById("viewer")
+  });
+  const docManager = Dynamsoft.DDV.documentManager;
+  doc = docManager.createDocument();
+  editViewer.openDocument(doc.uid);
+  Dynamsoft.DDV.annotationManager.on("annotationsAdded", function(e){
+    listAnnotations();
+  });
+  Dynamsoft.DDV.annotationManager.on("annotationsDeleted", function(e){
+    listAnnotations();
+  });
+  editViewer.on("selectedAnnotationsChanged", function(e){
+    let selectedAnnotation = Dynamsoft.DDV.annotationManager.getAnnotationsByUids(e.newAnnotationUids)[0];
+    highlightSelected(selectedAnnotation.uid);
+  });
+  editViewer.on("exportPDFWithOptions",e => {
+    showOptionsModal();
+  });
+  document.getElementById("okayBtn").addEventListener("click",async function(){
+    let saveAnnotationOption = document.getElementById("annotationOptionSelect").selectedOptions[0].value;
+    let blob = await doc.saveToPdf({
+      saveAnnotation: saveAnnotationOption
+    })
+    const pdfURL = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = pdfURL;
+    link.download = 'document-'+saveAnnotationOption+'.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    hideOptionsModal();
+  });
+  document.getElementById("cancelBtn").addEventListener("click",function(){
+    hideOptionsModal();
+  });
+}
+
+function showOptionsModal(){
+  document.getElementsByClassName("modal")[0].classList.add("active");
+}
+
+function hideOptionsModal(){
+  document.getElementsByClassName("modal")[0].classList.remove("active");
+}
+
+function highlightSelected(selectedUid){
+  let list = document.getElementById("list");
+  for (let index = 0; index < list.children.length; index++) {
+    const item = list.children[index];
+    if (item.getAttribute("data-uid") === selectedUid) {
+      item.classList.add("selected");
+    }else{
+      item.classList.remove("selected");
+    }
+  }
+}
+
+function listAnnotations(){
+  let list = document.getElementById("list");
+  list.innerHTML = "";
+  annotations = Dynamsoft.DDV.annotationManager.getAnnotationsByDoc(doc.uid);
+  sortAnnotationsByCreationDate(annotations);
+  for (let index = 0; index < annotations.length; index++) {
+    const annotation = annotations[index];
+    console.log(annotation);
+    const item = document.createElement("li")
+    item.setAttribute("data-uid",annotation.uid);
+    let container = document.createElement("div");
+    item.appendChild(container);
+    container.innerHTML = `
+      Page: <span class="page-index"></span>
+      <label>
+        Flatten: <input type="checkbox" class="flatten-checkbox"/>
+      </label>
+    `
+    container.getElementsByClassName("page-index")[0].innerText = doc.pages.indexOf(annotation.pageUid);
+    container.getElementsByClassName("flatten-checkbox")[0].checked = annotation.flattened;
+    container.getElementsByClassName("flatten-checkbox")[0].addEventListener("change",function(){
+      console.log(this);
+      annotation.flattened = this.checked;
+    })
+    item.addEventListener("mouseenter",function(e){
+      editViewer.selectAnnotations([annotation.uid]);
+    })
+    item.addEventListener("mouseleave",function(e){
+      item.classList.remove("selected");
+      editViewer.selectAnnotations([]);
+    })
+    list.appendChild(item);  
+  }
+}
+
+function sortAnnotationsByCreationDate(annotations){
+  annotations.sort((a, b) => compareCreationDate(a,b));
+}
+
+function compareCreationDate(a, b) {
+  let timeA = parseDate(a.creationDate).getTime();
+  let timeB = parseDate(b.creationDate).getTime();
+  if (timeA < timeB) {
+    return -1;
+  }else{
+    return 1;
+  }
+}
+
+function parseDate(dateString){
+  const year = dateString.slice(2, 6);
+  const month = dateString.slice(6, 8);
+  const day = dateString.slice(8, 10);
+  const hour = dateString.slice(10, 12);
+  const minute = dateString.slice(12, 14);
+  const second = dateString.slice(14, 16);
+  const timezone = dateString.slice(16, 19);
+  const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}${timezone}00`);
+  return date;
+}
+
+async function filesSelected(){
+  let filesInput = document.getElementById("files");
+  let files = filesInput.files;
+  if (files.length>0) {
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      const blob = await readFileAsBlob(file);
+      console.log(blob);
+      await doc.loadSource(blob);
+      listAnnotations();
+    }    
+  }
+}
+
+function readFileAsBlob(file){
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.onload = async function(e){
+      //const blob = window.dataURLtoBlob(e.target.result);
+      const response = await fetch(e.target.result);
+      const blob = await response.blob();
+      resolve(blob);
+    };
+    fileReader.onerror = function () {
+      reject('oops, something went wrong.');
+    };
+    fileReader.readAsDataURL(file); 
+  })
+}
+</script>
+</html>

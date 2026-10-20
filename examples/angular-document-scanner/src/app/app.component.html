@@ -1,0 +1,75 @@
+<nz-layout class="app-layout">
+  <nz-header>
+    <nz-page-header>
+      <nz-page-header-title>Document Scanner</nz-page-header-title>
+    </nz-page-header>
+  </nz-header>
+  <nz-layout>
+    <nz-layout>
+      <nz-content>
+        <div class="left">
+          <div class="toolbar">
+            <button (click)="removeSelected()" nz-tooltip nzTooltipTitle="Remove selected" nzTooltipPlacement="bottom">
+              <i nz-icon nzType="delete" nzTheme="outline"></i>
+            </button>
+            <button (click)="edit()" nz-tooltip nzTooltipTitle="Edit selected" nzTooltipPlacement="bottom">
+              <i nz-icon nzType="edit" nzTheme="outline"></i>
+            </button>
+            <button (click)="rotateRight()" nz-tooltip nzTooltipTitle="Rotate selected" nzTooltipPlacement="bottom">
+              <i nz-icon nzType="rotate-right" nzTheme="outline"></i>
+            </button>
+            <button (click)="moveUp()" nz-tooltip nzTooltipTitle="Move selected up" nzTooltipPlacement="bottom">
+              <i nz-icon nzType="up" nzTheme="outline"></i>
+            </button>
+            <button (click)="moveDown()" nz-tooltip nzTooltipTitle="Move selected down" nzTooltipPlacement="bottom">
+              <i nz-icon nzType="down" nzTheme="outline"></i>
+            </button>
+          </div>
+          <app-document-viewer height="calc(100% - 48px)" (onWebTWAINReady)="onWebTWAINReady($event)"></app-document-viewer>
+        </div> 
+        <div class="right">
+          <nz-collapse>
+            <nz-collapse-panel nzHeader="SCAN" nzActive>
+              Select Source:
+              <button (click)="loadScanners()" nz-tooltip nzTooltipTitle="Reload scanners" nzTooltipPlacement="bottom">
+                <i nz-icon nzType="reload" nzTheme="outline"></i>
+              </button>
+              <div>
+                <nz-select [(ngModel)]="selectedScanner">
+                  <nz-option *ngFor="let scanner of scanners" [nzValue]="scanner" [nzLabel]="scanner"></nz-option>
+                </nz-select>
+              </div>
+              <div>
+                <label nz-checkbox [(ngModel)]="showUI">Show UI</label>
+                <label nz-checkbox [(ngModel)]="useADF">Use ADF</label>
+                <br/>
+                <label nz-checkbox [(ngModel)]="duplex">Duplex Scan</label>
+              </div>
+              <div>
+                Resolution:
+                <nz-select [(ngModel)]="resolution">
+                  <nz-option [nzValue]="100" [nzLabel]="100"></nz-option>
+                  <nz-option [nzValue]="200" [nzLabel]="200"></nz-option>
+                  <nz-option [nzValue]="300" [nzLabel]="300"></nz-option>
+                </nz-select>
+              </div>
+              <div>
+                Pixel Type:
+                <nz-radio-group [(ngModel)]="pixelType">
+                  <label nz-radio nzValue="0">B&W</label>
+                  <label nz-radio nzValue="1">Gray</label>
+                  <label nz-radio nzValue="2">Color</label>
+                </nz-radio-group>
+              </div>
+              <button nz-button (click)="scan()">Scan</button>
+            </nz-collapse-panel>
+            <nz-collapse-panel nzHeader="SAVE" nzActive>
+              <button nz-button (click)="save()">Save as PDF</button>
+            </nz-collapse-panel>
+          </nz-collapse>
+        </div> 
+      </nz-content>
+    </nz-layout>
+  </nz-layout>
+
+</nz-layout>

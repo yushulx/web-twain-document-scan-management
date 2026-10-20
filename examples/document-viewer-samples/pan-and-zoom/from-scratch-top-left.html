@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pan and Zoom</title>
+</head>
+<style>
+  .container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+  
+  .container h2 {
+    text-align: center;
+  }
+
+  #viewer {
+    width: 640px;
+    height: 480px;
+    border: 1px solid black;
+    overflow: auto;
+  }
+
+</style>
+<body>
+  <div class="container">
+    <h2>Image Pan and Zoom</h2>
+    <label>
+      Select an image:
+      <br/>
+      <input type="file" id="files" name="files" onchange="filesSelected()"/>
+    </label>
+    <div id="viewer">
+      <img id="image" draggable="false"/>
+    </div>
+  </div>
+</body>
+<script>
+let currentPercent = 1.0;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let scrollStart = { x: 0, y: 0 };
+let isImageLoaded = false;
+
+registerEvents();
+
+function registerEvents() {
+  const viewer = document.getElementById("viewer");
+  const img = document.getElementById("image");
+  
+  // Wheel zoom event - uses debouncing to avoid frequent firing
+  viewer.addEventListener("wheel", function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!isImageLoaded) return;
+      
+      const rect = viewer.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const zoomIn = e.deltaY < 0;
+      
+      performZoom(zoomIn, mouseX, mouseY);
+    }
+  }, { passive: false });
+  
+  // Dragging functionality
+  viewer.addEventListener("mousedown", function(e) {
+    if (e.button !== 0 || !isImageLoaded) return; // only respond to left mouse button
+    
+    isDragging = true;
+    dragStart.x = e.clientX;
+    dragStart.y = e.clientY;
+    scrollStart.x = viewer.scrollLeft;
+    scrollStart.y = viewer.scrollTop;
+    
+    viewer.style.cursor = "grabbing";
+    viewer.style.userSelect = "none";
+  });
+  
+  document.addEventListener("mousemove", function(e) {
+    if (!isDragging) return;
+    
+    const deltaX = dragStart.x - e.clientX;
+    const deltaY = dragStart.y - e.clientY;
+    
+    // Directly update scroll position
+    viewer.scrollLeft = scrollStart.x + deltaX;
+    viewer.scrollTop = scrollStart.y + deltaY;
+  });
+  
+  document.addEventListener("mouseup", function() {
+    if (isDragging) {
+      isDragging = false;
+      viewer.style.cursor = "grab";
+      viewer.style.userSelect = "auto";
+    }
+  });
+  
+  // Show grab cursor when mouse enters
+  viewer.addEventListener("mouseenter", function() {
+    if (isImageLoaded && !isDragging) {
+      viewer.style.cursor = "grab";
+    }
+  });
+  
+  viewer.addEventListener("mouseleave", function() {
+    if (!isDragging) {
+      viewer.style.cursor = "default";
+      isDragging = false;
+    }
+  });
+}
+
+function performZoom(zoomIn, mouseX, mouseY) {
+  const viewer = document.getElementById("viewer");
+  const img = document.getElementById("image");
+  
+  // Save state before zoom
+  const oldWidth = img.clientWidth;
+  const oldHeight = img.clientHeight;
+  const oldScrollLeft = viewer.scrollLeft;
+  const oldScrollTop = viewer.scrollTop;
+  
+  // Calculate mouse position ratio within the content
+  const mouseContentRatioX = (oldScrollLeft + mouseX) / viewer.scrollWidth;
+  const mouseContentRatioY = (oldScrollTop + mouseY) / viewer.scrollHeight;
+  
+  // Calculate new zoom factor
+  const zoomFactor = zoomIn ? 1.1 : 0.9;
+  const newPercent = currentPercent * zoomFactor;
+  
+  // Clamp zoom range
+  const limitedPercent = Math.max(0.1, Math.min(newPercent, 5.0));
+  if (Math.abs(limitedPercent - currentPercent) < 0.001) return;
+  
+  // Immediately update image dimensions (avoid async jitter)
+  const ratio = img.naturalWidth / img.naturalHeight;
+  const newWidth = img.naturalWidth * limitedPercent;
+  
+  img.style.width = newWidth + "px";
+  img.style.height = (newWidth / ratio) + "px";
+  
+  // Use requestAnimationFrame to update scroll position on next frame
+  requestAnimationFrame(() => {
+    // Compute new content dimensions
+    const newContentWidth = viewer.scrollWidth;
+    const newContentHeight = viewer.scrollHeight;
+    
+    // Compute target scroll so the mouse point stays on the same content position
+    const targetScrollX = mouseContentRatioX * newContentWidth - mouseX;
+    const targetScrollY = mouseContentRatioY * newContentHeight - mouseY;
+    
+    // Apply scroll position, clamped to valid range
+    viewer.scrollLeft = Math.max(0, Math.min(targetScrollX, newContentWidth - viewer.clientWidth));
+    viewer.scrollTop = Math.max(0, Math.min(targetScrollY, newContentHeight - viewer.clientHeight));
+    
+    // Update current zoom percentage
+    currentPercent = limitedPercent;
+  });
+}
+
+function zoom(zoomin, percentOffset = 0.1) {
+  if (!isImageLoaded) return;
+  
+  const viewer = document.getElementById("viewer");
+  const centerX = viewer.clientWidth / 2;
+  const centerY = viewer.clientHeight / 2;
+  
+  performZoom(zoomin, centerX, centerY);
+}
+
+function resizeImage(percent) {
+  const img = document.getElementById("image");
+  const viewer = document.getElementById("viewer");
+  
+  if (!isImageLoaded) return;
+  
+  // Save current scroll position percentages
+  const scrollPercentageX = getScrollPercentageX(viewer);
+  const scrollPercentageY = getScrollPercentageY(viewer);
+  
+  // Immediately update image dimensions
+  const ratio = img.naturalWidth / img.naturalHeight;
+  const newWidth = img.naturalWidth * percent;
+  
+  img.style.width = newWidth + "px";
+  img.style.height = (newWidth / ratio) + "px";
+  
+  // Update current percent
+  currentPercent = percent;
+  
+  // Update scroll positions in a microtask
+  Promise.resolve().then(() => {
+    setScrollPercentageX(viewer, scrollPercentageX);
+    setScrollPercentageY(viewer, scrollPercentageY);
+  });
+}
+
+function loadImage(url) {
+  const img = document.getElementById("image");
+  const viewer = document.getElementById("viewer");
+  
+  // Reset state
+  isImageLoaded = false;
+  currentPercent = 1.0;
+  viewer.style.cursor = "wait";
+  
+  img.src = url;
+  img.onload = function() {
+    // Reset styles
+    img.style.width = "";
+    img.style.height = "";
+    
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const viewerWidth = viewer.clientWidth;
+    const viewerHeight = viewer.clientHeight;
+    
+    // Compute initial size to fit the viewer
+    let initWidth, initHeight;
+    
+    if (img.naturalWidth <= viewerWidth && img.naturalHeight <= viewerHeight) {
+      // If the image is smaller than the viewer, use original size
+      initWidth = img.naturalWidth;
+      initHeight = img.naturalHeight;
+      currentPercent = 1.0;
+    } else {
+      // If the image is larger than the viewer, scale down proportionally to fit
+      const widthRatio = viewerWidth / img.naturalWidth;
+      const heightRatio = viewerHeight / img.naturalHeight;
+      const scale = Math.min(widthRatio, heightRatio);
+      
+      initWidth = img.naturalWidth * scale;
+      initHeight = img.naturalHeight * scale;
+      currentPercent = scale;
+    }
+    
+    // Set image dimensions
+    img.style.width = initWidth + "px";
+    img.style.height = initHeight + "px";
+    
+    isImageLoaded = true;
+    viewer.style.cursor = "grab";
+    
+    // Center the image in the viewer
+    requestAnimationFrame(() => {
+      viewer.scrollLeft = (img.clientWidth - viewer.clientWidth) / 2;
+      viewer.scrollTop = (img.clientHeight - viewer.clientHeight) / 2;
+    });
+  };
+  
+  img.onerror = function() {
+    viewer.style.cursor = "default";
+    console.error("Failed to load image");
+  };
+}
+
+function readFileAsBlob(file) {
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.onload = async function(e) {
+      try {
+        const response = await fetch(e.target.result);
+        const blob = await response.blob();
+        resolve(blob);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    fileReader.onerror = function() {
+      reject('Failed to read file');
+    };
+    fileReader.readAsDataURL(file); 
+  });
+}
+
+async function filesSelected() {
+  const filesInput = document.getElementById("files");
+  const files = filesInput.files;
+  
+  if (files.length > 0) {
+    try {
+      const file = files[0];
+      const blob = await readFileAsBlob(file);
+      const url = URL.createObjectURL(blob);
+      loadImage(url);
+    } catch (error) {
+      console.error("Error loading image:", error);
+      alert("Failed to load image. Please try another file.");
+    }
+  }
+}
+
+function getScrollPercentageX(element) {
+  const maxScroll = element.scrollWidth - element.clientWidth;
+  if (maxScroll <= 0) return 0;
+  return element.scrollLeft / maxScroll;
+}
+
+function getScrollPercentageY(element) {
+  const maxScroll = element.scrollHeight - element.clientHeight;
+  if (maxScroll <= 0) return 0;
+  return element.scrollTop / maxScroll;
+}
+
+function setScrollPercentageX(element, percentage) {
+  const maxScroll = element.scrollWidth - element.clientWidth;
+  element.scrollLeft = maxScroll * Math.max(0, Math.min(1, percentage));
+}
+
+function setScrollPercentageY(element, percentage) {
+  const maxScroll = element.scrollHeight - element.clientHeight;
+  element.scrollTop = maxScroll * Math.max(0, Math.min(1, percentage));
+}
+</script>
+</html>

@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.container.fullscreen {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 990;
+}
+
+.viewer-container {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 30px);
+}
+
+.dwt-container {
+  width: 100%;
+  height: 100%;
+}
+
+.status {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 99;
+}
+
+.toolbar {
+  height: 30px;
+  border: 1px solid rgb(204, 204, 204);
+  display: flex;
+  align-items: center;
+  background: white;
+  overflow-x: auto;
+}
+
+.toolbar-item {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-right: 5px;
+}
+
+.toolbar-container {
+  flex: 1;
+}
+
+.Icon {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+}
+
+#percent-input {
+  width: 4em;
+}
+
+#page-input {
+  width: 3em;
+}
+
+.overlay {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  right: 5px;
+  top: 5px;
+  width: 22px;
+  height: 150px;
+  z-index: 999;
+  padding: 5px;
+  border-radius: 5%;
+  border: 1px solid rgb(204, 204, 204);
+  align-items: flex-start;
+  justify-content: space-between;
+  background: white;
+}
+
+.overlay.hidden {
+  visibility: hidden;
+}

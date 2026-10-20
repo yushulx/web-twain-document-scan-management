@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <title>Stencil Component Starter</title>
+    <script type="module">
+      import { defineCustomElements } from 'https://cdn.jsdelivr.net/npm/web-component-pdfviewer/dist/esm/loader.js';
+      defineCustomElements();
+    </script>
+    <style>
+      pdf-viewer {
+        height:100%;
+        width:100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" style="width:800px;height:600px;max-width:100%;">
+      <pdf-viewer 
+        showthumbnailviewer="true"
+        url="./sample.pdf"
+      ></pdf-viewer>
+      <div style="padding:5px;">Powered by Dynamic Web TWAIN</div>
+    </div>
+    <script>
+      let DWObject;
+      const PDFViewer = document.querySelector('pdf-viewer');
+      const webTWAINReady = async (e) => {
+        DWObject = e.detail;
+      }
+      PDFViewer.addEventListener("webTWAINReady",webTWAINReady);
+    </script>
+  </body>
+</html>

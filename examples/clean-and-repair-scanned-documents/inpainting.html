@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Inpainting</title>
+    <style>
+
+    </style>
+  </head>
+  <body>
+    <h2>Image Inpainting</h2>
+    <label>
+      Select a mask image:
+      <br/>
+      <input type="file" id="maskfile" name="maskfile" onchange="filesSelected('mask')"/>
+    </label>
+    <label>
+      Select an src image:
+      <br/>
+      <input type="file" id="srcfile" name="srcfile" onchange="filesSelected('src')"/>
+    </label>
+    <button onclick="inpaint()">Inpaint</button>
+    <div>
+      <img alt="mask" id="mask"/>
+      <img alt="src" id="src"/>
+    </div>
+    <div>
+      <canvas id="maskCanvas"></canvas>
+      <canvas id="output"></canvas>
+    </div>
+    <script type="text/javascript" src="inpaint.js"></script>
+    <script type="text/javascript" src="heapqueue.js"></script>
+    <script>
+      function getImageData(img){
+        var c = document.getElementById('maskCanvas')
+        c.width = img.width;
+        c.height = img.height;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0)
+        var imageData = ctx.getImageData(0, 0, c.width, c.height);
+        console.log("mask");
+        console.log(imageData);
+        return imageData;
+      }
+
+      function inpaint(){
+        // Load the input image
+        let srcImg = document.getElementById("src");
+        let maskImg = document.getElementById("mask");
+        var c = document.getElementById('output')
+        c.width = srcImg.width;
+        c.height = srcImg.height;
+        document.body.appendChild(c)
+        var ctx = c.getContext('2d');
+        ctx.drawImage(srcImg, 0, 0)
+        var blah = ctx.getImageData(0, 0, c.width, c.height);
+        console.log("blah");
+        console.log(blah);
+        var width = blah.width, height = blah.height;
+        var maskImageData = getImageData(maskImg);
+
+        var mask_u8 = new Uint8Array(width * height);
+        for(var i = 0; i < maskImageData.data.length / 4; i++){
+          var r = maskImageData.data[4 * i];
+          var g = maskImageData.data[4 * i + 1];
+          var b = maskImageData.data[4 * i + 2];
+          if(r > 0 || g > 0 || b > 0){
+            var rad = 6
+            for(var dx = -rad; dx <= rad; dx++){
+              for(var dy = -rad; dy <= rad; dy++){
+                if(dx * dx + dy * dy <= rad * rad){
+                  mask_u8[i + dx + dy * width] = 1;
+                }
+              }
+            }
+          }
+        }
+        console.log(mask_u8)
+        console.log(blah)
+        for(var channel = 0; channel < 3; channel++){
+          var img_u8 = new Uint8Array(width * height)
+          for(var n = 0; n < blah.data.length; n+=4){
+            img_u8[n / 4] = blah.data[n + channel]
+          }
+          InpaintTelea(width, height, img_u8, mask_u8)
+          for(var i = 0; i < img_u8.length; i++){
+            blah.data[4 * i + channel] = img_u8[i]
+          }  
+        }
+
+        
+        // render result back to canvas
+        for(var i = 0; i < img_u8.length; i++){
+          blah.data[4 * i + 3] = 255;
+        }
+          
+        ctx.putImageData(blah, 0, 0);
+      }
+
+      async function filesSelected(id){
+        let filesInput = document.getElementById(id+"file");
+        let files = filesInput.files;
+        if (files.length>0) {
+          const file = files[0];
+          const blob = await readFileAsBlob(file);
+          const url = URL.createObjectURL(blob);
+          document.getElementById(id).src = url;
+        }
+      }
+
+      function readFileAsBlob(file){
+        return new Promise((resolve, reject) => {
+          const fileReader = new FileReader();
+          fileReader.onload = async function(e){
+            //const blob = window.dataURLtoBlob(e.target.result);
+            const response = await fetch(e.target.result);
+            const blob = await response.blob();
+            resolve(blob);
+          };
+          fileReader.onerror = function () {
+            reject('oops, something went wrong.');
+          };
+          fileReader.readAsDataURL(file); 
+        })
+      }
+    </script>
+  </body>
+</html>

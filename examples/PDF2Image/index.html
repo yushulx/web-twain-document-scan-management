@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Convert PDF to Images</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+    <style>
+      #dwtcontrolContainer {
+        width: 360px;
+        height: 480px;
+      }
+
+      .options {
+        width: 360px;
+        border:  1px solid gray;
+        border-radius: 5px;
+        margin: 10px 0;
+        padding: 10px;
+      }
+
+      .viewer {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .info {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div>
+        <input class="loadFilesButton" type="button" value="Load Files" onclick="LoadFiles();" />
+        <input class="editButton" type="button" value="Edit" onclick="Edit();" />
+        <input class="downloadButton" type="button" value="Download as JPG Files" onclick="Download();" />
+      </div>
+      <div class="options">
+        PDF Rasterizer Options:
+        <br/>
+        <label>
+          Convert mode:
+          <select id="modeSelect">
+            <option>Auto</option>
+            <option>Image only</option>
+            <option>Render all</option>
+          </select>
+        </label>
+        <br/>
+        <label>
+          Render annotations:
+          <input type="checkbox" id="renderAnnotationCheckbox" />
+        </label>
+        <br/>
+        <label>
+          Password:
+          <input type="password" id="password" />
+        </label>
+        <br/>
+        <label>
+          Resolution:
+          <select id="resolutionSelect">
+            <option>200</option>
+            <option>300</option>
+            <option>600</option>
+          </select>
+        </label>
+      </div>
+      <div class="viewer">
+        <div id="dwtcontrolContainer"></div>
+        <div class="info"></div>
+      </div>
+    </div>
+    <script>
+      let DWObject;
+      Dynamsoft.DWT.AutoLoad = false;
+      Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+      Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+      init();
+
+      function init(){
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer',Width: 270, Height: 350 }];
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+          console.log("ready");
+          DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+          DWObject.Viewer.width = "100%";
+          DWObject.Viewer.height = "100%";
+          DWObject.SetViewMode(1,1);
+          DWObject.RegisterEvent('OnBufferChanged',function (bufferChangeInfo) {
+            updateImageInfo();
+          });
+        });
+        Dynamsoft.DWT.Load();
+      }
+
+      function updateImageInfo(){
+        let index = DWObject.CurrentImageIndexInBuffer;
+        let info = "Info of the selected image\n";
+        info = info + "Bitdepth: "+DWObject.GetImageBitDepth(index) + "\n";
+        info = info + "Width: "+DWObject.GetImageWidth(index) + "\n";
+        info = info + "Height: "+DWObject.GetImageHeight(index);
+        document.getElementsByClassName("info")[0].innerText = info;
+      }
+
+      function LoadFiles(){
+        if (DWObject) {
+          let convertMode;
+          let convertModeSelect = document.getElementById("modeSelect");
+          if (convertModeSelect.selectedIndex === 0) {
+            convertMode = Dynamsoft.DWT.EnumDWT_ConvertMode.CM_AUTO;
+          }else if (convertModeSelect.selectedIndex === 1) {
+            convertMode = Dynamsoft.DWT.EnumDWT_ConvertMode.CM_IMAGEONLY;
+          }else{
+            convertMode = Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL;
+          }
+          let password = document.getElementById("password").value;
+          let renderAnnotations = document.getElementById("renderAnnotationCheckbox").checked;
+          let resolution = parseInt(document.getElementById("resolutionSelect").selectedOptions[0].innerText);
+          let readerOptions = {
+              convertMode: convertMode,
+              password: password,
+              renderOptions: {
+                resolution: resolution,
+                renderAnnotations: renderAnnotations
+              }
+          };
+          console.log(readerOptions);
+          DWObject.Addon.PDF.SetReaderOptions(readerOptions);
+          DWObject.IfShowFileDialog = true; //"Open File" dialog will be opened.
+          DWObject.LoadImageEx(
+            "", //file name can be empty if "Open File" dialog is called.
+            Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF,
+            function () {
+              console.log("success");
+            },
+            function (errorCode, errorString) {
+              console.log(errorString);
+            }
+          );
+        }
+      }
+
+      function Edit(){
+        if (DWObject){
+          const imageEditor = DWObject.Viewer.createImageEditor();
+          imageEditor.show();
+        }
+      }
+
+      async function Download(){
+        if (DWObject) {
+          DWObject.IfShowFileDialog = false;
+          for (let index = 0; index < DWObject.HowManyImagesInBuffer; index++) {
+            DWObject.SelectImages([index]);
+            let blob = await getBlob();
+            downloadBlob((index+1)+".jpg",blob);
+          }
+        }
+      }
+
+      function downloadBlob(filename,blob){
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+
+      function getBlob(){
+        return new Promise((resolve, reject) => {
+          if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1) {
+            //If so, convert the image to Gray
+            DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+          }
+          DWObject.ConvertToBlob([DWObject.CurrentImageIndexInBuffer],Dynamsoft.DWT.EnumDWT_ImageType.IT_JPG,
+            function(blob){
+              resolve(blob);
+            },
+            function(_errorCode, errorString){
+              reject(errorString);
+            }
+          )
+        })
+      }
+    </script>
+  </body>
+</html>

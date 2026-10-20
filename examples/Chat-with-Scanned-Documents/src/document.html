@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web TWAIN + Tesseract OCR Demo</title>
+  <meta name="description" content="A light foundation for your next frontend project based on webpack.">
+  <style>
+    #dwtcontrolcontainer {
+      width: 320px;
+      height: 400px;
+    }
+    .app {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .document-scanner {
+      margin-right: 2em;
+    }
+
+    #status {
+      margin-left: 1em;
+    }
+
+    .modal {
+      position:fixed;
+      left: 20px;
+      top: 20px;
+      width: calc(100% - 40px);
+      height: calc(100% - 40px);
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 9998;
+      visibility: hidden;
+    }
+
+    .modal.active {
+      visibility: inherit;
+    }
+
+    .input-modal {
+      display: flex;
+      align-items: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 150px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 9999;
+      visibility: hidden;
+    }
+
+    .input-modal.active {
+      visibility: inherit;
+    }
+
+    .chat-window {
+      height: calc(100% - 40px);
+      overflow: auto;
+    }
+
+    .close-btn {
+      position: absolute;
+      right: 10px;
+      top: 10px; 
+    }
+
+    .question {
+      display: flex;
+    }
+
+    .answer {
+      display: flex;
+    }
+
+    .dialog {
+      padding: 10px;
+      margin: 10px;
+      border: 1px solid gray;
+      border-radius: 5px;
+    }
+
+    .chat-input {
+      height: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Chat with Scanned Documents</h2>
+  <div class="app">
+    <div class="document-scanner">
+      <div>Document Scanner:</div>
+      <button class="scan-btn">Scan</button>
+      <button class="edit-btn">Edit</button>
+      <button class="load-btn">Load Files</button>
+      <button class="save-pdf-btn">Save as PDF</button>
+      <div id="dwtcontrolcontainer"></div>
+    </div>
+    <div class="ocr">
+      <span>Tesseract:</span>
+      <span id="status"></span>
+      <div>
+        <button class="ocr-btn">OCR Selected</button>
+        <button class="batch-ocr-btn">OCR All</button>
+        <label for="skip-processed-chk">Skip processed
+          <input id="skip-processed-chk" type="checkbox"/>
+        </label>
+        <button class="download-text-btn">Download Text</button>
+      </div>
+      <div class="text"></div>
+    </div>
+  </div>
+  <button class="save-btn">Save to IndexedDB</button>
+  <button class="rebuild-btn">Rebuild VectorStore</button>
+  <button class="set-apikey-btn">Set APIKey</button>
+  <div>
+    <button class="chat-btn">Start Chat</button>
+  </div>
+  <div class="modal">
+    <button class="close-btn">X</button>
+    <div class="chat-window"></div>
+    <div class="chat-input">
+      <input style="margin-left:10px;height:100%;width:calc(100% - 110px);" type="text" id="question"/>
+      <button class="query-btn"  style="height:100%;width:80px;">Query</button>
+    </div>
+  </div>
+  <div class="input-modal">
+    <div style="padding:10px;">
+      Please input your OpenAI's key:
+      <input type="text" id="apikey"/>
+      <button class="save-apikey-btn">Save</button>
+    </div>
+  </div>
+</body>
+</html>

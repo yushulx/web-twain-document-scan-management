@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic Web TWAIN Sample</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <style>
+      .editor {
+        height:200px;
+        border:1px solid black;
+      }
+
+      .editor img {
+        max-height: 100px;
+      }
+
+      img {
+        max-height: 200px;
+      }
+    </style>
+    <script src="script.js"></script>
+</head>
+<body>
+  <div>Click the floating action button to reveal the scanner modal.</div>
+  Editable container:
+  <div class="editor" contenteditable="true">
+  </div>
+  <script>
+    window.onload = function(){
+      DWTExtension.load({});
+      DWTExtension.addButton();
+      DWTExtension.host = "dwt.azurewebsites.net";
+      DWTExtension.port = "443";
+    }
+  </script>
+</body>
+</html>

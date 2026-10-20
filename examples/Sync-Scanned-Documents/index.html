@@ -1,0 +1,375 @@
+<html>
+
+<head>
+    <title>Hello World</title>
+    <!--<script src="Resources/dynamsoft.webtwain.initiate.js"> </script>
+    <script src="Resources/dynamsoft.webtwain.config.js"> </script>-->
+    <script type="text/javascript" src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+    <script src="Dropbox-sdk.min.js"></script>
+    <script src="utils.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+</head>
+
+<body>
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+    <br/>
+    <input type="button" value="Save Selected (JPG)" onclick="SaveSelected();" />
+    <input type="button" value="Save All (JPG)" onclick="SaveAll(0);" />
+    <input type="button" value="Save All (PDF)" onclick="SaveAllAsPDF();" />
+    
+    <br/>
+    <a href="" id="dropbox-authlink" target="_blank" class="button" style="display:none;">Authenticate</a>
+    <a href="" id="onedrive-authlink" target="_blank" class="button" style="display:none;">Authenticate</a>
+    <input type="button" value="Upload to Dropbox (PDF)" onclick="ConvertAndUpload(this.value);"/>
+    <input type="button" value="Upload to Onedrive (PDF)" onclick="ConvertAndUpload(this.value);"/>
+    <br/>
+    <label>Path: <input type="text" id="path" name="path" onchange="UpdatePath(this.value)"></label>
+    <div id="status"></div>
+    <div id="dwtcontrolContainer"></div>
+    <script type="text/javascript">
+        var DWObject;
+        var path="";
+        var saveAll=false;
+        LoadAuthHref();
+        ResetCookieIfExpire();
+        window.onload = function() {
+            Dynamsoft.DWT.Containers = [{ContainerId: "dwtcontrolContainer", Width: "270px", Height: "350px"}];
+            //Dynamsoft.DWT.ProductKey = "t0149KQMAAEuKf181h8Tt/nPBGDJIIGm7R/hxF3KTIkQLSOL0VKYUpLTRPpkmamQkxv4cIk/hcJy/xeeTAlO8eSSZKwnrf7zy2BCOwWYio/rQGFbzMqO4ev72+Rqb9c+8UT86fRrDCaNjY/vpGzfztUP6mVvDCaNj42ZujL/nXIaEQyH76aVnOGF0bM7Md8OQKDHkD3uXotg=";
+            if (Dynamsoft.Lib.env.bMobile){
+                Dynamsoft.DWT.UseLocalService = false;
+            }else{
+                Dynamsoft.DWT.UseLocalService = true;
+            }
+            Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+            Dynamsoft.DWT.Load();
+        };
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+            DWObject.IfShowFileDialog = true;
+            DWObject.RegisterEvent("OnGetFilePath", (isSave, filesCount, index, directory, _fn) => {
+                if (directory === "" && _fn === "") {
+                    console.log("User cancelled the operation.")
+                    DWObject.IfShowFileDialog = true;
+                } else {                    
+                    document.getElementById("path").value=directory;
+                    path=directory;
+                    DWObject.IfShowFileDialog = false;
+                    if (saveAll){
+                        SaveAll(1);
+                    }
+                }
+            });
+        }
+
+        function AcquireImage() {
+            if (DWObject) {
+                if (Dynamsoft.Lib.env.bMobile) {
+                    DWObject.LoadImageEx('', 5,
+                        function() {
+                            console.log('success');
+                        },
+                        function(errCode, error) {
+                            alert(error);
+                        }
+                    );
+                } else {
+                    DWObject.SelectSource(function() {
+                            DWObject.OpenSource();
+                            DWObject.AcquireImage();
+                        },
+                        function() {
+                            console.log("SelectSource failed!");
+                        }
+                    );
+                }
+            }
+        }
+
+        function SaveSelected(){
+            saveAll=false;
+            SaveAsJPEG(getFormattedDate(),DWObject.CurrentImageIndexInBuffer);
+        }
+        
+        function SaveAsJPEG(filename,index) {
+            //If the current image is B&W
+            //1 is B&W, 8 is Gray, 24 is RGB
+            if (DWObject.GetImageBitDepth(index) == 1)
+                //If so, convert the image to Gray
+                DWObject.ConvertToGrayScale(index);
+            var fullPath = path+"/"+filename+".jpg";
+            console.log(fullPath);
+            DWObject.SaveAsJPEG(fullPath, index,
+                function() {
+                    console.log('Successful!');
+                },
+                function(errCode, errString) {
+                    console.log(errString);
+                }
+            );
+
+        }
+        
+        function SaveAll(startIndex){
+            saveAll=true;
+            if (DWObject.IfShowFileDialog==true){
+                var filename = getFormattedDate()+"-1";
+                SaveAsJPEG(filename,0);
+            }else {
+                for (var i = startIndex; i < DWObject.HowManyImagesInBuffer; i++) {
+                    var filename = getFormattedDate()+"-"+(i+1);
+                    SaveAsJPEG(filename,i);
+                }
+            }
+        }
+        
+        function SaveAllAsPDF(){
+            var fullPath = path+"/"+getFormattedDate()+".pdf";
+            DWObject.SaveAllAsPDF(fullPath,
+                function() {
+                    console.log('Successful!');
+                },
+                function(errCode, errString) {
+                    console.log(errString);
+                }
+            );
+        }
+        
+        function getFormattedDate() {
+            var date = new Date();
+
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            var hour = date.getHours();
+            var min = date.getMinutes();
+            var sec = date.getSeconds();
+
+            month = (month < 10 ? "0" : "") + month;
+            day = (day < 10 ? "0" : "") + day;
+            hour = (hour < 10 ? "0" : "") + hour;
+            min = (min < 10 ? "0" : "") + min;
+            sec = (sec < 10 ? "0" : "") + sec;
+
+            var str = date.getFullYear().toString() + month + day + hour + min + sec;
+
+            return str;
+        }
+        
+        function UpdatePath(value){
+            path=value;
+            DWObject.IfShowFileDialog = false;
+        }
+        
+        function imageIndices(){
+            var indices = [];
+            for (var i=0;i<DWObject.HowManyImagesInBuffer;i++){
+                indices.push(i)
+            }
+            
+            return indices;
+        }
+        
+        function LoadAuthHref(){
+            LoadDropboxAuthHref();
+            LoadOnedriveAuthHref();
+        }
+        
+        function ResetCookieIfExpire(){
+            var time = new Date().getTime();
+            var dropbox_expires = parseInt(getCookie("dropbox_expires"));
+            var onedrive_expires = parseInt(getCookie("onedrive_expires"));
+            if (time>onedrive_expires){
+                document.cookie="onedrive_expires=;";
+            }
+            if (time>dropbox_expires){
+                document.cookie="dropbox_expires=;";
+            }
+        }
+        
+        function LoadDropboxAuthHref(){
+            // Set the login anchors href using dbx.getAuthenticationUrl()
+            var CLIENT_ID = '0x25v6jq71m3cpm';
+            var dbx = new Dropbox.Dropbox({ clientId: CLIENT_ID });
+            var authUrl = dbx.auth.getAuthenticationUrl(  window.location.href+'auth.html')
+              .then((authUrl) => {
+                document.getElementById('dropbox-authlink').href = authUrl;
+              }
+            )
+        }
+        
+        function LoadOnedriveAuthHref(){
+            var CLIENT_ID = '2dfb77f2-ed6e-4a06-8219-1d3140b1a30e';
+            var redirectUri = window.location.href+"auth_onedrive.html";
+            var authurl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id="+CLIENT_ID+"&scope=Files.ReadWrite.All&response_type=token&redirect_uri="+redirectUri;
+            document.getElementById('onedrive-authlink').href = authurl;
+        }
+
+        function getAccessTokenFromCookie(drive) {
+            var name = "dropbox_token";
+            if (drive=="onedrive"){
+                name="onedrive_token";
+            }
+            var token = getCookie(name);
+            return token;
+        }
+        
+        function getCookie(cname)
+        {
+            var name = cname + "=";
+            var ca = document.cookie.split(';');
+            for(var i=0; i<ca.length; i++) 
+            {
+              var c = ca[i].trim();
+              if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+            }
+            return "";
+        }
+
+        // If the user was just redirected from authenticating, the urls hash will
+        // contain the access token.
+        function isAuthenticated(drive) {
+            return !!getAccessTokenFromCookie(drive);
+        }
+        
+        function updateStatus(status){
+            document.getElementById("status").innerText=status;
+        }
+        
+        function ConvertAndUpload(value){
+            var indices = imageIndices();
+            var filename = getFormattedDate()+".pdf";
+            var drive="dropbox";
+            if (value.indexOf("Onedrive")!=-1){
+                drive="onedrive";
+            }
+            if (isAuthenticated(drive)){
+                DWObject.ConvertToBlob(
+                    indices,
+                    Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF,
+                    function(result, indices, type) {
+                        UploadPDF(drive, result,filename);
+                    },
+                    function(errorCode, errorString) {
+                        console.log(errorString);
+                    }
+                );
+            }else{
+                alert("Please authorize first.");
+                document.getElementById(drive+"-authlink").click();
+            }
+        }
+        
+        function ConvertToPNGAndUpload(value){
+            var filename = getFormattedDate()+".png";
+            DWObject.ConvertToBase64(
+                [DWObject.CurrentImageIndexInBuffer],
+                Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+                function(result, indices, type) {
+                    launchSaveToOneDrive("data:image/png;base64,"+result.getData(0, result.getLength()),filename);
+                },
+                function(errorCode, errorString) {
+                    console.log(errorString);
+                }
+            );
+        }
+        
+        function UploadPDF(drive, blob,filename){
+            if (drive=="onedrive"){
+                UploadPDFtoOnedrive(blob,filename);
+            }else{
+                UploadPDFtoDropbox(blob,filename);
+            }
+        }
+        
+        function UploadPDFtoDropbox(blob,filename){
+            updateStatus("uploading...");
+            var file = new File([blob], filename,{type:"application/pdf", lastModified:new Date().getTime()});
+            console.log(file);
+            var ACCESS_TOKEN = getAccessTokenFromCookie("dropbox");
+            var dbx = new Dropbox.Dropbox({ accessToken: ACCESS_TOKEN });
+            dbx.filesUpload({path: '/' + file.name, contents: file})
+              .then(function(response) {
+                alert('File uploaded!');
+                updateStatus("");
+                console.log(response);
+          })
+          .catch(function(error) {
+            console.error(error);
+          });
+        }
+        
+        function UploadPDFtoOnedrive(blob,filename){
+            UploadLargeFileToOnedrive(blob,filename);
+        }
+        
+        function UploadLargeFileToOnedrive(blob,filename){
+            updateStatus("uploading...");
+            var ACCESS_TOKEN = getAccessTokenFromCookie("onedrive");
+            var endpoint = "https://graph.microsoft.com/v1.0"
+            var url = endpoint+"/me/drive/root:/ScannedDocuments/"+filename+":/createUploadSession";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url);
+            xhr.setRequestHeader("Authorization", "Bearer " + ACCESS_TOKEN);
+
+            xhr.onreadystatechange = function () {
+               if (xhr.readyState === 4) {
+                  console.log(xhr.status);
+                  console.log(xhr.responseText);
+                  if (xhr.status==200){
+                      UploadToSession(JSON.parse(xhr.responseText).uploadUrl,blob,filename);
+                  }
+               }};
+            xhr.send();
+        }
+        
+        function UploadToSession(session,blob,filename){
+            console.log(session);
+            var ACCESS_TOKEN = getAccessTokenFromCookie("onedrive");
+            var file = new File([blob], filename,{type:"application/pdf", lastModified:new Date().getTime()});
+            console.log(file);
+            var xhr = new XMLHttpRequest();
+            xhr.open("PUT", session);
+            xhr.setRequestHeader("Authorization", "Bearer " + ACCESS_TOKEN);
+            xhr.setRequestHeader("Content-Length", file.size);
+            xhr.setRequestHeader("Content-Range", "bytes 0-"+(file.size-1)+"/"+file.size);
+            
+            xhr.onreadystatechange = function () {
+               if (xhr.readyState === 4) {
+                  console.log(xhr.status);
+                  console.log(xhr.responseText);
+                  updateStatus("");
+                  if (xhr.status==201){
+                      alert("uploaded");
+                  }else{
+                      alert("failed");
+                  }
+               }};
+            xhr.send(blob);
+        }
+        
+        
+        //for files smaller than 4mb
+        function UploadSmallFileToOnedrive(blob,filename){
+            var ACCESS_TOKEN = getAccessTokenFromCookie("onedrive");
+            var url = "https://graph.microsoft.com/v1.0"+"/me/drive/root:/ScannedDocuments/"+filename+":/content";
+            var xhr = new XMLHttpRequest();
+            xhr.open("PUT", url);
+            xhr.setRequestHeader("Authorization", "Bearer " + getAccessTokenFromCookie("onedrive"));
+            xhr.setRequestHeader("Content-Type", "application/pdf");
+
+            xhr.onreadystatechange = function () {
+               if (xhr.readyState === 4) {
+                  console.log(xhr.status);
+                  console.log(xhr.responseText);
+                  updateStatus("");
+                  if (xhr.status==201){
+                      alert("uploaded");
+                  }else{
+                      alert("failed");
+                  }
+               }};
+            xhr.send(blob);
+        }
+    </script>
+</body>
+
+</html>

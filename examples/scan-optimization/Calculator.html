@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Image Size Calculator</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <label>
+        Image width:
+        <input type="text" class="width"/>
+      </label>
+      <br/>
+      <label>
+        Image height:
+        <input type="text" class="height"/>
+      </label>
+      <br/>
+      <label>
+        Bitdepth:
+        <input type="text" class="bitdepth"/>
+      </label>
+      <br/>
+      <button onclick="calc()">Calculate</button>
+      <div>
+        Result:<span id="result"></span>
+      </div>
+    </div>
+    <script>
+      function calc(){
+        let width = document.getElementsByClassName("width")[0].value;
+        let height = document.getElementsByClassName("height")[0].value;
+        let bitdepth = document.getElementsByClassName("bitdepth")[0].value;
+        let size = width * height * bitdepth / 8;
+        document.getElementById("result").innerText = (size/1024).toFixed(2)+"KB";
+      }
+    </script>
+  </body>
+</html>

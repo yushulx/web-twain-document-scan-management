@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pan and Zoom</title>
+</head>
+<style>
+  .container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+  
+  .container h2 {
+    text-align: center;
+  }
+
+  #viewer {
+    width: 320px;
+    height: 480px;
+    padding: 10px;
+    border: 1px solid black;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+  }
+
+  #image {
+    margin: auto;
+  }
+</style>
+<body>
+  <div class="container">
+    <h2>Image Pan and Zoom</h2>
+    <label>
+      Select an image:
+      <br/>
+      <input type="file" id="files" name="files" onchange="filesSelected()"/>
+    </label>
+    <div id="viewer">
+      <img id="image" draggable="false"/>
+    </div>
+  </div>
+</body>
+<script>
+let currentPercent;
+let downPoint;
+let downScrollPosition;
+let previousDistance;
+let pointerPoint;
+let touchDataStore = {moveable:false};
+let pinching = false;
+let resizing = false;
+registerEvents();
+
+async function filesSelected(){
+  let filesInput = document.getElementById("files");
+  let files = filesInput.files;
+  if (files.length>0) {
+    const file = files[0];
+    const blob = await readFileAsBlob(file);
+    const url = URL.createObjectURL(blob);
+    loadImage(url);
+  }
+}
+
+function zoom(zoomin,percentOffset){
+  let offset = percentOffset ?? 0.1;
+  if (zoomin) {
+    currentPercent = currentPercent + offset;
+  }else{
+    currentPercent = currentPercent - offset;
+  }
+  currentPercent = Math.max(0.1,currentPercent);
+  resizeImage(currentPercent);
+}
+
+function registerEvents(){
+  let img = document.getElementById("image");
+  let viewer = document.getElementById("viewer");
+  img.addEventListener("wheel",function(e){
+    if (e.ctrlKey || e.metaKey) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        zoom(true);
+      }else{
+        zoom(false);
+      }
+    }
+  });
+  img.addEventListener("pointerdown",function(e){
+    previousDistance = undefined;
+    downPoint = {x:e.clientX,y:e.clientY};
+    pointerPoint = {x:e.offsetX,y:e.offsetY};
+    downScrollPosition = {x:viewer.scrollLeft,y:viewer.scrollTop}
+  });
+  img.addEventListener("pointerup",function(e){
+    downPoint = undefined;
+    pointerPoint = undefined;
+  });
+  img.addEventListener("pointerleave",function(e){
+    pointerPoint = undefined;
+    downPoint = undefined;
+  });
+  img.addEventListener("mousemove",function(e){
+    pointerPoint = {x:e.offsetX,y:e.offsetY};
+    pan(e);
+  });
+  img.addEventListener("touchmove",function(event){
+    if (!touchDataStore.moveable) {
+      return;
+    }
+
+    event.preventDefault();
+    let touches = event.touches;
+    let events = touches[0];
+    let events2 = touches[1];
+    if (touches.length === 2) {
+      pinching = true;
+      if (!touchDataStore.clientX2) {
+        touchDataStore.clientX2 = events2.clientX;
+      }
+      if (!touchDataStore.clientY2) {
+        touchDataStore.clientY2 = events2.clientY;
+      }
+
+      let getDistance = function (start, stop) {
+        return Math.hypot(stop.x - start.x, stop.y - start.y);
+      };
+
+      let zoom = getDistance({
+        x: events.clientX,
+        y: events.clientY
+      }, {
+        x: events2.clientX,
+        y: events2.clientY
+      }) /
+      getDistance({
+        x: touchDataStore.clientX,
+        y: touchDataStore.clientY
+      }, {
+        x: touchDataStore.clientX2,
+        y: touchDataStore.clientY2
+      });
+      let newScale = touchDataStore.originScale * zoom;
+      resizeImage(newScale);
+    }else{
+      pan(event.touches[0]);
+    }
+  });
+  img.addEventListener('touchstart', function (event) {
+    let touches = event.touches;
+    let events = touches[0];
+    let events2 = touches[1];
+    event.preventDefault();
+    touchDataStore.clientX = events.clientX;
+    touchDataStore.clientY = events.clientY;
+    touchDataStore.moveable = true;
+    if (events2) {
+      touchDataStore.clientX2 = events2.clientX;
+      touchDataStore.clientY2 = events2.clientY;
+    }
+    touchDataStore.originScale = currentPercent || 1;
+  });
+  img.addEventListener('touchend', function () {
+    touchDataStore.moveable = false;
+    pinching = false;
+    delete touchDataStore.clientX2;
+    delete touchDataStore.clientY2;
+  });
+}
+
+function pan(e) {
+  if (downPoint) {
+    let offsetX = e.clientX - downPoint.x;
+    let offsetY = e.clientY - downPoint.y;
+    let newScrollLeft = downScrollPosition.x - offsetX;
+    let newScrollTop = downScrollPosition.y - offsetY;
+    viewer.scrollLeft = newScrollLeft;
+    viewer.scrollTop = newScrollTop;
+  }
+}
+
+function loadImage(url){
+  let img = document.getElementById("image");
+  img.src = url;
+  img.onload = function(){
+    let viewer = document.getElementById("viewer");
+    let percent = 1.0;
+    resizeImage(percent);
+  }
+}
+
+function resizeImage(percent){
+  if (resizing) {
+    return;
+  }
+  resizing = true;
+  setTimeout(function(){
+    currentPercent = percent;
+    let img = document.getElementById("image");
+    let viewer = document.getElementById("viewer");
+    let percentX;
+    let percentY;
+    if (pointerPoint && pointerPoint.x) {
+      percentX = pointerPoint.x / img.clientWidth;
+      percentY = pointerPoint.y / img.clientHeight;
+    } else {
+      percentX = viewer.scrollLeft / viewer.scrollWidth;
+      percentY = viewer.scrollTop / viewer.scrollHeight;
+    }
+    let ratio = img.naturalWidth/img.naturalHeight;
+    let newWidth = (viewer.offsetWidth - padding()) * percent
+    img.style.width = newWidth + "px";
+    img.style.height = newWidth/ratio + "px";
+    //keepScrollbarPosition(percentX,percentY); //not stable
+    resizing = false;
+  },20)
+}
+
+function padding(){
+  let borderWidth = 1;
+  let padding = 10;
+  return borderWidth*2 + padding*2;
+}
+
+function keepScrollbarPosition(percentX,percentY) {
+  let width = viewer.scrollWidth - viewer.clientWidth - padding();
+  let height = viewer.scrollHeight - viewer.clientHeight - padding();
+  viewer.scrollTo(width * percentX, height * percentY);
+}
+
+function readFileAsBlob(file){
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.onload = async function(e){
+      //const blob = window.dataURLtoBlob(e.target.result);
+      const response = await fetch(e.target.result);
+      const blob = await response.blob();
+      resolve(blob);
+    };
+    fileReader.onerror = function () {
+      reject('oops, something went wrong.');
+    };
+    fileReader.readAsDataURL(file); 
+  })
+}
+</script>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resize an Image with JavaScript</title>
+  <style>
+  .imageContainer {
+    overflow: auto;
+  }
+
+  #imageHidden {
+    display: none;
+  }
+
+  #canvasHidden {
+    display: none;
+  }
+  
+  input[type=number] {
+    max-width: 50px;
+  }
+
+  .dwtcontrols {
+    display: none;
+  }
+  </style>
+</head>
+<body>
+  <div class="home">
+    <h2>Rotate an Image</h2>
+    <button id="loadFileButton">Load a File</button>
+    <br/>
+    <input style="display:none;" type="file" id="file" onchange="loadImageFromFile();" accept=".jpg,.jpeg,.png,.bmp" />
+    <label>
+      Width:
+      <input type="number" onfocus="this.oldvalue = this.value;" id="widthInput">
+    </label>
+    <label>
+      Height:
+      <input type="number" onfocus="this.oldvalue = this.value;" id="heightInput">
+    </label>
+    <label>
+      Keep aspect:
+      <input type="checkbox" id="keepAspectCheckbox">
+    </label>
+    <label>
+      Preset resolutions:
+      <select id="presetSelect">
+        <option value="2480x3508">A4 300 DPI</option>
+        <option value="1654x2339">A4 200 DPI</option>
+        <option value="827x1169">A4 100 DPI</option>
+        <option value="1013x638">ID Card 300 DPI</option>
+        <option value="676x425">ID Card 200 DPI</option>
+        <option value="338x213">ID Card 100 DPI</option>
+      </select>
+    </label>
+    <br/>
+    <label>
+      Method:
+      <select id="methodSelect">
+        <option>Canvas</option>
+        <option>Dynamic Web TWAIN</option>
+      </select>
+    </label>
+    <div class="dwtcontrols">
+      <label>
+        Interpolation Method:
+        <select id="interpolationMethodSelect">
+          <option value="1">Nearest Neighbour</option>
+          <option value="2">Bilinear</option>
+          <option value="3">Bicubic</option>
+          <option value="5" selected>Best Quality</option>
+        </select>
+      </label>
+    </div>
+    <button id="resizeButton">Resize</button>
+    <div class="imageContainer">
+      <img id="image"/>
+      <img id="imageHidden"/>
+    </div>
+    <canvas id="canvasHidden"></canvas>
+  </div>
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <script>
+    let DWObject;
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; //one-day trial
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    let widthInput = document.getElementById("widthInput");
+    let heightInput = document.getElementById("heightInput");
+
+    document.getElementById("loadFileButton").addEventListener("click",function(){
+      document.getElementById("file").click();
+    })
+
+    document.getElementById("resizeButton").addEventListener("click",function(){
+      if (document.getElementById("methodSelect").selectedIndex === 0){
+        resizeImageWithCanvas();
+      }else{
+        resizeImageWithWebTWAIN();
+      }
+    })
+
+    document.getElementById("methodSelect").addEventListener("change",async function(e){
+      toggleControlsForDWT();
+    })
+
+    document.getElementById("presetSelect").selectedIndex = -1;
+    document.getElementById("presetSelect").addEventListener("change",async function(e){
+      usePreset();
+    })
+
+    widthInput.addEventListener("change",function(e){
+      console.log(e);
+      if (document.getElementById("keepAspectCheckbox").checked) {
+        syncSize(widthInput.oldvalue,heightInput.oldvalue,widthInput.value,undefined);
+      }
+      this.oldvalue = this.value;
+    })
+
+    heightInput.addEventListener("change",function(e){
+      console.log(e);
+      if (document.getElementById("keepAspectCheckbox").checked) {
+        syncSize(widthInput.oldvalue,heightInput.oldvalue,undefined,heightInput.value);
+      }
+      this.oldvalue = this.value;
+    })
+
+    function syncSize(oldWidth, oldHeight, newWidth, newHeight){
+      if (oldWidth && oldHeight) {
+        const ratio = parseInt(oldWidth)/parseInt(oldHeight);
+        if (newWidth) {
+          newHeight = newWidth/ratio;
+          heightInput.value = parseInt(newHeight);
+          heightInput.oldvalue = heightInput.value;
+        }else if (newHeight) {
+          newWidth = newHeight * ratio;
+          widthInput.value = parseInt(newWidth);
+          widthInput.oldvalue = widthInput.value;
+        }
+      }
+    }
+
+    function usePreset(){
+      let presetSelect = document.getElementById("presetSelect");
+      if (presetSelect.selectedIndex != -1) {
+        let selectedOption = presetSelect.selectedOptions[0];
+        widthInput.value = selectedOption.value.split("x")[0];
+        heightInput.value = selectedOption.value.split("x")[1];
+        presetSelect.selectedIndex = -1;
+      }
+    }
+
+    function loadImageFromFile(){
+      let fileInput = document.getElementById("file");
+      let files = fileInput.files;
+      if (files.length == 0) {
+        return;
+      }
+      let file = files[0];
+      fileReader = new FileReader();
+      fileReader.onload = function(e){
+        document.getElementById("image").src = e.target.result;
+        document.getElementById("imageHidden").onload = function(){
+          widthInput.value = document.getElementById("imageHidden").naturalWidth;
+          heightInput.value = document.getElementById("imageHidden").naturalHeight;
+          widthInput.oldvalue = widthInput.value;
+          heightInput.oldvalue = heightInput.value;
+        }
+        document.getElementById("imageHidden").src = e.target.result;
+      };
+      fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+      };
+      fileReader.readAsDataURL(file);
+    }
+
+    function resizeImageWithCanvas(){
+      const imageHidden = document.getElementById("imageHidden");
+      const canvas = document.getElementById("canvasHidden");
+      canvas.width = widthInput.value;
+      canvas.height = heightInput.value;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(imageHidden, 0, 0, imageHidden.naturalWidth, imageHidden.naturalHeight,0,0,canvas.width,canvas.height);
+      image.src = canvas.toDataURL();
+    }
+
+    function initDWT(){
+      return new Promise((resolve, reject) => {
+        const title = document.querySelector("h2").innerText;
+        document.querySelector("h2").innerText = "Loading Dynamic Web TWAIN...";
+        Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          DWObject = obj;
+          document.querySelector("h2").innerText = title;
+          resolve();
+        },
+        function(err) {
+          console.log(err);
+          document.querySelector("h2").innerText = "Failed to load Dynamic Web TWAIN";
+          reject(err);
+        }
+      );
+      })
+    }
+
+    async function resizeImageWithWebTWAIN(){
+      if (!DWObject) {
+        await initDWT();
+      }
+      DWObject.RemoveAllImages();
+      let file = document.getElementById("file").files[0];
+      let buffer = await file.arrayBuffer();
+      DWObject.LoadImageFromBinary(buffer,
+      function(){
+        const method = document.getElementById("interpolationMethodSelect").selectedOptions[0].value;
+        DWObject.ChangeImageSize(0,widthInput.value,heightInput.value,method,
+        function(){
+          document.getElementById("image").src = DWObject.GetImageURL(0);
+        },
+        function(errorCode, errorString){
+          console.log(errorString);
+        });
+      },
+      function(errorCode, errorString){
+        console.log(errorString);
+      })
+    }
+
+    function toggleControlsForDWT(){
+      const controls = document.getElementsByClassName("dwtcontrols")[0];
+      if (document.getElementById("methodSelect").selectedIndex === 1) {
+        controls.style.display = "inline-block";
+      }else{
+        controls.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>

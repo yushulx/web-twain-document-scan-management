@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DDV - HelloWorld</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/ddv.css">
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/ddv.js"></script>
+</head>
+<style>
+  #app {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    flex-direction: column;
+  }
+
+  #container {
+    width: 90%;
+    height: 640px;
+  }
+
+  .buttons {
+    display: flex;
+  }
+
+  .controls {
+    margin: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+</style>
+<body>
+  <div id="app">
+    <h2>Document Viewer Demo - Flatten Annotation with Font</h2>
+    <div class="controls">
+      <div>
+        <label>
+          Select font:
+          <input type="file" id="file" onchange="loadFontFromFile();" accept=".ttf,.woff2,.otf" />
+        </label>
+      </div>
+      <div>
+        <button class="saveButton" onclick="saveAsFlattenedPDF();">Save</button>
+      </div>
+    </div>
+    <div id="container"></div>
+  </div>
+</body>
+<script>
+  let editViewer;
+  let addedFontNames = [];
+  init();
+  async function init(){
+    // Public trial license which is valid for 24 hours
+    // You can request a 30-day trial key from https://www.dynamsoft.com/customer/license/trialLicense/?product=ddv
+    Dynamsoft.DDV.Core.license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+    Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/engine";
+    // Preload DDV Resource
+    Dynamsoft.DDV.Core.loadWasm();
+    await Dynamsoft.DDV.Core.init();
+    editViewer = new Dynamsoft.DDV.EditViewer({
+      container: "container"
+    });
+  }
+
+  async function loadFontFromFile(){
+    let fileInput = document.getElementById("file");
+    let files = fileInput.files;
+    if (files.length == 0) {
+      return;
+    }
+    let file = files[0];
+    const blob = new Blob([file], { type: file.type });
+    addedFontNames = await Dynamsoft.DDV.addFonts([blob]);
+
+  }
+
+  async function saveAsFlattenedPDF(){
+    const pdfSettings = {
+      saveAnnotation: "flatten"
+    };
+
+    // Save the whole document to a multi-page PDF file with the specified pdf settings.
+    const result = await editViewer.currentDocument.saveToPdf(pdfSettings);
+    downloadBlob(result, "flattened.pdf");
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'download';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } 
+</script>
+</html>

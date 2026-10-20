@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rotate an Image with JavaScript</title>
+  <style>
+  .home {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+  .imageContainer {
+    max-width: 50%;
+    overflow: auto;
+  }
+
+  #image {
+    max-width: 100%;
+    transform-origin: center;
+  }
+
+  #imageHidden {
+    display: none;
+  }
+
+  #canvasHidden {
+    display: none;
+  }
+  .dwtcontrols {
+    display: none;
+    align-items: center;
+    flex-direction: column;
+  }
+  </style>
+</head>
+<body>
+  <div class="home">
+    <h2>Rotate an Image</h2>
+    <button id="loadFileButton">Load a File</button>
+    <input style="display:none;" type="file" id="file" onchange="loadImageFromFile();" accept=".jpg,.jpeg,.png,.bmp" />
+    <label for="degree">Degree (0-360):</label>
+    <input type="number" id="degree" name="degree" min="0" max="360" value="0"/>
+    <label>
+      Method:
+      <select id="methodSelect">
+        <option>CSS</option>
+        <option>Canvas</option>
+        <option>Dynamic Web TWAIN</option>
+      </select>
+    </label>
+    <div class="dwtcontrols">
+      <label>
+        Interpolation Method:
+        <select id="interpolationMethodSelect">
+          <option value="1">Nearest Neighbour</option>
+          <option value="2">Bilinear</option>
+          <option value="3">Bicubic</option>
+          <option value="5" selected>Best Quality</option>
+        </select>
+      </label>
+      <button id="detectSkewButton">Detect Skew</button>
+    </div>
+    <div class="imageContainer">
+      <img id="image"/>
+      <img id="imageHidden"/>
+    </div>
+    <canvas id="canvasHidden"></canvas>
+  </div>
+  <script src="https://unpkg.com/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <!--<script src="/node_modules/dwt/dist/dynamsoft.webtwain.min.js"></script>-->
+  <script>
+    let DWObject;
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; //one-day trial
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    
+
+    function init(){
+      return new Promise((resolve, reject) => {
+        const title = document.querySelector("h2").innerText;
+        document.querySelector("h2").innerText = "Loading Dynamic Web TWAIN...";
+        Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          DWObject = obj;
+          document.querySelector("h2").innerText = title;
+          resolve();
+        },
+        function(err) {
+          console.log(err);
+          document.querySelector("h2").innerText = "Failed to load Dynamic Web TWAIN";
+          reject(err);
+        }
+      );
+      })
+     
+    }
+
+    document.getElementById("loadFileButton").addEventListener("click",function(){
+      document.getElementById("file").click();
+    })
+    document.getElementById("detectSkewButton").addEventListener("click",function(){
+      detectSkew();
+    })
+    document.getElementById("degree").addEventListener("change",function(e){
+      const degree = e.target.value;
+      rotateImage(degree);
+    })
+    document.getElementById("methodSelect").addEventListener("change",async function(e){
+      if (document.getElementById("methodSelect").selectedIndex === 2) {
+        if (!DWObject) {
+          await init();
+        }
+        toggleControlsForDWT();
+      }
+      rotateImage(document.getElementById("degree").value);
+    })
+    document.getElementById("interpolationMethodSelect").addEventListener("change",function(e){
+      rotateImage(document.getElementById("degree").value);
+    })
+
+    function toggleControlsForDWT(){
+      const controls = document.getElementsByClassName("dwtcontrols")[0];
+      if (document.getElementById("methodSelect").selectedIndex === 2) {
+        controls.style.display = "flex";
+      }else{
+        controls.style.display = "none";
+      }
+    }
+
+    function rotateImage(degree){
+      const method = document.getElementById("methodSelect").selectedIndex;
+      const image = document.getElementById("image");
+      const imageHidden = document.getElementById("imageHidden");
+      if (!image.src) {
+        return;
+      }
+      if (method == 0) {
+        image.src = imageHidden.src;
+        image.style.transform = 'rotate(' + degree + 'deg)';
+      }else if (method == 1){
+        image.style.transform = '';
+        const canvas = document.getElementById("canvasHidden");
+        const imgWidth = imageHidden.naturalWidth;
+        const imgHeight = imageHidden.naturalHeight;
+        const rect = getBoundingRect(imgWidth,imgHeight,degree);
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        const ctx = canvas.getContext("2d");
+        ctx.translate(canvas.width/2,canvas.height/2);
+        ctx.rotate(Degree2Rad(degree));
+        ctx.drawImage(imageHidden, -imgWidth/2, -imgHeight/2);
+        image.src = canvas.toDataURL();
+      }else if (method == 2){
+        image.style.transform = '';
+        rotateImageWithDWT(degree);
+      }
+    }
+
+    function getBoundingRect(width,height,degree) {
+      let rad = Degree2Rad(degree);
+      let points = [{x:0,y:0},{x:width,y:0},{x:width,y:height},{x:0,y:height}];
+      let minX = undefined;
+      let minY = undefined;
+      let maxX = 0;
+      let maxY = 0;
+      for (let index = 0; index < points.length; index++) {
+        const point = points[index];
+        const rotatedPoint = getRotatedPoint(point.x,point.y,width/2,height/2,rad);
+        if (minX == undefined) {
+          minX = rotatedPoint.x;
+        }else{
+          minX = Math.min(rotatedPoint.x,minX);
+        }
+        if (minY == undefined) {
+          minY = rotatedPoint.y;
+        }else{
+          minY = Math.min(rotatedPoint.y,minY);
+        }
+        maxX = Math.max(rotatedPoint.x,maxX);
+        maxY = Math.max(rotatedPoint.y,maxY);
+      }
+      let rectWidth = maxX - minX;
+      let rectHeight = maxY - minY;
+      let rect = {
+        x: minX,
+        y: minY,
+        width: rectWidth,
+        height: rectHeight
+      }
+      console.log(rect);
+      return rect;
+    }
+
+    function Degree2Rad(degree){
+      return degree*Math.PI/180
+    }
+
+    //https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
+    function getRotatedPoint(x,y,cx,cy,theta){
+      let tempX = x - cx;
+      let tempY = y - cy;
+
+      // now apply rotation
+      let rotatedX = tempX*Math.cos(theta) - tempY*Math.sin(theta);
+      let rotatedY = tempX*Math.sin(theta) + tempY*Math.cos(theta);
+
+      // translate back
+      x = rotatedX + cx;
+      y = rotatedY + cy;
+      let point = {x:x,y:y};
+      console.log(point);
+      return point;
+    }
+
+    function loadImageFromFile(){
+      let fileInput = document.getElementById("file");
+      let files = fileInput.files;
+      if (files.length == 0) {
+        return;
+      }
+      let file = files[0];
+      fileReader = new FileReader();
+      fileReader.onload = function(e){
+        document.getElementById("image").src = e.target.result;
+        document.getElementById("imageHidden").src = e.target.result;
+      };
+      fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+      };
+      fileReader.readAsDataURL(file);
+    }
+
+    function rotateImageWithDWT(degree){
+      return new Promise(async (resolve, reject) => {
+        if (DWObject) {
+          DWObject.RemoveAllImages();
+          let file = document.getElementById("file").files[0];
+          let buffer = await file.arrayBuffer();
+          DWObject.LoadImageFromBinary(buffer,
+          function(){
+            const method = document.getElementById("interpolationMethodSelect").selectedOptions[0].value;
+            DWObject.RotateEx(0,degree,false,method,
+            function(){
+              document.getElementById("image").src = DWObject.GetImageURL(0);
+            },
+            function(errorCode, errorString){
+              reject(errorString);
+            });
+          },
+          function(errorCode, errorString){
+            reject(errorString);
+          })
+          
+        }else{
+          reject();
+        }
+      })
+    }
+
+    function convertToBase64WithDWT(){
+      return new Promise((resolve, reject) => {
+        if (DWObject) {
+          DWObject.ConvertToBase64([0],3,
+          function(result, indices, type){
+            resolve(result.getData(0,result.getLength()));
+          },
+          function(errorCode, errorString){
+            resolve(errorString);
+          })
+        }else{
+          reject();
+        }
+      })
+    }
+
+    async function detectSkew(){
+      if (DWObject) {
+        DWObject.RemoveAllImages();
+        let file = document.getElementById("file").files[0];
+        if (!file) {
+          return;
+        }
+        let buffer = await file.arrayBuffer();
+        DWObject.LoadImageFromBinary(buffer,
+        function(){
+          DWObject.GetSkewAngle(
+            0,
+            function(angle) {
+              document.getElementById("degree").value = 360+angle;
+              rotateImage(360+angle);
+            },
+            function(errorCode, errorString) {
+              console.log(errorString);
+            }
+          );
+        },
+        function(errorCode, errorString){
+          console.log(errorString);
+        })
+       
+      }
+    }
+  </script>
+</body>
+</html>

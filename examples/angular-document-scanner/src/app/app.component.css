@@ -1,0 +1,49 @@
+:host {
+  display: flex;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-layout {
+  height: 100vh;
+}
+
+nz-header {
+  padding: 0;
+  width: 100%;
+  z-index: 2;
+}
+
+nz-content {
+  margin: 12px;
+}
+
+nz-page-header-title {
+  color:white;
+}
+
+.left {
+  height: 100%;
+  float: left;
+  width: calc(100% - 300px);
+}
+
+.right {
+  margin-left: 10px;
+  width:290px;
+  float:right;
+}
+
+.toolbar {
+  padding: 5px;
+  font-size: 21px;
+  background-color: #fafafa;
+  border: 1px solid #d9d9d9;
+  border-bottom: 0;
+  border-radius: 2px;
+}
+
+nz-select {
+  width: 100%;
+}

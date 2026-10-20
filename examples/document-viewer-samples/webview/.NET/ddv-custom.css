@@ -1,0 +1,32 @@
+.custom-pagination {
+    position: absolute;
+    height: 30px !important;
+    bottom: 10px;
+    left: 50%;
+    transform: translate(calc(-50% + 90px), 0px);
+    border-radius: 1px;
+    background: linear-gradient(#fefefe, #f1f1f1) !important;
+    opacity: 1;
+    width: 150px;
+    border: 1px solid #c9c9c9;
+    --ddv-pagination-font-color: black !important;
+    .ddv-button
+
+{
+    font-weight: bold;
+}
+
+.ddv-pagination-separator {
+    min-width: 1px !important;
+    width: 1px !important;
+}
+
+.ddv-pagination-goto {
+    background-color: transparent !important;
+}
+
+}
+
+.custom-pagination:hover {
+    background: linear-gradient(#fefefe, #e8e8e8) !important;
+}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DDV - HelloWorld</title>
+  <script src="https://cdn.jsdmirror.com/npm/dynamsoft-capture-vision-bundle/dist/dcv.bundle.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/dynamsoft-document-viewer@latest/dist/ddv.css">
+  <script src="https://cdn.jsdmirror.com/npm/dynamsoft-document-viewer@latest/dist/ddv.js"></script>
+</head>
+<style>
+  #app {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    flex-direction: column;
+  }
+
+  #container {
+    width: 90%;
+    height: 640px;
+  }
+
+  .buttons {
+    display: flex;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <div id="container"></div>
+  </div>
+</body>
+<script>
+  let editViewer;
+  init();
+  async function init() {
+    // Public trial license which is valid for 24 hours
+    // You can request a 30-day trial key from https://www.dynamsoft.com/customer/license/trialLicense/?product=ddv
+    Dynamsoft.DDV.Core.license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+    Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdmirror.com/npm/dynamsoft-document-viewer@latest/dist/engine";
+    // Preload DDV Resource
+    Dynamsoft.DDV.Core.loadWasm();
+
+    await Dynamsoft.DDV.Core.init();
+
+    // Initialize DCV bundle's ImageProcessor (separate from DDV)
+    Dynamsoft.Core.CoreModule.loadWasm();
+
+    let config = {
+      type: Dynamsoft.DDV.Elements.Layout,
+      flexDirection: "column",
+      className: "ddv-edit-viewer-desktop",
+      children: [
+        {
+          type: Dynamsoft.DDV.Elements.Layout,
+          className: "ddv-edit-viewer-header-desktop",
+          children: [{
+            type: Dynamsoft.DDV.Elements.Layout,
+            enableScroll: true,
+            children: [
+              Dynamsoft.DDV.Elements.ThumbnailSwitch,
+              Dynamsoft.DDV.Elements.Zoom,
+              Dynamsoft.DDV.Elements.FitMode,
+              Dynamsoft.DDV.Elements.DisplayMode,
+              Dynamsoft.DDV.Elements.RotateLeft,
+              Dynamsoft.DDV.Elements.RotateRight,
+              Dynamsoft.DDV.Elements.Crop,
+              Dynamsoft.DDV.Elements.Filter,
+              Dynamsoft.DDV.Elements.Undo,
+              Dynamsoft.DDV.Elements.Redo,
+              Dynamsoft.DDV.Elements.DeleteCurrent,
+              Dynamsoft.DDV.Elements.DeleteAll,
+              Dynamsoft.DDV.Elements.Pan,
+              Dynamsoft.DDV.Elements.TextSelectionMode,
+              Dynamsoft.DDV.Elements.SeparatorLine,
+              Dynamsoft.DDV.Elements.AnnotationSet,
+            ]
+          },
+          {
+            type: Dynamsoft.DDV.Elements.Layout,
+            children: [
+              {
+                type: Dynamsoft.DDV.Elements.Pagination,
+                className: "ddv-edit-viewer-pagination-desktop",
+              },
+              Dynamsoft.DDV.Elements.Load,
+              Dynamsoft.DDV.Elements.Download,
+              Dynamsoft.DDV.Elements.Print,
+              Dynamsoft.DDV.Elements.TextSearchPanelSwitch
+            ]
+          }
+          ]
+        },
+        {
+          type: Dynamsoft.DDV.Elements.Layout,
+          flexDirection: "row",
+          children: [
+            Dynamsoft.DDV.Elements.MainView,
+            Dynamsoft.DDV.Elements.TextSearchPanel
+          ]
+        }
+      ]
+    }
+    const imageFilter = new MyImageFilter();
+    Dynamsoft.DDV.setProcessingHandler("imageFilter", imageFilter);
+    editViewer = new Dynamsoft.DDV.EditViewer({
+      container: "container",
+      uiConfig: config
+    });
+  }
+  class MyImageFilter extends Dynamsoft.DDV.ImageFilter {
+    async applyFilter(image, type) {
+      if (type == "adaptive") {
+        try {
+          const DSImageData = await Dynamsoft.Utility.ImageIO.readFromFile(image.data);
+          let binary = await Dynamsoft.Utility.ImageProcessor.convertToBinaryLocal(DSImageData, 0, 10, true);
+          let file = await Dynamsoft.Utility.ImageIO.saveToFile(binary, "filtered_image.png", false);
+          const pureBlob = new Blob([file], { type: file.type });
+          const newImage = {
+            data: pureBlob,
+            height: image.height,
+            width: image.width,
+            type: 4
+          }
+          return super.applyFilter(newImage, "blackAndWhite");
+        } catch (e) {
+          console.error("applyFilter error:", e);
+          throw e;
+        }
+      } else {
+        return super.applyFilter(image, type);
+      }
+    };
+    get defaultFilterType() {
+      return "original"
+    };
+    querySupported() {
+      let supported = super.querySupported();
+      supported.push({
+        type: "adaptive",
+        label: "Adaptive"
+      });
+      return supported;
+    };
+    destroy() {
+      super.destroy()
+    };
+  }
+
+</script>
+
+</html>

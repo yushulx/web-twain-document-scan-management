@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document Scanner</title>
+  <meta name="description" content="A light foundation for your next frontend project based on webpack.">
+  <script type="module">
+    import { defineCustomElements } from 'https://cdn.jsdelivr.net/npm/camera-preview-component/dist/esm/loader.js';
+    defineCustomElements();
+  </script>
+</head>
+<body>
+  <h1>Document Scanner</h1>
+  <div>
+    <label for="serverURL">
+      Server URL:
+      <input type="value" id="serverURL" value="https://demo.scannerproxy.com/"/>
+    </label>
+  </div>
+  <div>
+    <button id="connect-button">Connect</button>
+  </div>
+  <div>
+    <label for="services-select">
+      Services:
+      <select id="services-select"></select>
+    </label>
+  </div>
+  <div>
+    <label for="devices-select">
+      Devices:
+      <select id="devices-select"></select>
+    </label>
+  </div>
+  <button id="scan-button">Scan</button>
+  <button id="take-photo-button">Take a Photo</button>
+  <button id="save-button">Save as PDF</button>
+  <span id="status"></span>
+  <div id="document-viewer"></div>
+  <div>
+    <div>
+      Operate selected page:
+    </div>
+    <button id="move-up-button">Move Up</button>
+    <button id="move-down-button">Move Down</button>
+    <button id="remove-button">Remove</button>
+    <button id="rotate-button">Rotate</button>
+    <button id="download-button">Download</button>
+  </div>
+  <camera-preview style="display:none;">
+    <button id="close-button">Close</button>
+    <button id="capture-button">Take Photo</button>
+  </camera-preview>
+</body>
+</html>
