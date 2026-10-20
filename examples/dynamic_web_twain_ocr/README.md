@@ -25,11 +25,23 @@ https://github.com/user-attachments/assets/e19f3847-35d4-4341-8cfc-5d4ac02a7a6d
 ### Installation
 
 1. Clone or download this project to your local machine
+
+   The Dynamic Web TWAIN runtime is loaded from the jsDelivr CDN
+   (`dwt@19.4.4`), so no SDK files are stored in this folder. Only the OCRKit
+   addon shim (`Resources/addon`) is versioned with the sample.
+
 2. Set the license key in the inline config block of `index.html`:
 
    ```javascript
    Dynamsoft.DWT.ProductKey = "LICENSE-KEY";
    ```
+
+   The desktop service installers are served from
+   `https://unpkg.com/dwt@19.4.4/dist/dist/` through
+   `Dynamsoft.DWT.ServiceInstallerLocation`. For a fully offline deployment,
+   download the [full package](https://www.dynamsoft.com/web-twain/downloads/),
+   copy its `dist` folder to `Resources/`, and point both `ResourcesPath` and
+   `ServiceInstallerLocation` at it.
 
 3. Start a web server in the project directory:
    ```bash

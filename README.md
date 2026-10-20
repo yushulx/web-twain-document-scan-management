@@ -22,19 +22,20 @@ The `examples/pdf-image-annotation` sample runs as a hosted, no-install demo —
 
 ## Installation
 
-- [Full Package](https://www.dynamsoft.com/web-twain/downloads/)
-    1. Extract the package and copy the `Resources` folder to your project.
-    
-    2. Import the scripts in your HTML file:
-        ```html
-        <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
-        <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
-    
-        <script type="text/javascript"> 
-            Dynamsoft.DWT.ResourcesPath = 'Resources/';
-        </script>
-        ```
-    
+The samples load the SDK from a CDN or from npm, so the desktop service installers are not
+stored in this repository. Pick one of the three options below.
+
+- CDN (recommended):
+  ```html
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+
+  <script type="text/javascript">
+      Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist';
+      // jsDelivr refuses files above 20 MB, so the service installers come from unpkg.
+      Dynamsoft.DWT.ServiceInstallerLocation = 'https://unpkg.com/dwt@19.4.4/dist/dist/';
+  </script>
+  ```
+
 - [NPM Package](https://www.npmjs.com/package/dwt)
 
     1. Install the package:
@@ -52,14 +53,23 @@ The `examples/pdf-image-annotation` sample runs as a hosted, no-install demo —
         </script>
         ```
 
-- CDN: 
-  ```html
-  <script type="text/javascript" src="https://unpkg.com/dwt/dist/dynamsoft.webtwain.min.js"> </script>
+- [Full Package](https://www.dynamsoft.com/web-twain/downloads/) — offline deployment only.
 
-  <script type="text/javascript"> 
-    Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
-  </script>
-  ```
+    1. Extract the package and copy its `dist` folder (the one containing
+       `dynamsoft.webtwain.min.js` and the `dist/` installers) to your project.
+
+    2. Import the script in your HTML file:
+        ```html
+        <script type="text/javascript" src="Resources/dynamsoft.webtwain.min.js"></script>
+    
+        <script type="text/javascript"> 
+            Dynamsoft.DWT.ResourcesPath = 'Resources/';
+        </script>
+        ```
+
+    > Since v19 the SDK is a single `dynamsoft.webtwain.min.js` file. The older
+    > `dynamsoft.webtwain.initiate.js` + `dynamsoft.webtwain.config.js` pair no longer exists;
+    > configuration is passed in an inline script block.
     
 ## Windows Virtual Scanner 
 Install the [Virtual Scanner](https://download.dynamsoft.com/tool/twainds.win32.installer.2.1.3.msi) on Windows. The virtual scanner allows you to test the document scanning features without a physical scanner.
