@@ -666,7 +666,7 @@ async function activate(license) {
         // parsing must be registered before Core.init(), otherwise
         // Dynamsoft.DDV.annotationManager has no annotation types available.
         Dynamsoft.DDV.Core.license = license;
-        // Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.0/dist/engine";
+        // Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";
         Dynamsoft.DDV.use(Dynamsoft.DDV.AnnotationPlugin);
         Dynamsoft.DDV.use(Dynamsoft.DDV.ImagePdfParserPlugin);
         await Dynamsoft.DDV.Core.init();
@@ -675,7 +675,7 @@ async function activate(license) {
         registerAnnotationEvents();
 
         // Initialize Dynamic Web TWAIN
-        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt@19.4.3/dist/';
+        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt@19.4.4/dist/';
         Dynamsoft.DWT.ProductKey = license;
 
         Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {

@@ -92,7 +92,7 @@ The production output is written to `dist/`.
 DDV's WASM engine is loaded from:
 
 ```text
-https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.0/dist/engine
+https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine
 ```
 
 For offline or controlled deployments, copy `node_modules/dynamsoft-document-viewer/dist/engine` into your static assets and update `ENGINE_RESOURCE_PATH` in `src/main.ts`.
@@ -110,13 +110,13 @@ DDV.use(ImagePdfParserPlugin);
 Dynamic Web TWAIN is loaded from:
 
 ```text
-https://cdn.jsdelivr.net/npm/dwt@19.4.3/dist/dynamsoft.webtwain.min.js
+https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist/dynamsoft.webtwain.min.js
 ```
 
 The DWT Service installer location is:
 
 ```text
-https://unpkg.com/dwt@19.4.3/dist/dist
+https://unpkg.com/dwt@19.4.4/dist/dist
 ```
 
 For production, Dynamsoft recommends extracting the service installers from the SDK package and self-hosting them so the service version matches the deployed DWT runtime.

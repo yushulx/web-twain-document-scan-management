@@ -1,6 +1,6 @@
 {
     "name": "dynamsoft-document-viewer",
-    "version": "2.0.0",
+    "version": "5.0.1",
     "author": {
         "name": "Dynamsoft",
         "url": "https://www.dynamsoft.com"
@@ -10,20 +10,9 @@
     "devDependencies": {},
     "directories": {},
     "files": [
-		"Api Reference.html",
-		"legal.txt",
-		"dist/ddv.css",
-		"dist/ddv.es.js",
-		"dist/ddv.js",
-		"dist/index.d.ts",
-		"dist/engine/ddv-crypto.wasm",
-		"dist/engine/ddv-imagecore.wasm",
-		"dist/engine/ddv-imageio.wasm",
-		"dist/engine/ddv-imageio.worker.js",
-		"dist/engine/ddv-imageproc.wasm",
-		"dist/engine/ddv-imageproc-simd.wasm",
-		"dist/engine/ddv-pdfreader.wasm",
-		"dist/engine/dls.license.dialog.html"
+        "Api Reference.html",
+        "legal.txt",
+        "dist"
     ],
     "homepage": "https://www.dynamsoft.com/document-viewer/docs/introduction/index.html",
     "keywords": [
@@ -50,10 +39,30 @@
         "url": "https://github.com/Dynamsoft/document-viewer-javascript"
     },
     "types": "dist/index.d.ts",
-	"type": "module",
-	"sideEffects": false,
-    "private":false,
-	"dependencies": {
-        "dynamsoft-core": "*"
-    }
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/ddv.es.js",
+            "default": "./dist/ddv.es.js"
+        },
+        "./dist/ddv.css": "./dist/ddv.css",
+        "./annotation": {
+            "types": "./dist/plugins/ddv-plugin-annotation.es.d.ts",
+            "import": "./dist/plugins/ddv-plugin-annotation.es.js",
+            "default": "./dist/plugins/ddv-plugin-annotation.es.js"
+        },
+        "./camera": {
+            "types": "./dist/plugins/ddv-plugin-camera.es.d.ts",
+            "import": "./dist/plugins/ddv-plugin-camera.es.js",
+            "default": "./dist/plugins/ddv-plugin-camera.es.js"
+        },
+        "./imagePdf": {
+            "types": "./dist/plugins/ddv-plugin-image-pdf.es.d.ts",
+            "import": "./dist/plugins/ddv-plugin-image-pdf.es.js",
+            "default": "./dist/plugins/ddv-plugin-image-pdf.es.js"
+        }
+    },
+    "sideEffects": false,
+    "private": false
 }

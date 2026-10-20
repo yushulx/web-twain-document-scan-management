@@ -16,7 +16,7 @@ function initializeDWT() {
     Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; // Replace with your actual license key
 
     // Configure DWT with latest v19.0 settings
-    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.2.0/dist";
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
     Dynamsoft.DWT.Containers = [{
         WebTwainId: 'dwtObject',
         ContainerId: 'dwtcontrolContainer',

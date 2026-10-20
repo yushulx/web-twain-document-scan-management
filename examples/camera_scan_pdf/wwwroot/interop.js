@@ -18,6 +18,9 @@ window.initSDK = async function (license) {
     try {
         //let baseUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
         Dynamsoft.DDV.Core.engineResourcePath = "/libs/dynamsoft-document-viewer/dist/engine";
+        Dynamsoft.DDV.Core.license = license;
+        Dynamsoft.DDV.use(Dynamsoft.DDV.AnnotationPlugin);
+        Dynamsoft.DDV.use(Dynamsoft.DDV.ImagePdfParserPlugin);
         Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
         Dynamsoft.DDV.Core.loadWasm();
         await Dynamsoft.License.LicenseManager.initLicense(license, true);

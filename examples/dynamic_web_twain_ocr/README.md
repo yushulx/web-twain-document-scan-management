@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/e19f3847-35d4-4341-8cfc-5d4ac02a7a6d
 ### Installation
 
 1. Clone or download this project to your local machine
-2. Set the license key in `Resources/dynamsoft.webtwain.config.js`:
+2. Set the license key in the inline config block of `index.html`:
 
    ```javascript
    Dynamsoft.DWT.ProductKey = "LICENSE-KEY";

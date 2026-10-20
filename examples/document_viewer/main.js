@@ -348,7 +348,8 @@ async function showViewer() {
 async function activate(license) {
     try {
         Dynamsoft.DDV.Core.license = license;
-        Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@1.1.0/dist/engine";
+        Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";
+        Dynamsoft.DDV.use(Dynamsoft.DDV.ImagePdfParserPlugin);
         await Dynamsoft.DDV.Core.init();
         Dynamsoft.DDV.setProcessingHandler("imageFilter", new Dynamsoft.DDV.ImageFilter());
         docManager = Dynamsoft.DDV.documentManager;

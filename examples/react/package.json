@@ -7,7 +7,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
-    "dwt": "^18.5.0-patch-20240517",
+    "dwt": "^19.4.4",
     "dwt-react-simple": "file:",
     "ncp": "^2.0.0",
     "react": "^16.13.1",

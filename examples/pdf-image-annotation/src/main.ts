@@ -100,7 +100,7 @@ function resolveDemoLicense(): string {
 // offline/production hosting, copy the `dist/engine` folder locally and
 // point this at that path instead.
 const ENGINE_RESOURCE_PATH =
-  "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.0/dist/engine";
+  "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";
 
 async function initDDV(license: string): Promise<void> {
   const title = document.getElementById("init-title")!;

@@ -7,7 +7,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mobile Web Capture - Complete Document Capturing Workflow</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.css">
     <link rel="stylesheet" href="./index.css">
     <link rel="manifest" href="manifest.json">
 </head>
@@ -19,7 +19,9 @@
 <script src="https://cdn.jsdelivr.net/npm/dynamsoft-license@3.2.10/dist/license.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-normalizer@2.2.10/dist/ddn.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-router@2.2.10/dist/cvr.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@2.0.0/dist/ddv.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/plugins/ddv-plugin-annotation.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/plugins/ddv-plugin-image-pdf.js"></script>
 
 <script>
     if ('serviceWorker' in navigator) {
@@ -85,6 +87,8 @@
          */
 
         // Initialize DDV
+        Dynamsoft.DDV.use(Dynamsoft.DDV.AnnotationPlugin);
+        Dynamsoft.DDV.use(Dynamsoft.DDV.ImagePdfParserPlugin);
         await Dynamsoft.DDV.Core.init();
 
         // Configure document boundaries function

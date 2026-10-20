@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dwt": "^18.5.1"
+    "dwt": "^19.4.4"
   }
 }
