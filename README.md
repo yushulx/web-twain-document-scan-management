@@ -102,7 +102,6 @@ The samples below started life as standalone repositories linked from the
 [blog posts](https://www.dynamsoft.com/codepool/). They are kept here so the code that the
 articles reference is versioned and updated together with the rest of the repository.
 
-- [APEX Dynamic Web TWAIN](./examples/APEX-Dynamic-Web-TWAIN/)
 - [Burn PDF Annotation](./examples/Burn-PDF-Annotation/)
 - [Chat with Scanned Documents](./examples/Chat-with-Scanned-Documents/)
 - [Color Conversion](./examples/Color-Conversion-JavaScript/)
