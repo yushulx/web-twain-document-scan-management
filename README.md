@@ -27,12 +27,12 @@ stored in this repository. Pick one of the three options below.
 
 - CDN (recommended):
   ```html
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
 
   <script type="text/javascript">
-      Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist';
+      Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist';
       // jsDelivr refuses files above 20 MB, so the service installers come from unpkg.
-      Dynamsoft.DWT.ServiceInstallerLocation = 'https://unpkg.com/dwt@19.4.4/dist/dist/';
+      Dynamsoft.DWT.ServiceInstallerLocation = 'https://unpkg.com/dwt@19.5.0/dist/dist/';
   </script>
   ```
 

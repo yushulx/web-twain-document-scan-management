@@ -142,7 +142,7 @@ function getLicense() {
 
         // Configure DWT — use the latest v19.4.x
         Dynamsoft.DWT.ProductKey = license;
-        Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist';
+        Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist';
         Dynamsoft.DWT.AutoLoad = false;
         Dynamsoft.DWT.UseDefaultViewer = false;
 

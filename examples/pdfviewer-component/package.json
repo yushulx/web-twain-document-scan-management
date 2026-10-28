@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@stencil/core": "^3.0.0",
-    "dwt": "^19.4.4"
+    "dwt": "^19.5.0"
   },
   "devDependencies": {
     "@types/jest": "^27.5.2",

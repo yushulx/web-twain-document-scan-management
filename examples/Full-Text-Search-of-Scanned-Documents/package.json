@@ -60,7 +60,7 @@
   "dependencies": {
     "@babel/polyfill": "^7.12.1",
     "core-js": "^3.26.1",
-    "dwt": "^19.4.4",
+    "dwt": "^19.5.0",
     "flexsearch": "^0.7.31",
     "localforage": "^1.10.0",
     "tesseract.js": "^4.0.6"

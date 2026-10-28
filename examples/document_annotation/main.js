@@ -675,7 +675,7 @@ async function activate(license) {
         registerAnnotationEvents();
 
         // Initialize Dynamic Web TWAIN
-        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt@19.4.4/dist/';
+        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt@19.5.0/dist/';
         Dynamsoft.DWT.ProductKey = license;
 
         Dynamsoft.DWT.CreateDWTObjectEx({ "WebTwainId": "container" }, (obj) => {

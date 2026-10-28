@@ -323,7 +323,7 @@ async function correctOrientation() {
 }
 
 async function correctOrientationForOne(index) {
-    let result = await DWTObject.Addon.OCRKit.DetectPageOrientation(index);
+    let result = await DWTObject.Addon.OCRConnector.DetectPageOrientation(index);
     if (result.angle != 0) {
         DWTObject.Rotate(index, -result.angle, true);
     }
@@ -348,7 +348,7 @@ async function recognize() {
 
 async function recognizeOnePage(index) {
     let language = document.getElementById("language").value;
-    let result = await DWTObject.Addon.OCRKit.Recognize(index, { settings: { language: language } });
+    let result = await DWTObject.Addon.OCRConnector.Recognize(index, { settings: { language: language } });
     await saveOCRResult(result.imageID, result);
     printPrettyResult(result);
 }
@@ -369,7 +369,7 @@ function printPrettyResult(result) {
 
 async function checkOCRInstalled() {
     try {
-        let info = await DWTObject.Addon.OCRKit.GetInstalledOCRInfo();
+        let info = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
         if (info.version) {
             return true;
         }
@@ -386,9 +386,9 @@ async function saveAsPDF() {
         let format = document.getElementById('outputFormat').value;
         if (format === "extralayer") {
             let indicesOfAll = DWTObject.SelectAllImages();
-            await DWTObject.Addon.OCRKit.SaveToPath(indicesOfAll, Dynamsoft.DWT.EnumDWT_OCRKitOutputFormat.PDF_WITH_EXTRA_TEXTLAYER, "test");
+            await DWTObject.Addon.OCRConnector.SaveToPath(indicesOfAll, Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_WITH_EXTRA_TEXTLAYER, "test");
         } else {
-            await DWTObject.Addon.OCRKit.SaveToPath(DWTObject.SelectAllImages(), Dynamsoft.DWT.EnumDWT_OCRKitOutputFormat.PDF_PLAIN_TEXT, "test");
+            await DWTObject.Addon.OCRConnector.SaveToPath(DWTObject.SelectAllImages(), Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_PLAIN_TEXT, "test");
         }
     } catch (error) {
         alert(error.message);

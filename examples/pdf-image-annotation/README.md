@@ -110,13 +110,13 @@ DDV.use(ImagePdfParserPlugin);
 Dynamic Web TWAIN is loaded from:
 
 ```text
-https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist/dynamsoft.webtwain.min.js
+https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist/dynamsoft.webtwain.min.js
 ```
 
 The DWT Service installer location is:
 
 ```text
-https://unpkg.com/dwt@19.4.4/dist/dist
+https://unpkg.com/dwt@19.5.0/dist/dist
 ```
 
 For production, Dynamsoft recommends extracting the service installers from the SDK package and self-hosting them so the service version matches the deployed DWT runtime.

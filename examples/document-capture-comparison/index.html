@@ -325,7 +325,7 @@ DELETE {host}/api/device/scanners/jobs/{id}               — Delete job
                 <h3>1. TWAIN Scanner via Dynamic Web TWAIN <span class="lang-badge">JavaScript</span></h3>
                 <pre class="code-block"><code>// Initialize and scan with ADF + duplex (DWT v19+)
 Dynamsoft.DWT.ProductKey = "YOUR-LICENSE-KEY";
-Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist";
+Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist";
 Dynamsoft.DWT.AutoLoad = false;
 
 Dynamsoft.DWT.CreateDWTObjectEx(
@@ -483,7 +483,7 @@ await fetch(host + "/device/scanners/jobs/" + job.jobuid, { method: "DELETE" });
     <!-- DCV Bundle MUST load first (it overwrites globalThis.Dynamsoft={}) -->
     <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-bundle@3.6.3200/dist/dcv.bundle.min.js"></script>
     <!-- DWT loads second, it merges into existing Dynamsoft namespace (preserves DCV) -->
-    <script src="https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
 
     <script src="js/app.js?v=6"></script>
 </body>

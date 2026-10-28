@@ -3,20 +3,19 @@
 
 <head>
     <title>Dynamic Web TWAIN - OCR Demo</title>
-    <script src="https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist/dynamsoft.webtwain.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
     <script>
-        // Dynamic Web TWAIN 19.4.4 ships as a single file, so this sample loads the SDK
+        // Dynamic Web TWAIN 19.5.0 ships as a single file, so this sample loads the SDK
         // from the CDN instead of vendoring its ~140 MB desktop service installers.
         Dynamsoft.DWT.AutoLoad = true;
-        Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.4.4/dist";
+        Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist";
         // jsDelivr refuses files above 20 MB, so the service installers come from unpkg.
-        Dynamsoft.DWT.ServiceInstallerLocation = "https://unpkg.com/dwt@19.4.4/dist/dist/";
+        Dynamsoft.DWT.ServiceInstallerLocation = "https://unpkg.com/dwt@19.5.0/dist/dist/";
         Dynamsoft.DWT.Containers = [{ WebTwainId: '', ContainerId: 'dwtcontrolContainer', Width: 350, Height: 380 }];
         Dynamsoft.DWT.ProductKey = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
         Dynamsoft.DWT.IfAddMD5InUploadHeader = false;
         Dynamsoft.DWT.IfConfineMaskWithinTheViewer = true;
     </script>
-    <script src="Resources/addon/dynamsoft.webtwain.addon.ocrkit.js"></script>
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
     <link rel="stylesheet" href="css/style.css" />
 </head>

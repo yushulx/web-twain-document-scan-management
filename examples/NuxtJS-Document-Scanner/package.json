@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "dwt": "^19.4.4",
+    "dwt": "^19.5.0",
     "nuxt": "^3.15.2",
     "vue": "latest",
     "vue-router": "latest"

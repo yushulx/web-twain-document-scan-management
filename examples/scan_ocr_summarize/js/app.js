@@ -533,11 +533,11 @@ async function performOCR(imageIndex) {
 
     try {
         // Check if OCR is available
-        if (!DWTObject.Addon || !DWTObject.Addon.OCRKit) {
+        if (!DWTObject.Addon || !DWTObject.Addon.OCRConnector) {
             throw new Error('OCR add-on is not available. Please install the OCR resources.');
         }
 
-        const result = await DWTObject.Addon.OCRKit.Recognize(imageIndex, {
+        const result = await DWTObject.Addon.OCRConnector.Recognize(imageIndex, {
             settings: { language: language }
         });
 

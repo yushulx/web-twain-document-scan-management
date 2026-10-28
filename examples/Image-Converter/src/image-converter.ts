@@ -148,7 +148,7 @@ export class ImageConverter {
   initDWT(){
     Dynamsoft.DWT.AutoLoad = false;
     Dynamsoft.DWT.Containers = [];
-    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.4.4/dist";
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.5.0/dist";
     Dynamsoft.DWT.UseLocalService = false;
     let pThis = this;
     Dynamsoft.DWT.CreateDWTObjectEx(

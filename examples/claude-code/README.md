@@ -1,6 +1,6 @@
 # Web Document Scanner
 
-A simple yet powerful web-based document scanning application built with the latest Dynamic Web TWAIN SDK v19.4.4. This application allows users to scan documents directly from their web browser using TWAIN-compatible scanners with enhanced performance and image quality features.
+A simple yet powerful web-based document scanning application built with the latest Dynamic Web TWAIN SDK v19.5.0. This application allows users to scan documents directly from their web browser using TWAIN-compatible scanners with enhanced performance and image quality features.
 
 https://github.com/user-attachments/assets/ebe22c6b-03b2-443e-9cae-9854e29cd39d
 
@@ -91,7 +91,7 @@ https://github.com/user-attachments/assets/ebe22c6b-03b2-443e-9cae-9854e29cd39d
 ## Technical Details
 
 ### Dependencies
-- **Dynamic Web TWAIN SDK 19.4.4**: Latest version with enhanced scanning features
+- **Dynamic Web TWAIN SDK 19.5.0**: Latest version with enhanced scanning features
 - **HTML5**: Modern web standards
 - **CSS3**: Responsive design and animations
 - **Vanilla JavaScript**: No additional frameworks required
