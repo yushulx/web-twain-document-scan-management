@@ -1,0 +1,180 @@
+<html>
+  <head>
+    <style>
+      body {
+        padding: 20px;
+      }
+      #dwtcontrolContainer {
+        width: 380px;
+        height: 405px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+    <input type="button" value="Upload" onclick="upload();" />
+    <div id="dwtcontrolContainer"></div>
+    <input
+      type="button"
+      value="Convert to binary image"
+      onclick="binarizeImage();"
+    />
+    <input type="button" value="Rotate clockwise" onclick="rotateCW();" />
+    <input
+      type="button"
+      value="Rotate counter-clockwise"
+      onclick="rotateCCW();"
+    />
+    <script type="text/javascript">
+      let DWTObject;
+      LoadDWTByVersion();
+
+      async function LoadDWTByVersion(){
+        let version = await GetServiceVersion();
+        let license = window.prompt("Please input the license for version " + version + ". The default value is a one-day license.","DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9");
+        await loadLibrary("https://cdn.jsdelivr.net/npm/dwt@" + version + "/dist/dynamsoft.webtwain.min.js", "text/javascript");
+        let DWT;
+        if (Dynamsoft.WebTwainEnv) {
+          DWT = Dynamsoft.WebTwainEnv;
+        }else{
+          DWT = Dynamsoft.DWT;
+        };
+        DWT.AutoLoad = false;
+        DWT.IfCheckCssFiles = false;
+        DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '380px', Height: '400px' }];
+        DWT.ProductKey = license;
+        DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@" + version + "/dist";
+        if (version == "latest") {
+          Dynamsoft.DWT.ServiceInstallerLocation = 'https://unpkg.com/dwt@latest/dist/dist/';
+        }
+        DWT.Load();
+        DWT.RegisterEvent("OnWebTwainReady", function () {
+          DWTObject = DWT.GetWebTwain("dwtcontrolContainer");
+        });
+      }
+
+      async function GetServiceVersion(){
+        let majorVersions = ["dwt_16000000", "dwt_17000000", "dwt_18000000", "dwt_19000000"];
+        let uuid= (new Date()).getTime(); 
+        for (let index = 0; index < majorVersions.length; index++) {
+          const version = majorVersions[index];
+          try {
+            let response = await fetch("http://127.0.0.1:18622/fa/VersionInfo?ts=" + uuid, {
+                "body": "{\"id\":\"" + uuid + "\",\"method\":\"VersionInfo\",\"version\":\"" + version + "\",\"parameter\":[]}",
+                "method": "POST",
+            });
+            let data = await response.json();
+            console.log(data);
+            let versionParts = data.result[0].split(", ");
+            versionParts.splice(versionParts.length - 1, 1);
+            let jsVersion = versionParts.join(".");
+            return jsVersion;
+          } catch (error) {
+            continue;
+          }
+        } 
+        return "latest";
+      }
+              
+      function loadLibrary (src,type,id,data){
+        return new Promise(function (resolve, reject) {
+          let scriptEle = document.createElement("script");
+          scriptEle.setAttribute("type", type);
+          scriptEle.setAttribute("src", src);
+          if (id) {
+            scriptEle.id = id;
+          }
+          if (data) {
+            for (let key in data) {
+              scriptEle.setAttribute(key, data[key]);
+            }
+          }
+          document.body.appendChild(scriptEle);
+          scriptEle.addEventListener("load", () => {
+            console.log(src+" loaded")
+            resolve(true);
+          });
+          scriptEle.addEventListener("error", (ev) => {
+            console.log("Error on loading "+src, ev);
+            reject(ev);
+          });
+        });
+      }
+      
+      function AcquireImage() {
+        if (DWTObject) {
+          DWTObject.SelectSource(
+            function () {
+              DWTObject.OpenSource();
+              DWTObject.AcquireImage(successCallback, failureCallback);
+            },
+            function (errorCode, errorString) {
+              console.log(errorString);
+            }
+          );
+
+          function successCallback() {
+            DWTObject.CloseSource();
+            console.log("successful");
+          }
+
+          function failureCallback(errorCode, errorString) {
+            DWTObject.CloseSource();
+            console.log(errorString);
+          }
+        }
+      }
+
+      function upload() {
+        if (DWTObject && DWTObject.HowManyImagesInBuffer > 0) {
+          let strUrl = "https://demo.dynamsoft.com/sample-uploads/";
+          let imageFormat;
+          if (Dynamsoft.EnumDWT_ImageType) {
+            imageFormat = Dynamsoft.EnumDWT_ImageType.IT_PNG;
+          }else{
+            imageFormat = Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG;
+          }
+          let uploadDataFormat;
+          if (Dynamsoft.EnumDWT_UploadDataFormat) {
+            uploadDataFormat = Dynamsoft.EnumDWT_UploadDataFormat.Binary;
+          }else{
+            uploadDataFormat = Dynamsoft.DWT.EnumDWT_UploadDataFormat.Binary;
+          }
+          let imgAry = [DWTObject.CurrentImageIndexInBuffer];
+          DWTObject.HTTPUpload(
+            strUrl,
+            imgAry,
+            imageFormat,
+            uploadDataFormat,
+            "WebTWAINImage.png",
+            onEmptyResponse,
+            onServerReturnedSomething
+          );
+        } else {
+          alert("There is no image in buffer.");
+        }
+      }
+
+      function onEmptyResponse() {
+        alert("Upload successful");
+      }
+
+      function onServerReturnedSomething(errorCode, errorString, sHttpResponse) {
+        alert(sHttpResponse.length > 0 ? sHttpResponse : errorString);
+      }
+
+      function binarizeImage() {
+        DWTObject.ConvertToBW(DWTObject.CurrentImageIndexInBuffer);
+      }
+
+      function rotateCW() {
+        DWTObject.RotateRight(DWTObject.CurrentImageIndexInBuffer);
+      }
+
+      function rotateCCW() {
+        DWTObject.RotateLeft(DWTObject.CurrentImageIndexInBuffer);
+      }
+    </script>
+  </body>
+</html>

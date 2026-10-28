@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Web TWAIN Sample</title>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+    <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.camera.js"></script>
+    <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="tabs.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+    <link rel="stylesheet" href="css/tabs.css">
+</head>
+
+<body>
+    <div style="height:100%;width:100%;position:absolute;overflow:hidden;">
+        <div id="dwtcontrolContainer" style="width:100%;height:60%"></div>
+        <div id="action" style="height:40%;">
+            <div class="tab" style="display:flex;overflow-x:auto;height:50px;">
+                <button class="tablinks" onclick="switchTab(event, 'scan')">Scan</button>                
+                <button class="tablinks" onclick="switchTab(event, 'local')">Local</button>
+                <button class="tablinks" onclick="switchTab(event, 'save')">Save</button>
+                <button class="tablinks" onclick="switchTab(event, 'move')">Move</button>
+                <button class="tablinks" onclick="switchTab(event, 'remove')">Remove</button>
+                <button class="tablinks" onclick="switchTab(event, 'view')">View</button>
+                <button class="tablinks" onclick="switchTab(event, 'edit')">Edit</button>
+            </div>        
+            <div style="height:calc(100% - 50px);overflow-y:auto;">
+                <div id="scan" class="tabcontent">
+                    <input onclick="AcquireImage();" type="button" value="Scan">
+                    <select size="1" id="source"></select>
+                    <div>
+                        <span>Pixel Type:</span>
+                        <div>                        
+                            <label for="BW">
+                                <input name="PixelType" id="BW" type="radio">B&amp;W </label>
+                            <label for="Gray">
+                                <input name="PixelType" id="Gray" type="radio">Gray</label>
+                            <label for="RGB">
+                                <input name="PixelType" id="RGB" type="radio" checked="checked">Color</label>
+                        </div>
+                    </div>
+                    <div>
+                        <span>Resolution:</span>
+                        <select id="Resolution" size="1">
+                            <option value="100">100</option>
+                            <option value="150">150</option>
+                            <option value="200">200</option>
+                            <option value="300">300</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>
+                            <input id="ShowUI" type="checkbox">Show UI</label>
+                        <label>
+                            <input id="Duplex" type="checkbox">Duplex</label>                            
+                        <label>
+                            <input id="ADF" type="checkbox">Auto Feeder</label>
+                    </div>                            
+                </div>
+                <div id="local" class="tabcontent">            
+                    <input onclick="LoadLocal();" type="button" value="Load Images">
+                </div>
+                <div id="save"  class="tabcontent">
+                    Default Filename: <input type="text" id="filename" value="DynamicWebTWAIN"/>
+                    <input onclick="SaveWithFileDialog();" type="button" value="Save">
+                    <input onclick="GenerateDownloadLink();" type="button" value="Generate a download link">
+                    <div>
+                        <label>
+                            <input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+                        <label>
+                            <input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+                        <label>
+                            <input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+                    </div>
+                </div>
+                <div id="move"  class="tabcontent">
+                    <input onclick="MoveSelectedUp();" type="button" value="Move Selected Up" />
+                    <input onclick="MoveSelectedDown();" type="button" value="Move Selected Down" />
+                </div>                
+                <div id="remove"  class="tabcontent">
+                    <input onclick="RemoveBlankImages();" type="button" value="Remove Blank Images" />
+                    <input onclick="RemoveSelectedImages();" type="button" value="Remove Selected Images" />
+                    <input onclick="RemoveAllImages()" type="button" value="Remove All Images" />
+                </div>
+                <div id="view" class="tabcontent">
+                    Column: <input id="colNum" type="range" value="2" min="1" max="10" onchange="ViewModeNumChanged(true,this.value)" /><span id="colNumDisplay">2</span><br />
+                    Row: <input id="rowNum" type="range" value="2" min="1" max="10" onchange="ViewModeNumChanged(false,this.value)" /><span id="rowNumDisplay">2</span><br />
+                    <input onclick="SetViewMode()" type="button" value="Set View Mode" />
+                </div>        
+                <div id="edit" class="tabcontent">
+                    <input onclick="ShowImageEditor()" type="button" value="Show Editor" />
+                </div>                    
+           </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var console = window['console'] ? window['console'] : { 'log': function () { } };
+
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+        var DWObject;
+        
+        switchTab(null, 'scan')
+        
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+            if (DWObject) {
+                DWObject.Viewer.width="100%";
+                DWObject.Viewer.height="100%";
+                DWObject.SetViewMode(2, 2);
+                loadLocalScannersList();
+            }
+        }
+        
+        function loadLocalScannersList(){
+            var count = DWObject.SourceCount; // Get how many sources are installed in the system
+            for (var i = 0; i < count; i++)
+                document.getElementById("source").options.add(new Option(DWObject.GetSourceNameItems(i), i)); // Add the sources in a drop-down list
+        }
+        
+        
+        function AcquireImage() {
+            var pixelType,feederEnabled,duplexEnabled,showUI,resolution;
+            //Pixel type
+            if (document.getElementById("BW").checked)
+                pixelType = Dynamsoft.DWT.EnumDWT_PixelType.TWPT_BW;
+            else if (document.getElementById("Gray").checked)
+                pixelType = Dynamsoft.DWT.EnumDWT_PixelType.TWPT_GRAY;
+            else if (document.getElementById("RGB").checked)
+                pixelType = Dynamsoft.DWT.EnumDWT_PixelType.TWPT_RGB;
+            //If auto feeder
+            if (document.getElementById("ADF").checked)
+                feederEnabled = true;
+            else
+                feederEnabled = false;
+            //If duplex
+            if (document.getElementById("Duplex").checked)
+                duplexEnabled = true;
+            else
+                duplexEnabled = false;
+            //If show UI
+            if (document.getElementById("ShowUI").checked)
+                showUI = true;
+            else
+                showUI = false;
+            //Resolution
+            resolution = parseInt(document.getElementById("Resolution").value);
+            if (DWObject) {        
+                var OnAcquireImageSuccess, OnAcquireImageFailure = function () {
+                    console.log("local scan done");
+                    DWObject.CloseSource();
+                };
+                DWObject.SelectSourceByIndex(document.getElementById("source").selectedIndex);                
+                DWObject.CloseSource();
+                DWObject.OpenSource();                    
+                DWObject.PixelType=pixelType;
+                DWObject.IfFeederEnabled = feederEnabled;
+                DWObject.IfDuplexEnabled = duplexEnabled;
+                DWObject.IfShowUI=showUI;
+                DWObject.Resolution=resolution;
+                console.log("sourceIndex: "+document.getElementById("source").selectedIndex);
+                if (document.getElementById("ADF").checked && DWObject.IfFeederEnabled == true)  // if paper is NOT loaded on the feeder
+                {
+                    if (DWObject.IfFeederLoaded != true && DWObject.ErrorCode == 0) {
+                        alert("No paper detected! Please load papers and try again!");
+                        return;
+                    }
+                }
+
+                DWObject.IfDisableSourceAfterAcquire = true;    // Scanner source will be disabled/closed automatically after the scan.
+                DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
+            }
+        }
+
+        //Callback functions for async APIs
+        function OnSuccess() {
+            console.log('successful');
+        }
+
+        function OnFailure(errorCode, errorString) {
+            alert(errorString);
+        }
+
+        function LoadLocal(){
+            DWObject.IfShowFileDialog = true;
+            // PDF Rasterizer Addon is used here to ensure PDF support
+            DWObject.Addon.PDF.SetResolution(200);
+            DWObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL);
+            DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure);
+        }
+        
+        function SaveWithFileDialog() {
+            var filename=document.getElementById("filename").value;
+            SaveFile(true, filename);
+        }
+
+        function SaveFile(showDialog, filename) {
+            var path = "";
+            if (showDialog == false) {
+                path = getQueryVariable("outputDir") + "//";
+            }
+            
+            if (DWObject) {
+                if (DWObject.HowManyImagesInBuffer > 0) {
+                    DWObject.IfShowFileDialog = showDialog;
+                    
+                    if (document.getElementById("imgTypejpeg").checked == true) {
+                        //If the current image is B&W
+                        //1 is B&W, 8 is Gray, 24 is RGB
+                        if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1)
+                            //If so, convert the image to Gray
+                            DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+                        //Save image in JPEG
+                        path = path + filename+".jpg";
+                        DWObject.SaveAsJPEG(path, DWObject.CurrentImageIndexInBuffer, 
+                                                  function() {
+                                                      OnFileSaved(path);
+                                                  },
+                                                  function(errCode, errString) {
+                                                      console.log(errString);
+                                                  });
+                    }
+                    else if (document.getElementById("imgTypetiff").checked == true) {
+                        path = path + filename+".tiff";
+                        DWObject.SaveAllAsMultiPageTIFF(path, function() {
+                                                                  OnFileSaved(path);
+                                                              },
+                                                              function(errCode, errString) {
+                                                                  console.log(errString);
+                                                              });
+                    }
+                    else if (document.getElementById("imgTypepdf").checked == true) {
+                        path = path + filename+".pdf";
+                        DWObject.SaveAllAsPDF(path, function() {
+                                                        OnFileSaved(path);
+                                                    },
+                                                    function(errCode, errString) {
+                                                        console.log(errString);
+                                                    });
+                    }
+                    
+                }
+            }
+            return path;
+        }
+        
+        function OnFileSaved(path){
+            console.log(arguments);
+            alert("saved");
+            var msg = {};
+            msg["msg"] = "download";
+            msg["content"] = path;
+            console.log(msg);
+            window.postMessageExt(msg);
+        }
+        
+        function GenerateDownloadLink(){
+            var filename=document.getElementById("filename").value;
+            var path = SaveFile(false, filename);
+            
+            
+        }
+        
+        function getQueryVariable(variable)
+        {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                var pair = vars[i].split("=");
+                if(pair[0] == variable){return pair[1];}
+            }
+            return "";
+        }
+        
+        
+        function MoveSelectedUp() {
+            if (DWObject) {
+                var indices=DWObject.SelectedImagesIndices;
+                var firstIndex = indices[0];
+                DWObject.MoveImage(firstIndex, firstIndex-1);                
+            }
+        }
+        
+        function MoveSelectedDown() {
+            if (DWObject) {
+                var indices=DWObject.SelectedImagesIndices;
+                var firstIndex = indices[0];
+                DWObject.MoveImage(firstIndex, firstIndex+1);                
+            }
+        }
+        
+        function RemoveSelectedImages() {
+            if (DWObject) {
+                DWObject.RemoveAllSelectedImages();
+            }
+        }
+        
+        function RemoveBlankImages() {
+            if (DWObject) {
+                var indices=[];
+                for (var i=0; i<DWObject.HowManyImagesInBuffer; i=i+1){    
+                    if (DWObject.IsBlankImage(i)==true){
+                        indices.push(i);
+                    }
+                }
+                if (indices.length>0){
+                    DWObject.SelectImages(indices);
+                    DWObject.RemoveAllSelectedImages();
+                }
+            }
+        }
+
+        function RemoveAllImages() {
+            if (DWObject) {
+                DWObject.RemoveAllImages();
+            }
+        }
+        
+        function SetViewMode(){
+            if (DWObject) {
+                var colNum = parseInt(document.getElementById("colNum").value);
+                var rowNum = parseInt(document.getElementById("rowNum").value);
+                DWObject.SetViewMode(colNum,rowNum);
+            }        
+        }
+        
+        function ViewModeNumChanged(isColumn,value){
+            if (isColumn){
+                document.getElementById("colNumDisplay").innerText=value;
+            }else{
+                document.getElementById("rowNumDisplay").innerText=value;
+            }            
+        }
+        
+        function ShowImageEditor(){
+            var editorSettings = {
+                /*element: document.getElementById("imageEditor"),
+                width: 600,
+                height: 400,*/
+                border: '1px solid rgb(204, 204, 204);',
+                topMenuBorder: '',
+                innerBorder: '',
+                background: "rgb(255, 255, 255)",
+                promptToSaveChange: true
+            };
+            var imageEditor = DWObject.Viewer.createImageEditor(editorSettings);
+            imageEditor.show();
+        }
+        
+    </script>
+</body>
+
+</html>

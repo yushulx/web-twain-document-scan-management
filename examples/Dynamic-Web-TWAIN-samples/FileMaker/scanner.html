@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>FileMaker Example</title>
+  <!--<script src="https://unpkg.com/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>-->
+  <script src="/npm/dynamsoft.webtwain.min.js"></script>
+  <style>
+    .app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .scanButton {
+      height: 25px;
+    }
+
+    #dwtcontrolContainer {
+      width: 100%;
+      height: calc(100% - 25px);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <input class="scanButton" type="button" value="Scan" onclick="AcquireImage();" />
+    <input class="setButton" type="button" value="Set Image" onclick="SetImage();" />
+    <div id="dwtcontrolContainer"></div>
+  </div>
+  <script type="text/javascript">
+    let DWObject;
+    Dynamsoft.DWT.AutoLoad = false;
+    //Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.5.0/dist";
+    Dynamsoft.DWT.ResourcesPath = "/npm";
+    init();
+
+    function init(){
+      //do not show notification about license 
+      Dynamsoft.OnLTSConnectionFailure = function(){};
+      Dynamsoft.OnLTSReturnedAnError = function () { };
+      Dynamsoft.OnLTSUUIDError = function () { };
+      Dynamsoft.OnLTSConnectionWarning= function(){};
+      Dynamsoft.OnLTSPublicLicenseMessage = function () { };
+      Dynamsoft.DWT.OnLicenseException= function(){ }
+      Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer',Width: 270, Height: 350 }];
+      Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+        console.log("ready");
+        DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+        DWObject.Viewer.width = "100%";
+        DWObject.Viewer.height = "100%";
+        DWObject.SetViewMode(1,1);
+      });
+      Dynamsoft.DWT.Load();
+    }
+
+    function AcquireImage() {
+      if (DWObject) {
+        if (Dynamsoft.Lib.env.bMobile) {
+          DWObject.Addon.Camera.scanDocument();
+        }else {
+          DWObject.SelectSource(function () {
+            DWObject.OpenSource();
+            DWObject.AcquireImage();
+          },
+            function () {
+              console.log("SelectSource failed!");
+            }
+          );
+        }
+      }
+    }
+
+    function SetImage(){
+      if (DWObject && DWObject.HowManyImagesInBuffer > 0) {
+        DWObject.RegisterEvent("OnGetFilePath",
+          function (isSave, filesCount, index, directory, fileName) {
+            console.log(directory);
+            console.log(fileName);
+            var path = getFullPath(directory,fileName);
+            DWObject.IfShowFileDialog = false;
+            //var path = "";
+            //FileMaker.PerformScript ( "SetDocumentImage", path);
+            //If the current image is B&W
+            //1 is B&W, 8 is Gray, 24 is RGB
+            if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1) {
+              //If so, convert the image to Gray
+              DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+            }  
+            DWObject.SaveAsJPEG(path, DWObject.CurrentImageIndexInBuffer, 
+              function() {
+                console.log("saved");
+                if (FileMaker) {
+                  var fileMakerPath = getFileMakerPath(path);
+                  FileMaker.PerformScript("SetDocumentImage", fileMakerPath);
+                }
+              },
+              function(errCode, errString) {
+                console.log(errString);
+              }
+            );
+          }
+        );
+        DWObject.ShowFileDialog(
+          true,
+          "",
+          0,
+          "jpg",
+          "",
+          false,
+          false,
+          0
+        );
+      }
+    }
+
+    function getFullPath(directory,fileName){
+      if (Dynamsoft.Lib.env.bMac) {
+        return directory + "/" + fileName;
+      }else{
+        return directory + "\\" + fileName;
+      }
+    }
+
+    function getFileMakerPath(path){
+      if (Dynamsoft.Lib.env.bMac) {
+        return "imagemac:/"+path;
+      }else{
+        return "imagewin:/"+path.replaceAll("\\","/");
+      }
+    }
+  </script>
+</body>
+
+</html>

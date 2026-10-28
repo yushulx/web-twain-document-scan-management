@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Append Images to PDF</title>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+  <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+  <style>
+  .panel {
+    border: 1px solid black;
+    padding: 5px;
+    width: 450px;
+  }
+  </style>
+</head>
+
+<body>
+  <button onclick="Scan();">Scan</button>
+  <button onclick="Load();">Load</button>
+  <button onclick="Save();">Save as PDF</button>
+  <div id="dwtcontrolContainer" style="width: 350px; height: 380px;"></div>
+  <script type="text/javascript">
+    Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+    let DWTObject;
+
+    function Dynamsoft_OnReady() {
+      DWTObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+      if (DWTObject) {
+        DWTObject.SetViewMode(2, 2);
+      }
+    }
+    function Scan() {
+      if (DWTObject) {
+        DWTObject.SelectSourceAsync().then(
+          function () {
+            return DWTObject.AcquireImageAsync(
+              { IfCloseSourceAfterAcquire: true }
+            );
+          }
+        ).catch(function (exp) {
+          alert(exp.message);
+        });
+      }
+    }
+
+    function Save(){
+      if (DWTObject) {
+        let OnSuccess = function () {
+          alert("Success");
+        };
+        let OnFailure = function () {
+          alert("Fail");
+        };
+        
+        DWTObject.JPEGQuality = 100;
+        let pdfSaveSettings = { quality: 100 };
+
+        DWTObject.Addon.PDF.Write.Setup(pdfSaveSettings);
+        DWTObject.SaveAllAsPDF("DynamicWebTWAIN.pdf", OnSuccess, OnFailure);
+      }
+    }
+    
+    function Load(){
+      if (DWTObject) {
+        DWTObject.Addon.PDF.SetReaderOptions({
+          convertMode: Dynamsoft.DWT.EnumDWT_ConvertMode.CM_AUTO,
+          preserveUnmodifiedOnSave: true //only available for v19.0+
+        });
+        DWTObject.IfShowFileDialog = true; // Open the system's file dialog to load image
+        DWTObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+      }
+    }
+  </script>
+</body>
+
+</html>

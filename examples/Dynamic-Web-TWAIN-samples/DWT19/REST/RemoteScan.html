@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Remote Scan via REST API Example</title>
+    <script src="RESTAPI.js"></script>
+    <style>
+        #config {
+            width: 300px;
+            height: 200px;
+            resize: none;
+        }
+        #scannedImages img {
+            max-height: 150px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <label>
+            License: <input type="password" id="licenseInput" oninput="updateLicense();" />
+        </label>
+        <label>
+            Service Address: <input type="text" id="addressInput" oninput="updateAddress();" value="https://127.0.0.1:18623" />
+        </label>
+        <label>
+            Scanners:
+            <select id="scanners">
+            </select>
+        </label>
+        <input type="button" value="List scanners" onclick="listScanners();" />
+        <input type="button" value="Scan" onclick="startScanning();" />
+        <span id="status"></span>
+        <br/>
+        <label>
+            Config:
+            <br/>
+            <textarea id="config">
+                {
+                    "Resolution": 200,
+                    "IfFeederEnabled": false,
+                    "IfDuplexEnabled": false,
+                    "IfShowUI": false
+                }
+            </textarea>
+        </label>
+        <div id="scannedImages"></div>
+    </div>
+    <script type="text/javascript">
+        let scanners = [];
+        let jobuid = "";
+        WebTWAINService.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTAwMjI3NzYzLVRYbFFjbTlxIiwibWFpblNlcnZlclVSTCI6Imh0dHBzOi8vbWx0cy5keW5hbXNvZnQuY29tIiwib3JnYW5pemF0aW9uSUQiOiIxMDAyMjc3NjMiLCJzdGFuZGJ5U2VydmVyVVJMIjoiaHR0cHM6Ly9zbHRzLmR5bmFtc29mdC5jb20iLCJjaGVja0NvZGUiOjE4OTc4MDUzNDV9";
+
+        async function listScanners(){
+            updateStatus("Listing scanners...");
+            scanners = await WebTWAINService.listScanners();
+            console.log(scanners);
+            let scannersSelect = document.getElementById("scanners");
+            scannersSelect.innerHTML = "";
+            for (let i = 0; i < scanners.length; i++){
+                let option = document.createElement("option");
+                option.value = scanners[i].name;
+                option.innerHTML = scanners[i].name;
+                scannersSelect.appendChild(option);
+            }
+            updateStatus("");
+        }
+
+        async function startScanning() { 
+            updateStatus("Scanning...");
+            try {
+                await createScanJob();
+                await acquireImages();
+                updateStatus("Done");    
+            } catch (error) {
+                updateStatus(error);
+            }
+        }
+
+        async function createScanJob(){
+            jobuid = "";
+            let scannerName = document.getElementById("scanners").value;
+            let license = document.getElementById("licenseInput").value;
+            let selectedScannerIndex = document.getElementById("scanners").selectedIndex;
+            let selectedScanner = scanners[selectedScannerIndex];
+            let config = JSON.parse(document.getElementById("config").value);
+            jobuid = await WebTWAINService.CreateScanJob(selectedScanner.device,config);
+        }
+
+        async function acquireImages(){
+            let imgBlob = await WebTWAINService.nextPage(jobuid);
+            while (imgBlob) {
+                console.log("Image acquired successfully.");
+                appendImage(imgBlob);
+                imgBlob = await WebTWAINService.nextPage(jobuid);
+            }
+        }
+
+        function appendImage(blob){
+            let url = URL.createObjectURL(blob);
+            let img = document.createElement("img");
+            img.src = url;
+            document.getElementById("scannedImages").appendChild(img);
+        }
+
+        function updateStatus(info){
+            document.getElementById("status").innerHTML = info;
+        }
+
+        function updateLicense(){
+            let license = document.getElementById("licenseInput").value;
+            WebTWAINService.license = license;
+        }
+
+        function updateAddress(){
+            let address = document.getElementById("addressInput").value;
+            WebTWAINService.endPoint = address;
+            let scannersSelect = document.getElementById("scanners");
+            scannersSelect.innerHTML = "";
+        }
+    </script>
+</body>
+</html>

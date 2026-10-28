@@ -1,0 +1,86 @@
+<html>
+<head>
+  <title>Hello World</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script src="https://cdn.jsdelivr.net/npm/dwt@latest/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    #dwtcontrolContainer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="dwtcontrolContainer"></div>
+  <script type="text/javascript">
+    let DWObject;
+    init();
+
+    function init(){
+      Dynamsoft.DWT.ProductKey = "t01888AUAAB8bqKDC4hMnmd5+onvwpQdB+bHDW8JX0iZ8LCDxalKejZI86WLuuu1oAD/FDcsdqgqKE5861S24+HI53wzZNb5+OdXAafWdhvpONnDqlhPo52FadjvM86YJGoHXDNh2HDaAJbDUcgDeca2NHiAPMAcwrwZ6wOUqzj9fOAak/PrPhk5ONXBafWcZkDpONnDqljMH5JmRIa92WALC8uTsAHmAXQJcL7JTQHAE5AF2AqRkHUL4ApE1Kpw=";
+      Dynamsoft.DWT.AutoLoad = false;
+      Dynamsoft.DWT.ServiceInstallerLocation = "https://unpkg.com/dwt@latest/dist/dist/";
+      Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@latest/dist";
+      Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer',Width: 270, Height: 350 }];
+      Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+        DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+        DWObject.Viewer.width = "100%";
+        DWObject.Viewer.height = "100%";
+        DWObject.SetViewMode(2,2);
+      });
+      Dynamsoft.DWT.Load();
+      window.addEventListener(
+        "message",
+        async (event) => {
+          console.log("received message in iframe");
+          console.log(event);
+          if (event.data === "acquire") {
+            AcquireImage();
+          } else if (event.data === "getPDF") {
+            ConvertToPDFBase64();
+          } else if (event.data === "showEditor") {
+            ShowImageEditor();
+          }
+        },
+        false,
+      );
+    }
+
+    function ConvertToPDFBase64(){
+      const success = (result, indices, type) => {
+        window.parent.postMessage(result);
+      }
+      const error = (error) => {
+        console.log(error);
+      }
+      DWObject.ConvertToBase64(
+        DWObject.SelectAllImages(),
+        Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF,
+        success,
+        error
+      )
+    }
+
+    function AcquireImage() {
+      if (DWObject) {
+        DWObject.SelectSourceAsync().then(function () {
+          return DWObject.AcquireImageAsync({ 
+            IfCloseSourceAfterAcquire: true 
+          });
+        }).catch(function (exp) {
+          alert(exp.message);
+        });
+      }
+    }
+
+    function ShowImageEditor(){
+      const imageEditor = DWObject.Viewer.createImageEditor();
+      imageEditor.show();
+    }
+  </script>
+</body>
+
+</html>

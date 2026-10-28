@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Web TWAIN Mobile Sample</title>
+    <!-- Download Dynamic Web TWAIN and copy the Resources folder to the web page's root -->
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+    <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.camera.js"></script>
+    <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="tabs.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+    <link rel="stylesheet" href="css/tabs.css">
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+        <div class="six columns">
+            <div id="dwtcontrolContainer" style="float:left;width:100%"></div>
+        </div>
+        <div class="six columns">
+            <div class="tab" style="display:flex;overflow-x:auto">
+                <button class="tablinks" onclick="switchTab(event, 'camera')">Camera</button>
+                <button class="tablinks" onclick="switchTab(event, 'save')">Save</button>
+                <button class="tablinks" onclick="switchTab(event, 'edit')">Edit</button>
+            </div>
+            <div>
+                <div id="camera" class="tabcontent">
+                    <input id="switchButton" type="button" value="Hide Video" onclick="SwitchViews();" />
+                    <br/>
+                    Camera: <select id="camerasource"></select>
+                    <br/>
+                    Resolution: <select id="resolution"></select>
+                    <input type="button" value="Load Resolution List" onclick="LoadResolutionList();" />
+                    <div>
+                        Camera Mode:
+                        <label>
+                            <input type="radio" value="document" name="cameraMode" id="cameraModeDoc" checked/>Document</label>
+                        <label>
+                            <input type="radio" value="picture" name="cameraMode" id="cameraModePic"/>Picture</label>
+                    </div>
+                    <div id="fullScreenContainer">
+                        <label>
+                             <input id="fullScreen" type="checkbox" onchange="makeFullScreenIfChecked();">Full Screen</label>
+                    </div>
+                </div>
+                <div id="save"  class="tabcontent">
+                    Default Filename: <input type="text" id="filename" value="DynamicWebTWAIN"/>
+                    <input onclick="SaveWithFileDialog();" type="button" value="Save">
+                    <div>
+                        <label>
+                            <input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+                        <label>
+                            <input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+                        <label>
+                            <input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+                    </div>
+                </div>
+                <div id="edit" class="tabcontent">
+                    <input onclick="RotateAll()" type="button" value="Rotate All" />
+                    Rotation: <input type="range" id="rotation" min="0" max="360" step="10" value="0" onchange="degreeChanged(this.value)"/>
+                    <span id="degreeVal">0</span>
+                    
+                </div>
+           </div>
+        </div>
+    </div>
+  </div>
+    <script type="text/javascript">
+        var console = window['console'] ? window['console'] : { 'log': function () { } };
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+        var DWObject;
+        Dynamsoft.DWT.UseLocalService=false;
+        switchTab(null, 'camera')
+        LoadPresetResolution();
+        
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+            if (DWObject) {
+                DWObject.Viewer.width="100%";
+                DWObject.SetViewMode(2, 2);
+   
+                SetIfWebcamPlayVideo(false);    
+                DWObject.Addon.Camera.getSourceList().then(function (sourceName) {
+                    var iCount = sourceName.length;
+                    for (var i = 0; i < iCount; i++) {
+                        document.getElementById("camerasource").options.add(new Option(sourceName[i].label, sourceName[i].deviceId));
+                    }
+                    if (iCount>0){
+                        SelectCamera(sourceName[0].deviceId);
+                    }
+                });
+                document.getElementById('camerasource').onchange = function () {
+                    var deviceId = document.getElementById("camerasource").options[document.getElementById("camerasource").selectedIndex].value;
+                    SelectCamera(deviceId);
+                }
+            }
+        }
+        
+        function SelectCamera(deviceId){
+            DWObject.Addon.Camera.selectSource(deviceId).then(function () {
+                    if (isVideoOn){
+                        SetIfWebcamPlayVideo(false);
+                        SetIfWebcamPlayVideo(true);
+                    }
+            }, function (ex) { console.log(ex.message); });
+        }
+        
+        function LoadResolutionList(){
+            var res = document.getElementById("resolution");
+            res.innerHTML="";
+            LoadPresetResolution();
+            DWObject.Addon.Camera.getResolution().then(function (Resolution) {
+                if (Resolution){
+                    for (var i = 0; i < Resolution.length; i++) {
+                        var width=Resolution[i].width;
+                        var height=Resolution[i].height;
+                        var name = width+"x"+height;
+                        res.options.add(new Option(name, name));
+                    }
+                }
+            }, function (ex) { console.log(ex.message); });
+        }
+        
+        function LoadPresetResolution(){
+            var res = document.getElementById("resolution");
+            var name = "2594x1920";
+            res.options.add(new Option(name, name));
+        }
+        
+        function GetSelectedResolution(){
+            var resolution = document.getElementById("resolution").options[document.getElementById("resolution").selectedIndex].value;
+            var width = parseInt(resolution.split("x")[0]);
+            var height = parseInt(resolution.split("x")[1]);
+            return {width: width, height: height};
+        }
+        
+        function SetIfWebcamPlayVideo(bShow) {
+            if (bShow) {
+                document.getElementById("switchButton").value = "Loading";
+                var camerasource = document.getElementById("camerasource").options[document.getElementById("camerasource").selectedIndex].value;
+                var cameramode = "document";
+                if (document.getElementById("cameraModePic").checked){
+                    cameramode = "picture";
+                }
+                DWObject.Addon.Camera.showVideo(camerasource, GetSelectedResolution(), cameramode, false).then(function (r) {
+                    isVideoOn = true;
+                    makeFullScreenIfChecked();
+                    document.getElementById("switchButton").value = "Hide Video";
+                }, function (ex) {
+                    console.log(ex.message);
+                    DWObject.Addon.Camera.stop();
+                    document.getElementById("switchButton").value = "Show Video";
+                });
+            }
+            else {
+                DWObject.Addon.Camera.closeVideo();
+                isVideoOn = false;
+                document.getElementById("switchButton").value = "Show Video";
+            }
+        }
+        
+        function SwitchViews() {
+            if (isVideoOn == false) {
+                // continue the video
+                SetIfWebcamPlayVideo(true);
+            } else {
+                // stop the video
+                SetIfWebcamPlayVideo(false);
+            }
+        }
+        
+        function makeFullScreenIfChecked(){
+            if (document.getElementById("fullScreen").checked==true){
+                document.getElementsByClassName("dvs-cameraContainer")[0].style.position="fixed";
+                document.getElementsByClassName("dvs-cameraContainer")[0].style.left="0";
+                document.getElementsByClassName("dvs-cameraContainer")[0].style.top="0";
+                document.getElementsByClassName("dvs-cameraContainer")[0].style.width="100%";
+                document.getElementsByClassName("dvs-cameraContainer")[0].style.height="100%";
+                console.log(document.getElementsByClassName("dvs-cameraContainer")[0]);
+                return true;
+            }
+            return false;
+        }
+
+        //Callback functions for async APIs
+        function OnSuccess() {
+            console.log('successful');
+        }
+
+        function OnFailure(errorCode, errorString) {
+            alert(errorString);
+        }
+
+        function SaveWithFileDialog() {
+            if (DWObject) {
+                if (DWObject.HowManyImagesInBuffer > 0) {
+                    DWObject.IfShowFileDialog = true;
+                    var filename=document.getElementById("filename").value;
+                    if (document.getElementById("imgTypejpeg").checked == true) {
+                        //If the current image is B&W
+                        //1 is B&W, 8 is Gray, 24 is RGB
+                        if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1)
+                            //If so, convert the image to Gray
+                            DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+                        //Save image in JPEG
+                        DWObject.SaveAsJPEG(filename+".jpg", DWObject.CurrentImageIndexInBuffer);
+                    }
+                    else if (document.getElementById("imgTypetiff").checked == true)
+                        DWObject.SaveAllAsMultiPageTIFF(filename+".tiff", OnSuccess, OnFailure);
+                    else if (document.getElementById("imgTypepdf").checked == true)
+                        DWObject.SaveAllAsPDF(filename+".pdf", OnSuccess, OnFailure);
+                }
+            }
+        }
+        
+        async function RotateAll(){
+            var degree = document.getElementById("rotation").value;
+            for (var i=0; i<DWObject.HowManyImagesInBuffer; i++){
+                await DWObject.RotateAsync(parseInt(i),parseInt(degree),true);
+            }
+        }
+        
+        function degreeChanged(degree){
+            document.getElementById("degreeVal").innerText=degree;
+        }
+    </script>
+</body>
+</html>

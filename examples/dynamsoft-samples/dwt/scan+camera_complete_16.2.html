@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Web TWAIN Mobile Sample</title>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+	<script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.camera.js"></script>
+	<script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+	<script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.barcodereader.js"> </script>
+
+	<script type="text/javascript" src="common.js"></script>
+	<script type="text/javascript" src="tabs.js"></script>
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+	<link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+	<link rel="stylesheet" href="css/tabs.css">
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+        <div class="six columns">
+			<div id="dwtcontrolContainer" style="float:left;width:100%"></div>
+		</div>
+		<div class="six columns">
+			<div class="tab" style="display:flex;overflow-x:auto">
+				<button class="tablinks" onclick="switchTab(event, 'camera')">Camera</button>
+				<button class="tablinks" onclick="switchTab(event, 'scan')">Scan</button>				
+				<button class="tablinks" onclick="switchTab(event, 'local')">Local</button>
+				<button class="tablinks" onclick="switchTab(event, 'barcode')">Barcode</button>
+				<button class="tablinks" onclick="switchTab(event, 'ocr')">OCR</button>
+				<button class="tablinks" onclick="switchTab(event, 'save')">Save</button>
+				<button class="tablinks" onclick="switchTab(event, 'move')">Move</button>
+				<button class="tablinks" onclick="switchTab(event, 'remove')">Remove</button>
+				<button class="tablinks" onclick="switchTab(event, 'view')">View</button>
+				<button class="tablinks" onclick="switchTab(event, 'edit')">Edit</button>
+			</div>		
+			<div>
+				<div id="camera" class="tabcontent">
+					<select id="camerasource"></select>
+					<input id="captureButton" type="button" value="Capture Images" onclick="CaptureImages();" />
+					<input id="switchButton" type="button" value="Hide Video" onclick="SwitchViews();" />
+				</div>
+				<div id="scan" class="tabcontent">							
+					<div id="desktopscan">
+						<select size="1" id="source" style="position: relative; width: 220px;"></select>
+						<input onclick="Scan();" type="button" value="Local Scan">
+						
+					</div>
+					<div id="remotescan">
+						<select class="source" size="1" id="remote">
+						</select>
+						<select id="remotesource"></select>
+						<input onclick="RemoteScan();" type="button" value="Remote Scan">
+					</div>
+					<div>
+						<span>Pixel Type:</span>
+						<div>						
+							<label for="BW">
+								<input name="PixelType" id="BW" type="radio">B&amp;W </label>
+							<label for="Gray">
+								<input name="PixelType" id="Gray" type="radio">Gray</label>
+							<label for="RGB">
+								<input name="PixelType" id="RGB" type="radio" checked="checked">Color</label>
+						</div>
+					</div>
+					<div>
+						<span>Resolution:</span>
+						<select id="Resolution" size="1">
+							<option value="100">100</option>
+							<option value="150">150</option>
+							<option value="200">200</option>
+							<option value="300">300</option>
+						</select>					
+					</div>
+					<div>
+						<label>
+							<input id="ShowUI" type="checkbox">Show UI</label>
+						<label>
+							<input id="Duplex" type="checkbox">Duplex</label>							
+						<label>
+							<input id="ADF" type="checkbox" checked="checked">Auto Feeder</label>
+					</div>							
+				</div>
+				<div id="local" class="tabcontent">			
+					<input onclick="LoadLocal();" type="button" value="Load Images">				
+				</div>
+				<div id="barcode" class="tabcontent">			
+					<input onclick="ReadBarcodes();" type="button" value="Read Barcodes in Selected Image">
+					<p id="barcoderesult"></p>
+					<textarea id="dbrtemplate"></textarea>
+				</div>
+				<div id="ocr" class="tabcontent">			
+					<input onclick="ReadText();" type="button" value="Read Text in Selected Image">
+				</div>
+				<div id="save"  class="tabcontent">
+					Default Filename: <input type="text" id="filename" value="DynamicWebTWAIN"/>
+					<input onclick="SaveWithFileDialog();" type="button" value="Save">
+					<div>
+						<label>
+							<input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+						<label>
+							<input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+						<label>
+							<input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+					</div>
+				</div>
+				<div id="move"  class="tabcontent">
+					<input onclick="MoveSelectedUp();" type="button" value="Move Selected Up" />
+					<input onclick="MoveSelectedDown();" type="button" value="Move Selected Down" />
+				</div>				
+				<div id="remove"  class="tabcontent">
+					<input onclick="RemoveBlankImages();" type="button" value="Remove Blank Images" />
+					<input onclick="RemoveSelectedImages();" type="button" value="Remove Selected Images" />
+					<input onclick="RemoveAllImages()" type="button" value="Remove All Images" />
+				</div>
+				<div id="view" class="tabcontent">
+					Column: <input id="colNum" type="range" value="2" min="1" max="10" onchange="ViewModeNumChanged(true,this.value)" /><span id="colNumDisplay">2</span><br />
+					Row: <input id="rowNum" type="range" value="2" min="1" max="10" onchange="ViewModeNumChanged(false,this.value)" /><span id="rowNumDisplay">2</span><br />
+					<input onclick="SetViewMode()" type="button" value="Set View Mode" />
+				</div>		
+				<div id="edit" class="tabcontent">
+					<input onclick="ShowImageEditor()" type="button" value="Show Editor" />
+				</div>					
+		   </div>
+		</div>
+	  </div>
+    </div>
+    <script type="text/javascript">
+	    var ip = document.getElementById('remote');
+		ip.options.add(new Option(window.location.hostname,window.location.hostname))
+        ip.onchange = function () {
+            initRemoteDWT(ip.value);
+        }
+	    var isDesktop = true;
+		isDesktopFunc().then(function(bDesktop){
+			isDesktop = bDesktop;
+			if (isDesktop==false) {
+			    Dynamsoft.WebTwainEnv.UseLocalService = false;
+				document.getElementById("desktopscan").style.display="none";
+			}
+		});
+		
+        var console = window['console'] ? window['console'] : { 'log': function () { } };
+
+        Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+        var DWObject;
+		var DWObjectRemote;
+		switchTab(null, 'camera')
+		
+        function Dynamsoft_OnReady() {
+			DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+			initRemoteDWT(ip.value);
+            if (DWObject) {
+			    DWObject.Viewer.width="100%";
+				DWObject.SetViewMode(2, 2);
+                var count = DWObject.SourceCount; // Get how many sources are installed in the system
+                for (var i = 0; i < count; i++)
+                    document.getElementById("source").options.add(new Option(DWObject.GetSourceNameItems(i), i)); // Add the sources in a drop-down list
+				SetIfWebcamPlayVideo(false);	
+				DWObject.Addon.Camera.getSourceList().then(function (sourceName) {
+					var iCount = sourceName.length;
+					for (var i = 0; i < iCount; i++) {
+						document.getElementById("camerasource").options.add(new Option(sourceName[i].label, sourceName[i].deviceId));
+					}
+				});
+				document.getElementById('camerasource').onchange = function () {
+					var deviceId = document.getElementById("camerasource").options[document.getElementById("camerasource").selectedIndex].value;
+					DWObject.Addon.Camera.selectSource(deviceId).then(function () {
+						SetIfWebcamPlayVideo(true);
+						document.getElementById("switchButton").style.display = '';
+						document.getElementById("captureButton").disabled = "";
+					}, function (ex) { console.log(ex.message); });
+				}
+            }
+        }
+		
+        // Connect to the remote DWT service
+        function initRemoteDWT(ip) {
+            var dwtConfig = {
+			  WebTwainId:"remoteScan",
+			  Host: ip, 
+			  Port: '18622', 
+			  PortSSL: '18623', 
+			  UseLocalService:'true'
+		    };
+           Dynamsoft.WebTwainEnv.CreateDWTObjectEx(
+			  dwtConfig, 
+			  function (dwt) {
+				  DWObjectRemote = dwt;
+				  console.log('service connected!');
+				  loadRemoteScannersList(dwt);
+				  registerTransferEvent(dwt);
+			  }, 
+			  function (error){
+				  console.log(error)
+			  }
+			);
+        }
+		
+		function loadRemoteScannersList(dwt){
+			// Update the remote scanner list
+			var remoteSelect = document.getElementById('remotesource');
+			dwt.GetSourceNamesAsync().then(function (result) {
+				// Remove previous options
+				for (var i = 0; i < remoteSelect.length; i++) {
+					remoteSelect.remove(i);
+				}
+
+				for (var i = 0; i < result.length; i++)
+					remoteSelect.options.add(new Option(result[i], i));
+			},
+				function (fail) {
+					console.log(fail);
+				});
+		}
+		
+		function registerTransferEvent(dwt){
+			dwt.RegisterEvent('OnPostTransferAsync', function(outputInfo){
+			  dwt.ConvertToBlob(
+				  [dwt.ImageIDToIndex(outputInfo.imageId)], 
+				  Dynamsoft.EnumDWT_ImageType.IT_PNG, 
+				  function (result, indices, type) {
+					  DWObject.LoadImageFromBinary(
+						  result,         
+						  function () {
+							  console.log('LoadImageFromBinary success');
+							  dwt.RemoveImage(dwt.ImageIDToIndex(outputInfo.imageId));
+						  },
+						  function (errorCode, errorString) {
+							  console.log(errorString);
+						  }
+					  );
+				  },
+				  function (errorCode, errorString) {
+					  console.log(errorString);
+				  }
+			  );
+		  });
+		}
+		
+		function CaptureImages() {
+			if (DWObject) {
+				DWObject.Addon.Camera.capture().then(function () {
+					DWObject.Viewer.render();
+					SetIfWebcamPlayVideo(false);
+				}, function (ex) {
+					console.log(ex.message);
+					SetIfWebcamPlayVideo(false);
+				});
+			}
+		}
+
+		function SetIfWebcamPlayVideo(bShow) {
+			if (bShow) {
+				DWObject.Addon.Camera.play(null, { width: 2560, height: 1440 },true).then(function (r) {
+					isVideoOn = true;
+					document.getElementById("captureButton").style.backgroundColor = "";
+					document.getElementById("captureButton").disabled = "";
+					document.getElementById("switchButton").value = "Hide Video";
+				}, function (ex) {
+					console.log(ex.message);
+					DWObject.Addon.Camera.stop();
+				});
+			}
+			else {
+				DWObject.Addon.Camera.stop();
+				isVideoOn = false;
+				document.getElementById("captureButton").style.backgroundColor = "#aaa";
+				document.getElementById("captureButton").disabled = "disabled";
+				document.getElementById("switchButton").value = "Show Video";
+
+			}
+		}
+
+		function SwitchViews() {
+			if (isVideoOn == false) {
+				// continue the video
+				SetIfWebcamPlayVideo(true);
+			} else {
+				// stop the video
+				SetIfWebcamPlayVideo(false);
+			}
+		}
+
+		function Scan(){
+			AcquireImage(false);
+		}
+		
+		function RemoteScan(){
+		    AcquireImage(true);
+		}
+		
+        function AcquireImage(isRemote) {
+			var pixelType,feederEnabled,duplexEnabled,showUI,resolution;
+			//Pixel type
+			if (document.getElementById("BW").checked)
+				pixelType = EnumDWT_PixelType.TWPT_BW;
+			else if (document.getElementById("Gray").checked)
+				pixelType = EnumDWT_PixelType.TWPT_GRAY;
+			else if (document.getElementById("RGB").checked)
+				pixelType = EnumDWT_PixelType.TWPT_RGB;
+			//If auto feeder
+			if (document.getElementById("ADF").checked)
+				feederEnabled = true;
+			else
+				feederEnabled = false;
+			//If duplex
+			if (document.getElementById("Duplex").checked)
+				duplexEnabled = true;
+			else
+				duplexEnabled = false;
+			//If show UI
+			if (document.getElementById("ShowUI").checked)
+				showUI = true;
+			else
+				showUI = false;
+			//Resolution
+			resolution = parseInt(document.getElementById("Resolution").value);
+		    if (isRemote){
+				if (DWObjectRemote){
+					var OnAcquireImageSuccess, OnAcquireImageFailure = function () {
+						console.log("remote scan done");
+						//DWObjectRemote.CloseSource();
+					};
+					DWObjectRemote.CloseSource();
+					var sourceIndex = document.getElementById("remotesource").selectedIndex;					  
+					var deviceConfiguration = {
+					  SelectSourceByIndex: sourceIndex,
+					  IfShowUI: showUI,
+					  PixelType: pixelType,
+					  Resolution: resolution,
+					  IfFeederEnabled: feederEnabled,
+					  IfDuplexEnabled: duplexEnabled,
+					  IfDisableSourceAfterAcquire: true,
+					  RemoteScan: true,
+					  ShowRemoteScanUI: true
+					};
+					console.log("sourceIndex: "+sourceIndex);
+					DWObjectRemote.AcquireImage(deviceConfiguration, OnAcquireImageSuccess, OnAcquireImageFailure);
+				}							
+			}
+			else
+			{
+			    if (DWObject) {		
+					var OnAcquireImageSuccess, OnAcquireImageFailure = function () {
+						console.log("local scan done");
+						//DWObject.CloseSource();
+					};
+					DWObject.SelectSourceByIndex(document.getElementById("source").selectedIndex);				
+					DWObject.CloseSource();
+					DWObject.OpenSource();					
+					DWObject.PixelType=pixelType;
+					DWObject.IfFeederEnabled = feederEnabled;
+					DWObject.IfDuplexEnabled = duplexEnabled;
+					DWObject.IfShowUI=showUI;
+					DWObject.Resolution=resolution;
+					console.log("sourceIndex: "+document.getElementById("source").selectedIndex);
+					if (document.getElementById("ADF").checked && DWObject.IfFeederEnabled == true)  // if paper is NOT loaded on the feeder
+					{
+						if (DWObject.IfFeederLoaded != true && DWObject.ErrorCode == 0) {
+							alert("No paper detected! Please load papers and try again!");
+							return;
+						}
+					}
+
+					DWObject.IfDisableSourceAfterAcquire = true;	// Scanner source will be disabled/closed automatically after the scan.
+					DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
+				}
+			}
+
+        }
+
+        //Callback functions for async APIs
+        function OnSuccess() {
+            console.log('successful');
+        }
+
+        function OnFailure(errorCode, errorString) {
+            alert(errorString);
+        }
+		
+		function OnFailure2() {
+            console.log("error");
+        }
+		
+
+        function LoadLocal(){
+			DWObject.IfShowFileDialog = true;
+			// PDF Rasterizer Addon is used here to ensure PDF support
+			DWObject.Addon.PDF.SetResolution(200);
+			DWObject.Addon.PDF.SetConvertMode(Dynamsoft.EnumDWT_ConvertMode.CM_RENDERALL);
+			DWObject.LoadImageEx("", Dynamsoft.EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure);
+		}
+
+        function SaveWithFileDialog() {
+            if (DWObject) {
+                if (DWObject.HowManyImagesInBuffer > 0) {
+                    DWObject.IfShowFileDialog = true;
+					var filename=document.getElementById("filename").value;
+                    if (document.getElementById("imgTypejpeg").checked == true) {
+                        //If the current image is B&W
+                        //1 is B&W, 8 is Gray, 24 is RGB
+                        if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1)
+                            //If so, convert the image to Gray
+                            DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+                        //Save image in JPEG
+                        DWObject.SaveAsJPEG(filename+".jpg", DWObject.CurrentImageIndexInBuffer);
+                    }
+                    else if (document.getElementById("imgTypetiff").checked == true)
+                        DWObject.SaveAllAsMultiPageTIFF(filename+".tiff", OnSuccess, OnFailure);
+                    else if (document.getElementById("imgTypepdf").checked == true)
+                        DWObject.SaveAllAsPDF(filename+".pdf", OnSuccess, OnFailure);
+                }
+            }
+        }
+		
+		
+		function MoveSelectedUp() {
+            if (DWObject) {
+			    var indices=DWObject.SelectedImagesIndices;
+				var firstIndex = indices[0];
+				DWObject.MoveImage(firstIndex, firstIndex-1);				
+            }
+        }
+		
+		function MoveSelectedDown() {
+            if (DWObject) {
+			    var indices=DWObject.SelectedImagesIndices;
+				var firstIndex = indices[0];
+				DWObject.MoveImage(firstIndex, firstIndex+1);				
+            }
+        }
+		
+        function RemoveSelectedImages() {
+            if (DWObject) {
+			    DWObject.RemoveAllSelectedImages();
+            }
+        }
+		
+        function RemoveBlankImages() {
+            if (DWObject) {
+			    var indices=[];
+                for (var i=0; i<DWObject.HowManyImagesInBuffer; i=i+1){	
+					if (DWObject.IsBlankImage(i)==true){
+					    indices.push(i);
+					}
+				}
+				if (indices.length>0){
+				    DWObject.SelectImages(indices);
+				    DWObject.RemoveAllSelectedImages();
+				}
+            }
+        }
+
+        function RemoveAllImages() {
+            if (DWObject) {
+                DWObject.RemoveAllImages();
+            }
+        }
+		
+		function SetViewMode(){
+		    if (DWObject) {
+			    var colNum = parseInt(document.getElementById("colNum").value);
+				var rowNum = parseInt(document.getElementById("rowNum").value);
+		        DWObject.SetViewMode(colNum,rowNum);
+		    }		
+		}
+		
+		function ViewModeNumChanged(isColumn,value){
+			if (isColumn){
+				document.getElementById("colNumDisplay").innerText=value;
+			}else{
+				document.getElementById("rowNumDisplay").innerText=value;
+			}		    
+		}
+		
+		function ShowImageEditor(){
+			var editorSettings = {
+				/*element: document.getElementById("imageEditor"),
+				width: 600,
+				height: 400,*/
+				border: '1px solid rgb(204, 204, 204);',
+				topMenuBorder: '',
+				innerBorder: '',
+				background: "rgb(255, 255, 255)",
+				promptToSaveChange: true
+			};
+			var imageEditor = DWObject.Viewer.createImageEditor(editorSettings);
+			imageEditor.show();
+		}
+		
+	function ReadBarcodes() {
+		var resultParagraph = document.getElementById("barcoderesult");
+		var template = document.getElementById("dbrtemplate");
+		resultParagraph.innerText="decoding...";
+		if (DWObject) {
+			if (template.value!=""){
+				try {
+					console.log(template.value);
+					DWObject.Addon.BarcodeReader.initRuntimeSettingsWithString(template.value).then(DecodeBarcodes()).catch(OnFailure2());
+				}
+				catch(error) {
+					console.log(error);
+				}
+			}else{
+				DWObject.Addon.BarcodeReader.resetRuntimeSettings().then(DecodeBarcodes()).catch(OnFailure2());		
+			}		
+		} else {
+			console.log('DWObject is not initialized yet');
+			resultParagraph.innerText="failed";
+		}
+	}
+	
+	function DecodeBarcodes(){
+	    console.log("decoding...");
+		var resultParagraph = document.getElementById("barcoderesult");
+		DWObject.Addon.BarcodeReader.decode(DWObject.CurrentImageIndexInBuffer)
+		.then(function(textResults) {
+			var resultText="";
+			console.log(textResults.length);
+			if (textResults.length==0){
+				resultText="Not Found."
+			}else{
+				for (var i = 0; i < textResults.length; i++){			    
+					var result = textResults[i];
+					resultText=resultText+(i+1).toString()+"\nFormat: "+result.BarcodeFormatString+"\nText: "+result.BarcodeText+"\n";
+					console.log(i);
+					console.log(textResults[i]);
+				}		
+			}
+
+			resultParagraph.innerText=resultText;
+			
+		}, function(error) {
+			console.log(error);
+			resultParagraph.innerText="failed";
+		});
+	}
+    </script>
+</body>
+
+</html>

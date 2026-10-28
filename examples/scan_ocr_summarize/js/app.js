@@ -22,6 +22,44 @@ const MAX_ZOOM = 3.0;
 const MIN_ZOOM = 0.5;
 
 // Wait for DWT to be ready
+let ocrInfo = null;
+
+// Enumerate OCR engines exposed by the service (system OCR + ONNX Runtime engines).
+// OCR Connector is supported on Windows and macOS only.
+async function initOCREngines() {
+    const select = document.getElementById('ocrEngine');
+    try {
+        ocrInfo = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
+        const engines = (ocrInfo && ocrInfo.engines) || [];
+        select.innerHTML = '';
+        if (engines.length === 0) {
+            select.add(new Option('None installed', ''));
+            return;
+        }
+        engines.forEach(function (engine) {
+            select.add(new Option(engine.name, engine.name));
+        });
+        fillOCRLanguages(select.value);
+    } catch (error) {
+        select.innerHTML = '';
+        select.add(new Option('Not available', ''));
+        console.warn('OCR Connector unavailable:', error);
+    }
+}
+
+function fillOCRLanguages(engineName) {
+    const select = document.getElementById('ocrLanguage');
+    const engines = (ocrInfo && ocrInfo.engines) || [];
+    const engine = engines.find(function (item) { return item.name === engineName; });
+    if (!engine || !engine.languages || engine.languages.length === 0) {
+        return;
+    }
+    select.innerHTML = '';
+    engine.languages.forEach(function (language) {
+        select.add(new Option(language, language));
+    });
+}
+
 Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
     DWTObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
     if (DWTObject) {
@@ -37,6 +75,10 @@ Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
 function loadScanners() {
     const sourceSelect = document.getElementById('sourceSelect');
     sourceSelect.innerHTML = '<option selected>Loading scanners...</option>';
+
+    if (DWTObject.Addon && DWTObject.Addon.OCRConnector) {
+        initOCREngines();
+    }
 
     DWTObject.GetDevicesAsync().then(function (devices) {
         deviceList = devices;
@@ -527,6 +569,7 @@ async function performOCR(imageIndex) {
     const modal = document.getElementById('ocrModal');
     const ocrText = document.getElementById('ocrText');
     const language = document.getElementById('ocrLanguage').value;
+    const engineName = document.getElementById('ocrEngine').value;
 
     modal.classList.add('show');
     ocrText.textContent = 'Processing OCR...';
@@ -537,9 +580,11 @@ async function performOCR(imageIndex) {
             throw new Error('OCR add-on is not available. Please install the OCR resources.');
         }
 
-        const result = await DWTObject.Addon.OCRConnector.Recognize(imageIndex, {
-            settings: { language: language }
-        });
+        const options = { settings: { language: language } };
+        if (engineName) {
+            options.engine = { name: engineName };
+        }
+        const result = await DWTObject.Addon.OCRConnector.Recognize(imageIndex, options);
 
         const extractedText = formatOCRResult(result);
         ocrText.textContent = extractedText || 'No text found in the image.';

@@ -133,7 +133,7 @@ Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
     
     // Always restore from local storage (enabled by default)
     restoreStorage().then(function() {
-        checkOCRInstalled();
+        initOCR();
         
     });
 });
@@ -323,7 +323,11 @@ async function correctOrientation() {
 }
 
 async function correctOrientationForOne(index) {
-    let result = await DWTObject.Addon.OCRConnector.DetectPageOrientation(index);
+    let options = {};
+    if (selectedEngine()) {
+        options.engine = selectedEngine();
+    }
+    let result = await DWTObject.Addon.OCRConnector.DetectPageOrientation(index, options);
     if (result.angle != 0) {
         DWTObject.Rotate(index, -result.angle, true);
     }
@@ -348,7 +352,11 @@ async function recognize() {
 
 async function recognizeOnePage(index) {
     let language = document.getElementById("language").value;
-    let result = await DWTObject.Addon.OCRConnector.Recognize(index, { settings: { language: language } });
+    let options = { settings: { language: language } };
+    if (selectedEngine()) {
+        options.engine = { name: selectedEngine() };
+    }
+    let result = await DWTObject.Addon.OCRConnector.Recognize(index, options);
     await saveOCRResult(result.imageID, result);
     printPrettyResult(result);
 }
@@ -367,18 +375,53 @@ function printPrettyResult(result) {
     document.getElementById("result").innerText = prettyResult;
 }
 
-async function checkOCRInstalled() {
+let ocrInfo = null;
+
+// Enumerate the OCR engines the local service exposes (the system built-in engine
+// plus any ONNX Runtime engine) and fill the engine/language pickers.
+async function initOCR() {
+    const engineSelect = document.getElementById("engine");
     try {
-        let info = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
-        if (info.version) {
-            return true;
-        }
+        ocrInfo = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
     } catch (error) {
-        alert(error.message);
-        return false;
+        engineSelect.innerHTML = "";
+        engineSelect.add(new Option("Not available", ""));
+        document.getElementById("result").innerText =
+            "OCR Connector is unavailable: " + (error.message || error) +
+            "\nOCR Connector runs on Windows and macOS only. Linux is not supported yet.";
+        return;
     }
-    alert("OCR Add-on is not installed. Please install it to use OCR features.");
-    return false;
+    if (!ocrInfo || !ocrInfo.engines || ocrInfo.engines.length === 0) {
+        engineSelect.innerHTML = "";
+        engineSelect.add(new Option("No OCR engine installed", ""));
+        document.getElementById("result").innerText =
+            "No OCR engine was reported by the service. Windows should have the system OCR; on macOS install the OCR Connector add-on.";
+        return;
+    }
+    engineSelect.innerHTML = "";
+    ocrInfo.engines.forEach(function (engine) {
+        engineSelect.add(new Option(engine.name, engine.name));
+    });
+    fillLanguages(engineSelect.value);
+}
+
+// Languages are engine specific: the system engine exposes the OS language pack list.
+function fillLanguages(engineName) {
+    const languageSelect = document.getElementById("language");
+    languageSelect.innerHTML = "";
+    if (!ocrInfo || !ocrInfo.engines) {
+        return;
+    }
+    const engine = ocrInfo.engines.find(function (item) { return item.name === engineName; });
+    const languages = (engine && engine.languages) || [];
+    languages.forEach(function (language) {
+        languageSelect.add(new Option(language, language));
+    });
+}
+
+function selectedEngine() {
+    const value = document.getElementById("engine").value;
+    return value ? value : undefined;
 }
 
 async function saveAsPDF() {

@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Proxy Scan</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+</head>
+
+<body>
+  Server URL:
+  <input id="serverURL" type="text" value="https://rocky.scannerproxy.com/"></input>
+  <br/>
+  Services:
+  <select id="services" onChange="serviceSelected();"></select>
+  <br/>
+  Scanners:
+  <select id="scanners" onChange="scannerSelected();"></select>
+  <br/>
+  <input id="searchButton" type="button" value="Search Services" onclick="loadServices();"/>
+  <input id="scanButton" type="button" value="Scan" onclick="AcquireImage();"/>
+  <div id="dwtcontrolContainer" style="width: 350px; height: 380px;"></div>
+  <script type="text/javascript">
+    Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+    let DWObject;
+    let RemoteDWObject;
+    let services;
+    let devices;
+    
+
+    function Dynamsoft_OnReady() {
+      DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+      console.log("ready");
+    }
+
+    async function serviceSelected(){
+      console.log("serviceSelected");
+      if (RemoteDWObject) {
+        RemoteDWObject.dispose();
+      }
+      let servicesSelect = document.getElementById("services");
+      let selectedService = services[servicesSelect.selectedIndex];
+      RemoteDWObject = await Dynamsoft.DWT.CreateRemoteScanObjectAsync(selectedService);
+      loadScanners();
+    }
+
+    function scannerSelected(){
+      console.log("scannerSelected");
+
+    }
+
+    async function loadServices(){
+      let servicesSelect = document.getElementById("services");
+      servicesSelect.innerHTML = "";
+      let serverURL = document.getElementById("serverURL").value;
+      services = await Dynamsoft.DWT.FindDynamsoftServiceAsync(serverURL);
+      services.forEach(service => {
+        console.log(service);
+        let option = new Option();
+        option.value = service.attrs.name;
+        option.text = service.attrs.name;
+        servicesSelect.appendChild(option);
+      });
+      serviceSelected();
+    }
+
+    async function loadScanners(){
+      let scannersSelect = document.getElementById("scanners");
+      scannersSelect.innerHTML = "";
+      devices = await RemoteDWObject.getDevices();
+      devices.forEach(device => {
+        console.log(device);
+        let option = new Option();
+        option.value = device.displayName;
+        option.text = device.displayName;
+        scannersSelect.appendChild(option);
+      });
+    }
+    
+    async function AcquireImage() {
+      if (RemoteDWObject) {
+        let scannersSelect = document.getElementById("scanners");
+        let device = devices[scannersSelect.selectedIndex];
+        await RemoteDWObject.selectDevice(device);
+        await RemoteDWObject.acquireImage({IfShowUI:false},DWObject);
+      }
+    }
+  </script>
+</body>
+
+</html>

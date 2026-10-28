@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynamic Web TWAIN — CreateDWTObjectEx (No UI, img Display)</title>
+  <style>
+    :root {
+      --brand: #2563eb;
+      --brand-dark: #1d4ed8;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --ok: #16a34a;
+      --err: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(1200px 600px at 50% -10%, #e8efff 0%, #f6f8fc 45%, #eef2f7 100%);
+    }
+
+    .shell {
+      width: min(960px, 100%);
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 45px -25px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+    }
+
+    .card__head {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fbfcff, #ffffff);
+    }
+
+    .card__head h1 {
+      margin: 0 0 6px;
+      font-size: 19px;
+      letter-spacing: -0.01em;
+    }
+
+    .card__head p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .code-tag {
+      display: inline-block;
+      margin: 0 2px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--brand-dark);
+      background: #eef2ff;
+      border: 1px solid #dbe3ff;
+      border-radius: 6px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    button.scan {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      padding: 11px 26px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(180deg, var(--brand), var(--brand-dark));
+      border-radius: 10px;
+      box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.9);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+
+    button.scan:hover:not(:disabled) { transform: translateY(-1px); }
+    button.scan:active:not(:disabled) { transform: translateY(0); }
+
+    button.scan:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      box-shadow: none;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      transition: background 0.2s ease;
+    }
+
+    .status.is-ready::before { background: var(--ok); }
+    .status.is-busy::before { background: #f59e0b; }
+    .status.is-error::before { background: var(--err); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 18px;
+      padding: 24px 28px 28px;
+      min-height: 140px;
+    }
+
+    .page {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f8fafc;
+      box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.6);
+    }
+
+    .page img {
+      display: block;
+      width: 100%;
+      height: 260px;
+      object-fit: contain;
+      background: #fff;
+    }
+
+    .page figcaption {
+      padding: 9px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .empty {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 40px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="card">
+      <div class="card__head">
+        <h1>CreateDWTObjectEx (No UI / Headless)</h1>
+        <p>
+          Use <span class="code-tag">Dynamsoft.DWT.CreateDWTObjectEx()</span> to create a WebTwain
+          instance that is <strong>not bound to any UI container</strong>, scan with a single
+          "Scan" button, then display the results with plain
+          <span class="code-tag">&lt;img&gt;</span> elements (backed by
+          <span class="code-tag">GetImageURL()</span>).
+        </p>
+      </div>
+
+      <div class="toolbar">
+        <button id="scanBtn" class="scan" type="button" disabled>Scan</button>
+        <span id="status" class="status">Creating the WebTwain instance…</span>
+      </div>
+
+      <div id="gallery" class="gallery">
+        <p class="empty" id="empty">No scans yet. Click "Scan" to start.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- 1. Load the SDK core library + local configuration (ProductKey / ResourcesPath come from the config file) -->
+  <script src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script src="Resources/dynamsoft.webtwain.config.js"></script>
+
+  <script>
+    /* ------------------------------------------------------------------
+     * Override the defaults from the config file:
+     *  - AutoLoad = false         -> disable auto-loading (otherwise the config's Containers is used)
+     *  - Containers = []          -> do not create any instance via Load()
+     *  - UseDefaultViewer = false -> do not load the built-in viewer js/css at all (we need no UI)
+     * ------------------------------------------------------------------ */
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.Containers = [];
+    Dynamsoft.DWT.UseDefaultViewer = false;
+    Dynamsoft.DWT.IfCheckCssFiles = false;
+
+    var DWTObject = null;
+
+    var scanBtn = document.getElementById("scanBtn");
+    var statusEl = document.getElementById("status");
+    var galleryEl = document.getElementById("gallery");
+
+    /* ------------------------------------------------------------------
+     * Create a headless (no UI) instance with CreateDWTObjectEx.
+     * Since there is no container div, WebTwainId is used as the instance identifier.
+     * ------------------------------------------------------------------ */
+    window.addEventListener("load", function () {
+      if (!window.Dynamsoft || !Dynamsoft.DWT) {
+        setStatus("error", "Dynamic Web TWAIN is not loaded. Check that the Resources folder is in place.");
+        return;
+      }
+
+      Dynamsoft.DWT.CreateDWTObjectEx(
+        { WebTwainId: "dwtObject" },
+        function (object) {
+          DWTObject = object;
+          scanBtn.disabled = false;
+          setStatus("ready", 'Instance ready (no UI). Click "Scan" to start.');
+        },
+        function (error) {
+          var message = error && error.message ? error.message : String(error);
+          setStatus("error", "Failed to create the instance: " + message);
+        }
+      );
+    });
+
+    /* ------------------------------------------------------------------
+     * Scan
+     * ------------------------------------------------------------------ */
+    function scan() {
+      if (!DWTObject) {
+        return;
+      }
+
+      setStatus("busy", "Scanning…");
+      scanBtn.disabled = true;
+
+      DWTObject.SelectSourceAsync() // Select the scanner (opens the source picker on desktop)
+        .then(function () {
+          return DWTObject.AcquireImageAsync({
+            IfShowUI: false, // Do not show the scanner's native UI
+            IfCloseSourceAfterAcquire: true // Close the scanner connection after acquisition
+            // Add more options if needed:
+            // PixelType: Dynamsoft.DWT.EnumDWT_PixelType.TWPT_RGB,
+            // Resolution: 200,
+            // IfFeederEnabled: true,
+            // IfDuplexEnabled: false
+          });
+        })
+        .then(function () {
+          renderImages();
+          setStatus("ready", "Scan complete: " + DWTObject.HowManyImagesInBuffer + " page(s).");
+        })
+        .catch(function (exp) {
+          setStatus("error", "Scan failed: " + (exp && exp.message ? exp.message : exp));
+        })
+        .then(function () {
+          scanBtn.disabled = false;
+        });
+    }
+
+    /* ------------------------------------------------------------------
+     * Render every page in the buffer with plain <img> elements.
+     * GetImageURL(index) returns a direct image URL served by the local Dynamsoft Service.
+     * ------------------------------------------------------------------ */
+    function renderImages() {
+      var total = DWTObject ? DWTObject.HowManyImagesInBuffer : 0;
+
+      if (total === 0) {
+        galleryEl.innerHTML = '<p class="empty">No images in the buffer.</p>';
+        return;
+      }
+
+      galleryEl.innerHTML = "";
+
+      for (var i = 0; i < total; i++) {
+        var figure = document.createElement("figure");
+        figure.className = "page";
+
+        var img = document.createElement("img");
+        img.src = DWTObject.GetImageURL(i);
+        img.alt = "Scanned page " + (i + 1);
+        img.loading = "lazy";
+
+        var caption = document.createElement("figcaption");
+        caption.textContent = "Page " + (i + 1);
+
+        figure.appendChild(img);
+        figure.appendChild(caption);
+        galleryEl.appendChild(figure);
+      }
+    }
+
+    function setStatus(state, text) {
+      statusEl.className = "status" + (state ? " is-" + state : "");
+      statusEl.textContent = text;
+    }
+
+    scanBtn.addEventListener("click", scan);
+  </script>
+</body>
+</html>

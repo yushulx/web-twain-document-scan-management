@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Dynamic Web TWAIN - OCR Demo</title>
+  <script src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script src="Resources/dynamsoft.webtwain.config.js"></script>
+  <script src="Resources/addon/dynamsoft.webtwain.addon.ocrconnector.js"></script>
+  <script src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <style>
+    #dwtcontrolContainer {
+      margin-top: 20px;
+      width: 320px;
+      height: 400px;
+      border: 1px solid #ccc;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      width: 640px;
+      height: 380px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+    }
+
+    /* OCR result viewer */
+    #viewerBackdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      background: rgba(0, 0, 0, 0.88);
+      font-family: sans-serif;
+    }
+    #viewerBackdrop.open {
+      display: flex;
+    }
+    #viewerDialog {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+    #viewerToolbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 14px;
+      background: #222;
+      color: #eee;
+      font-size: 14px;
+    }
+    #viewerTitle {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    #viewerModeSwitch {
+      display: flex;
+      border: 1px solid #555;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #viewerModeSwitch button {
+      padding: 5px 16px;
+      border: none;
+      background: #333;
+      color: #ccc;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #viewerModeSwitch button.active {
+      background: #4a90d9;
+      color: #fff;
+    }
+    #viewerHint {
+      margin-left: auto;
+      color: #999;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    #viewerClose {
+      border: none;
+      background: none;
+      color: #bbb;
+      font-size: 22px;
+      line-height: 1;
+      padding: 2px 8px;
+      cursor: pointer;
+    }
+    #viewerClose:hover {
+      color: #fff;
+    }
+    #viewerBody {
+      flex: 1 1 auto;
+      overflow: auto;
+      padding: 16px;
+      text-align: center;
+    }
+    #viewerStage {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      vertical-align: top;
+    }
+    #viewerImage {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    #viewerOverlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+    .ocr-word {
+      position: absolute;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #fff;
+      color: #000;
+      pointer-events: auto;
+      cursor: default;
+    }
+    .ocr-word > span {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1.05;
+      unicode-bidi: plaintext;
+    }
+    .ocr-word:hover {
+      background: #ffe066;
+      outline: 3px solid #e00000;
+      outline-offset: 0;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div>Input: </div>
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+    <input type="button" value="Load Image" onclick="LoadImage();" />
+  </div>
+  <div>
+    <div>Processing:</div>
+    <input type="button" value="Correct Orientation" onclick="CorrectOrientation();" />
+    <input type="button" value="Recognize Text" onclick="Recognize();" />
+    <label>
+      Engine:
+      <select id="engine" onchange="listLanguagesOfSelectedEngine(this.value);">
+      </select>
+    </label>
+    <label>
+      Language:
+      <select id="language" onchange="ApplyResultDirection();">
+      </select>
+    </label>
+    <label>
+      Target:
+      <select id="processingTarget">
+        <option value="current">Current Image</option>
+        <option value="all">All Images</option>
+      </select>
+    </label>
+  </div>
+  <div>
+    <div>Output:</div>
+    <input type="button" value="Save as PDF" onclick="SaveAsPDF();" />
+    <label>Option:
+      <select id="outputFormat">
+        <option value="extralayer">With Extra Text Layer</option>
+        <option value="plaintext">Plain Text</option>
+      </select>
+    </label>
+    <label>PDF/A:
+      <select id="pdfaOption">
+        <option value="pdf/a-1b">PDF/A-1b</option>
+        <option value="pdf/a-2b">PDF/A-2b</option>
+        <option value="pdf/a-3b">PDF/A-3b</option>
+        <option value="none">Don't save as PDF/A</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="container">
+    <div id="dwtcontrolContainer"></div>
+    <pre id="result"></pre>
+  </div>
+  <div style="margin-top: 10px; color: #666; font-size: 13px;">
+    Tip: after recognizing text, click the image to open the full-size OCR result viewer.
+  </div>
+
+  <div id="viewerBackdrop">
+    <div id="viewerDialog" role="dialog" aria-modal="true" aria-label="OCR result viewer">
+      <div id="viewerToolbar">
+        <span id="viewerTitle">OCR Result</span>
+        <div id="viewerModeSwitch">
+          <button type="button" data-mode="original">Original</button>
+          <button type="button" data-mode="ocr" class="active">OCR Result</button>
+        </div>
+        <span id="viewerHint">Hover to highlight text regions · Press Esc to close</span>
+        <button type="button" id="viewerClose" title="Close">✕</button>
+      </div>
+      <div id="viewerBody">
+        <div id="viewerStage">
+          <img id="viewerImage" alt="OCR result preview" />
+          <div id="viewerOverlay"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    let DWTObject;
+    let storedOCRResults = {};
+    let ocrInfo;
+
+    Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTAwMjI3NzYzLU1UQXdNakkzTnpZekxWUnlhV0ZzVUhKdmFnIiwibWFpblNlcnZlclVSTCI6Imh0dHBzOi8vbWRscy5keW5hbXNvZnRvbmxpbmUuY29tLyIsIm9yZ2FuaXphdGlvbklEIjoiMTAwMjI3NzYzIiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tLyIsImNoZWNrQ29kZSI6MjEwODQ0NjQwOH0="; //one-day trial license
+    Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
+      DWTObject = Dynamsoft.DWT.GetWebTwain("dwtcontrolContainer");
+      DWTObject.Viewer.width = "100%";
+      DWTObject.Viewer.height = "100%";
+      GetInstalledOCRInfo();
+      DWTObject.RegisterEvent('OnBufferChanged',
+        function (bufferChangeInfo) {
+          console.log('Buffer changed: ', bufferChangeInfo);
+          if (DWTObject.CurrentImageIndexInBuffer != -1) {
+            let imageID = DWTObject.IndexToImageID(DWTObject.CurrentImageIndexInBuffer);
+            if (imageID in storedOCRResults) {
+              PrettyPrintResult(storedOCRResults[imageID]);
+            } else {
+              document.getElementById("result").innerText = "";
+            }
+          }
+        }
+      );
+
+      // Click on a page in the viewer to open its OCR result in the full-size viewer.
+      if (DWTObject.Viewer && typeof DWTObject.Viewer.on === "function") {
+        DWTObject.Viewer.on("click", function (viewerEvent) {
+          if (!viewerEvent || typeof viewerEvent.index !== "number" || viewerEvent.index < 0) return;
+          openResultViewer(viewerEvent.index);
+        });
+      } else {
+        DWTObject.RegisterEvent("OnMouseClick", function (index) {
+          if (index >= 0) openResultViewer(index);
+        });
+      }
+    });
+
+
+    function AcquireImage() {
+      if (DWTObject) {
+        DWTObject.SelectSourceAsync()
+          .then(function () {
+            return DWTObject.AcquireImageAsync({
+              IfCloseSourceAfterAcquire: true,
+            });
+          })
+          .catch(function (exp) {
+            alert(exp.message);
+          });
+      }
+    }
+
+    function LoadImage(){
+      DWTObject.IfShowFileDialog = true; //"Open File" dialog will be opened.
+      DWTObject.LoadImageEx(
+          "", //file name can be empty if "Open File" dialog is called.
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL,
+          function () {
+              console.log("success");
+          },
+          function (errorCode, errorString) {
+              console.log(errorString);
+          },
+      );
+    }
+
+    async function CorrectOrientation() {
+      if (DWTObject) {
+        if (document.getElementById("processingTarget").value === "all") {
+          let count = DWTObject.HowManyImagesInBuffer;
+          for (let i = 0; i < count; i++) {
+            DWTObject.SelectImages([i])
+            await CorrectOrientationForOne(i);
+          }
+          return;
+        }else{
+          if (DWTObject.CurrentImageIndexInBuffer != -1) {
+            await CorrectOrientationForOne(DWTObject.CurrentImageIndexInBuffer);
+          }
+        }
+      }
+    }
+
+    async function CorrectOrientationForOne(index){
+      try {
+        let engine = document.getElementById("engine").value;
+        let result = await DWTObject.Addon.OCRConnector.DetectPageOrientation(index,{engine:engine});
+        console.log(result);
+        if (result.angle != 0) {
+          DWTObject.Rotate(index,-result.angle,true);
+        }
+      }catch(error) {
+        console.log(error);
+        alert(error.message);
+      }
+    }
+
+    async function Recognize() {
+      if (DWTObject) {
+        if (document.getElementById("processingTarget").value === "all") {
+          let count = DWTObject.HowManyImagesInBuffer;
+          for (let i = 0; i < count; i++) {
+            DWTObject.SelectImages([i])
+            await RecognizeOnePage(i);
+          }
+          return;
+        }else{
+          if (DWTObject.CurrentImageIndexInBuffer != -1) {
+            await RecognizeOnePage(DWTObject.CurrentImageIndexInBuffer);
+          }
+        }
+      }
+    }
+
+    async function RecognizeOnePage(index){
+      let engine = document.getElementById("engine").value;
+      let language = document.getElementById("language").value;
+      let result = await DWTObject.Addon.OCRConnector.Recognize(index,{
+        engine:{name:engine},
+        settings:{language:language}
+      });
+      console.log(result);
+      storedOCRResults[result.imageID] = result;
+      PrettyPrintResult(result);
+    }
+
+    function PrettyPrintResult(result){
+      let prettyResult = "";
+      result.blocks.forEach(block => {
+        block.lines.forEach(line => {
+          if (line.value) {
+            prettyResult += line.value + " ";
+          }else{
+            line.words.forEach(word => {
+              prettyResult += word.value + " ";
+            });
+          }
+          prettyResult += "\n";
+        });
+        prettyResult += "\n";
+      });
+      document.getElementById("result").innerText = prettyResult;
+      ApplyResultDirection();
+    }
+
+    let RTL_LANGUAGES = [
+      "ar"
+    ];
+
+    function isRtlLanguage(language) {
+      if (!language) {
+        return false;
+      }
+      let value = language.trim().toLowerCase();
+      return RTL_LANGUAGES.some(function (lang) {
+        return value === lang || new RegExp("^" + lang + "(?![a-z])").test(value);
+      });
+    }
+
+    function ApplyResultDirection() {
+      let resultEl = document.getElementById("result");
+      let language = document.getElementById("language").value;
+      resultEl.style.direction = isRtlLanguage(language) ? "rtl" : "";
+    }
+
+    /* ---------------- OCR result viewer ---------------- */
+
+    let viewerResult = null;
+    let viewerMode = "ocr";
+    let viewerResizeTimer = null;
+
+    function openResultViewer(index) {
+      if (!DWTObject || typeof index !== "number" || index < 0) return;
+      let imageID = DWTObject.IndexToImageID(index);
+      let result = storedOCRResults[imageID];
+      if (!result) {
+        console.log("No OCR result for image index", index);
+        return;
+      }
+
+      let imageURL;
+      try {
+        // Full-size image served by the local DWT service.
+        imageURL = DWTObject.GetImageURL(index);
+      } catch (error) {
+        console.log(error);
+        return;
+      }
+
+      viewerResult = result;
+      let img = document.getElementById("viewerImage");
+      let overlay = document.getElementById("viewerOverlay");
+      overlay.innerHTML = "";
+      setViewerMode("ocr");
+      document.getElementById("viewerBackdrop").classList.add("open");
+
+      img.onload = function () {
+        buildViewerOverlay(result);
+        layoutViewerOverlay();
+      };
+      img.src = imageURL;
+    }
+
+    function closeResultViewer() {
+      document.getElementById("viewerBackdrop").classList.remove("open");
+      let img = document.getElementById("viewerImage");
+      img.onload = null;
+      img.removeAttribute("src");
+      document.getElementById("viewerOverlay").innerHTML = "";
+      viewerResult = null;
+    }
+
+    function setViewerMode(mode) {
+      viewerMode = mode;
+      let overlay = document.getElementById("viewerOverlay");
+      if (overlay) {
+        overlay.style.display = mode === "ocr" ? "block" : "none";
+      }
+      document.querySelectorAll("#viewerModeSwitch button").forEach(function (btn) {
+        btn.classList.toggle("active", btn.dataset.mode === mode);
+      });
+    }
+
+    // Collect word-level results, falling back to the line if the engine
+    // doesn't report individual words.
+    function getWordBoxes(result) {
+      let boxes = [];
+      (result.blocks || []).forEach(function (block) {
+        (block.lines || []).forEach(function (line) {
+          if (line.words && line.words.length) {
+            line.words.forEach(function (word) {
+              if (word.value && word.geometry) boxes.push(word);
+            });
+          } else if (line.value && line.geometry) {
+            boxes.push({ value: line.value, geometry: line.geometry });
+          }
+        });
+      });
+      return boxes;
+    }
+
+    // Accept both {left, top, right, bottom} (documented) and
+    // {x, y, width, height} (returned by some engines).
+    function normalizeGeometry(g) {
+      g = g || {};
+      if (typeof g.left === "number" && typeof g.right === "number") {
+        return {
+          left: Math.min(g.left, g.right),
+          top: Math.min(g.top, g.bottom),
+          width: Math.abs(g.right - g.left),
+          height: Math.abs(g.bottom - g.top)
+        };
+      }
+      let x = typeof g.x === "number" ? g.x : (typeof g.X === "number" ? g.X : 0);
+      let y = typeof g.y === "number" ? g.y : (typeof g.Y === "number" ? g.Y : 0);
+      let w = typeof g.width === "number" ? g.width : (typeof g.Width === "number" ? g.Width : 0);
+      let h = typeof g.height === "number" ? g.height : (typeof g.Height === "number" ? g.Height : 0);
+      return { left: x, top: y, width: w, height: h };
+    }
+
+    function buildViewerOverlay(result) {
+      let overlay = document.getElementById("viewerOverlay");
+      overlay.innerHTML = "";
+      getWordBoxes(result).forEach(function (word) {
+        let geo = normalizeGeometry(word.geometry);
+        if (geo.width <= 0 || geo.height <= 0 || !word.value) return;
+
+        let el = document.createElement("div");
+        el.className = "ocr-word";
+        el.style.left = geo.left + "px";
+        el.style.top = geo.top + "px";
+        el.style.width = geo.width + "px";
+        el.style.height = geo.height + "px";
+        el.title = word.value;
+
+        let span = document.createElement("span");
+        span.textContent = word.value;
+        el.appendChild(span);
+        overlay.appendChild(el);
+
+        fitWordFontSize(el, span);
+      });
+    }
+
+    // Binary-search the largest font size that keeps the word inside its box.
+    function fitWordFontSize(el, span) {
+      let maxWidth = el.clientWidth - 2;
+      let maxHeight = el.clientHeight - 1;
+      if (maxWidth <= 0 || maxHeight <= 0) return;
+      let lo = 1;
+      let hi = Math.max(2, maxHeight);
+      let best = 1;
+      for (let i = 0; i < 12; i++) {
+        let mid = (lo + hi) / 2;
+        el.style.fontSize = mid + "px";
+        if (span.offsetWidth <= maxWidth && span.offsetHeight <= maxHeight) {
+          best = mid;
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+        if (hi - lo < 0.5) break;
+      }
+      el.style.fontSize = Math.max(1, Math.floor(best)) + "px";
+    }
+
+    // Scale the OCR coordinate space onto the displayed (responsive) image.
+    function layoutViewerOverlay() {
+      if (!viewerResult) return;
+      let img = document.getElementById("viewerImage");
+      let overlay = document.getElementById("viewerOverlay");
+      if (!img.naturalWidth || !img.clientWidth) return;
+
+      let dims = viewerResult.dimensions || {};
+      let ocrW = dims.width || img.naturalWidth;
+      let ocrH = dims.height || img.naturalHeight;
+      if (ocrW <= 0 || ocrH <= 0) return;
+
+      overlay.style.width = ocrW + "px";
+      overlay.style.height = ocrH + "px";
+      overlay.style.transform =
+        "scale(" + (img.clientWidth / ocrW) + ", " + (img.clientHeight / ocrH) + ")";
+    }
+
+    document.getElementById("viewerClose").addEventListener("click", closeResultViewer);
+    document.querySelectorAll("#viewerModeSwitch button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setViewerMode(btn.dataset.mode);
+      });
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && viewerResult) closeResultViewer();
+    });
+    window.addEventListener("resize", function () {
+      if (!viewerResult) return;
+      clearTimeout(viewerResizeTimer);
+      viewerResizeTimer = setTimeout(layoutViewerOverlay, 100);
+    });
+
+    async function GetInstalledOCRInfo(){
+      try {
+        ocrInfo = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
+        listEngines();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+    
+    function listEngines(){
+      let select = document.getElementById("engine");
+      select.innerHTML = "";
+      ocrInfo.engines.forEach(function (engine) {
+        let option = document.createElement("option");
+        option.value = engine.name;
+        option.text = engine.name;
+        select.add(option);
+      });
+      listLanguagesOfSelectedEngine(select.value);
+    }
+
+    function listLanguagesOfSelectedEngine(engine) {
+      let select = document.getElementById("language");
+      select.innerHTML = "";
+      let info = ocrInfo.engines.find(function (e) { return e.name === engine; });
+      info.languages.forEach(function (language) {
+        let option = document.createElement("option");
+        option.value = language;
+        option.text = language;
+        select.add(option);
+      });
+    }
+
+    async function SaveAsPDF(){
+      try {
+        let format = document.getElementById('outputFormat').value;
+        let pdfaOption = document.getElementById('pdfaOption').value;
+        DWTObject.Addon.PDF.Write.Setup({
+          pdfaVersion: pdfaOption !== "none" ? pdfaOption : ""
+        });
+        if(format === "extralayer"){
+          await DWTObject.Addon.OCRConnector.SaveToPath(DWTObject.SelectAllImages(),Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_WITH_EXTRA_TEXTLAYER,"output.pdf");
+        }else{
+          await DWTObject.Addon.OCRConnector.SaveToPath(DWTObject.SelectAllImages(),Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_PLAIN_TEXT,"output.pdf");
+        }  
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+  </script>
+</body>
+</html>

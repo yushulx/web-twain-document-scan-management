@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CDN Example</title>
+  <script src="https://cdn.jsdelivr.net/npm/dwt@latest/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    .app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .scanButton {
+      height: 25px;
+    }
+
+    #dwtcontrolContainer {
+      width: 100%;
+      height: calc(100% - 25px);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <input class="scanButton" type="button" value="Scan" onclick="AcquireImage();" />
+    <div id="dwtcontrolContainer"></div>
+  </div>
+  <script type="text/javascript">
+    let DWObject;
+    Dynamsoft.DWT.ProductKey = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@latest/dist";
+    Dynamsoft.DWT.ServiceInstallerLocation = 'https://unpkg.com/dwt@latest/dist/dist/';
+    init();
+
+    function init(){
+      Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer',Width: 270, Height: 350 }];
+      Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+        console.log("ready");
+        DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+        DWObject.Viewer.width = "100%";
+        DWObject.Viewer.height = "100%";
+        DWObject.SetViewMode(1,1);
+      });
+      Dynamsoft.DWT.Load();
+    }
+
+    function AcquireImage() {
+      if (DWObject) {
+        DWObject.SelectSource(function () {
+          DWObject.OpenSource();
+          DWObject.AcquireImage();
+        },
+          function () {
+            console.log("SelectSource failed!");
+          }
+        );
+      }
+    }
+
+  </script>
+</body>
+
+</html>

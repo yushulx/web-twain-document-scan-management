@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Scan to PDF</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+  <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+  <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.camera.js"></script>
+</head>
+
+<body>
+  <h2>Input</h2>
+  <div class="panel">
+    <input type="button" value="Load Images" onclick="LoadImages();" />
+    <input type="button" value="Camera" onclick="StartCamera();" />
+  </div>
+  <h2>Output</h2>
+  <div class="panel">
+    PDF Compression Type:
+    <select size="1" id="compressionType">
+      <option value="0">PDF_AUTO</option>
+      <option value="2">PDF_FAX4</option>
+      <option value="3">PDF_LZW</option>
+      <option value="5">PDF_JPEG</option>
+      <option value="6">PDF_JP2000</option>
+      <option value="7">PDF_JBIG2</option>
+    </select>
+    <br />
+    PDF Page Type:
+    <select size="1" id="pageType">
+      <option value="0">Page_Default</option>
+      <option value="1">Page_Custom</option>
+      <option value="2">Page_A4</option>
+      <option value="3">Page_A4_Reverse</option>
+      <option value="4">Page_A3</option>
+      <option value="5">Page_A3_Reverse</option>
+      <option value="6">Page_Letter</option>
+      <option value="7">Page_Letter_Reverse</option>
+      <option value="8">Page_Legal</option>
+      <option value="9">Page_Legal_Reverse</option>
+    </select>
+    <br />
+    JPEG Quality:
+    <input type="text" id="JPEGQuality" value="100">
+    <br />
+    <input type="button" value="Edit" onclick="StartDocumentEditor();" />
+    <br />
+    <input type="button" value="Save as PDF" onclick="Save();" />
+  </div>
+  <div id="dwtcontrolContainer" style="width: 350px; height: 380px;"></div>
+  <script type="text/javascript">
+    Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+    Dynamsoft.DWT.UseLocalService = false;
+    let DWObject;
+
+    function Dynamsoft_OnReady() {
+      DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+      DWObject.SetViewMode(2, 2);
+    }
+    
+    function Save(){
+      if (DWObject) {
+        let OnSuccess = function () {
+          alert("Success");
+        };
+        let OnFailure = function () {
+          alert("Fail");
+        };
+        //https://www.dynamsoft.com/web-twain/docs/info/api/Dynamsoft_Enum.html#dynamsoftdwtenumdwt_pdfcompressiontype
+        let compressionType = document.getElementById("compressionType").selectedOptions[0].value;
+        compressionType = parseInt(compressionType);
+
+        let pageType = document.getElementById("pageType").selectedOptions[0].value;
+        pageType = parseInt(pageType);
+        
+
+        let JPEGQuality = document.getElementById("JPEGQuality").value;
+        
+        DWObject.JPEGQuality = JPEGQuality;
+        let pdfSaveSettings = { author: "Dynamsoft", 
+            compression: compressionType, 
+            pageType: pageType, 
+            creator: "DWT", 
+            creationDate: "", 
+            keyWords: "", 
+            modifiedDate: "", 
+            producer: "Dynamsoft Corporation", 
+            subject: "", 
+            title: "", 
+            version: 1.5, 
+            quality: DWObject.JPEGQuality };
+        console.log(pdfSaveSettings);
+        DWObject.Addon.PDF.Write.Setup(pdfSaveSettings);
+        DWObject.SaveAllAsPDF("DynamicWebTWAIN.pdf", OnSuccess, OnFailure);
+      }
+    }
+    
+    function LoadImages(){
+      if (DWObject) {
+        DWObject.IfShowFileDialog = true; // Open the system's file dialog to load image
+        DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+      }
+    }
+    
+    function StartCamera(){
+      if (DWObject) {
+        DWObject.Addon.Camera.scanDocument().then(
+          function(){
+            console.log("OK");
+          }, 
+          function(error){
+            console.log(error.message);
+          }
+        );
+      }
+    }
+    
+    function StartDocumentEditor() {
+      if (DWObject) {
+        let documentEditor = DWObject.Viewer.createDocumentEditor();
+        documentEditor.show();
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello World</title>
+    <script src="https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+
+<style>
+    #dwtContainer {
+        width: 800px;
+        height: 600px;
+        position: relative;
+    }
+
+    #deleteButton {
+        position: absolute;
+        background: white;
+        z-index: 9;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        border: 1px solid #bdbdbd;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+
+    #deleteButton:hover {
+        background: #dcdcdc;
+    }
+</style>
+
+<body >
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+    <div id="dwtContainer">
+
+        <div style="display: none;" id="deleteButton">
+            <svg t="1741757038261" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4738" width="20" height="20"><path d="M397.05956843 404.34871484c-3.40984951-3.40984951-7.76549707-5.10233027-13.06694267-5.10232939h-36.33854414c-5.31389004 0-9.65709229 1.69247989-13.06694179 5.10232939-3.40984951 3.40984951-5.10233027 7.76549707-5.10233028 13.06694268v327.0842332c0 5.3014456 1.69247989 9.64464786 5.10233028 13.05449737 3.40984951 3.40984951 7.75305263 5.11477471 13.06694179 5.1147747h36.33854414c5.3014456 0 9.65709229-1.7049252 13.06694267-5.1147747 3.39740508-3.40984951 5.10233027-7.75305263 5.10233028-13.05449737V417.41565752c0-5.3014456-1.7049252-9.65709229-5.10233028-13.06694268z m145.36662188 0c-3.40984951-3.40984951-7.76549707-5.10233027-13.0669418-5.10232939h-36.33854414c-5.3014456 0-9.65709229 1.69247989-13.05449824 5.10232939-3.40984951 3.40984951-5.11477471 7.76549707-5.11477471 13.06694268v327.0842332c0 5.3014456 1.7049252 9.64464786 5.11477471 13.05449737 3.39740508 3.40984951 7.75305263 5.11477471 13.05449824 5.1147747h36.33854414c5.3014456 0 9.65709229-1.7049252 13.0669418-5.1147747 3.40984951-3.40984951 5.11477471-7.75305263 5.11477471-13.05449737V417.41565752c0-5.3014456-1.7049252-9.65709229-5.11477471-13.06694268z m145.36662275 0c-3.40984951-3.40984951-7.76549707-5.10233027-13.05449824-5.10232939h-36.35098858c-5.3014456 0-9.64464786 1.69247989-13.05449736 5.10232939-3.40984951 3.40984951-5.11477471 7.76549707-5.1147747 13.06694268v327.0842332c0 5.3014456 1.7049252 9.64464786 5.1147747 13.05449737 3.40984951 3.40984951 7.75305263 5.11477471 13.05449736 5.1147747h36.35098858c5.28900029 0 9.64464786-1.7049252 13.05449824-5.1147747 3.40984951-3.40984951 5.11477471-7.75305263 5.11477471-13.05449737V417.41565752c0-5.3014456-1.7049252-9.65709229-5.11477471-13.06694268z m73.82200167 447.18810029c-2.65072237 7.00636992-5.3885584 12.12114463-8.2383961 15.33187969-2.83739326 3.22317949-4.81610127 4.82854658-5.96101465 4.82854571H274.96454803c-1.13246807 0-3.12362138-1.60536709-5.96101465-4.82854571-2.83739326-3.21073418-5.58767373-8.32550888-8.2383961-15.33187969a64.48847167 64.48847167 0 0 1-3.96986133-22.99781776V290.21830771h508.80184454v538.32068966c0 8.32550888-1.3315834 15.99144873-3.98230576 22.99781776zM411.81899099 151.0864833c2.63827793-3.40984951 5.86145742-5.47567119 9.65709229-6.24724277h180.00024169c3.78319131 0.77157158 7.00636992 2.83739326 9.65709317 6.24724277l27.2539081 66.44229082H383.99262575l27.82636524-66.44229082z m494.02997754 71.55706553c-3.40984951-3.40984951-7.76549707-5.11477471-13.05449736-5.11477471h-175.47036855l-39.74839453-94.82866699c-5.67478652-14.00029541-15.90433594-25.93476914-30.66375763-35.7785332C632.14008348 77.07781074 617.18154558 72.16215136 602.0487821 72.16215136H420.33117078c-15.14520878 0-30.09130137 4.91565937-44.85072392 14.75942257-14.771867 9.84376318-24.98897197 21.77823692-30.66375851 35.7785332l-39.76083896 94.82866699H129.59792615c-5.31389004 0-9.65709229 1.7049252-13.06694267 5.11477471-3.40984951 3.39740508-5.10233027 7.75305263-5.1023294 13.05449736v36.33854414c0 5.31389004 1.69247989 9.65709229 5.1023294 13.06694268 3.40984951 3.40984951 7.75305263 5.11477471 13.06694266 5.1147747h54.50781622v540.58562578c0 31.43533008 8.89796513 58.20389472 26.69389717 80.35547344 17.78348584 22.15157871 39.1759374 33.21492276 64.16490849 33.21492276h472.45085596c24.98897197 0 46.36897822-11.44913028 64.17735381-34.3473917 17.78348584-22.91070586 26.68145185-50.06505586 26.68145186-81.48794062V290.21830771h54.52026152c5.28900029 0 9.64464786-1.7049252 13.05449736-5.1147747 3.40984951-3.40984951 5.11477471-7.75305263 5.11477471-13.06694268v-36.33854414c0-5.3014456-1.7049252-9.65709229-5.11477471-13.05449736z" p-id="4739"></path></svg>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        
+        let DWObject;
+        Dynamsoft.DWT.AutoLoad = false;
+        Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist";
+        Dynamsoft.DWT.ServiceInstallerLocation = "https://demo.dynamsoft.com/DWT/Resources/dist/";
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtContainer',Width: 270, Height: 350 }];
+        Dynamsoft.DWT.Load();
+
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtContainer');
+            DWObject.Viewer.width = "100%";
+            DWObject.Viewer.height = "100%";
+            DWObject.Viewer.disableFocusOutline = false;
+            bindThumbnailEvent();
+        }
+
+        function bindThumbnailEvent(){
+            const thumbnail = DWObject.Viewer.createThumbnailViewer({});
+            const deleteButton = document.getElementById("deleteButton");
+            thumbnail.show();
+
+            let currentIndex = -1;
+            thumbnail.on("mouseover",(e) => {
+                const {
+                    containerOffsetX,
+                    containerOffsetY,
+                    canvasOffsetX,
+                    canvasOffsetY,
+                } = e.position;
+
+                currentIndex = e.index;
+
+                if (e.index !== -1 && canvasOffsetX >= 0 && canvasOffsetY >= 0) {
+                    deleteButton.style.display = "flex";
+                    deleteButton.style.left = `${containerOffsetX + e.pageWidth - 22 - 2}px`;
+                    deleteButton.style.top = `${containerOffsetY+ 4}px`;
+                } else {
+                    deleteButton.style.display = "none";
+                }
+            })
+
+            thumbnail.on("mousemove", e => {
+                if (e.index === -1) {
+                    deleteButton.style.display = "none";
+                }
+            });
+
+            thumbnail.on("scroll", e=> {
+                deleteButton.style.display = "none";
+            });
+
+            deleteButton.addEventListener("click", e => {
+                if (currentIndex !== -1) {
+                    DWObject.RemoveImage(currentIndex);
+                    deleteButton.style.display = "none";
+                }
+            });
+        }
+
+        function AcquireImage() {
+            if (DWObject) {
+                DWObject.SelectSourceAsync().then(function(){
+                    return DWObject.AcquireImageAsync({
+                            IfCloseSourceAfterAcquire: true // Scanner source will be closed automatically after the scan.
+                        });
+                }).catch(function (exp) {
+                    alert(exp.message);
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>

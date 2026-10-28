@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la gulpfile.*)",
+      "Bash(ls package.json)",
+      "Bash(unzip -l \"sharepoint/solution/dynamic-web-twain.sppkg\")",
+      "Bash(python -c \"import zipfile; z=zipfile.ZipFile\\('sharepoint/solution/dynamic-web-twain.sppkg'\\); [print\\(f'{i.filename} \\({i.file_size} bytes\\)'\\) for i in z.infolist\\(\\)]\")",
+      "Bash(find lib *)",
+      "Bash(find lib-commonjs *)"
+    ]
+  }
+}

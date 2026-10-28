@@ -123,6 +123,12 @@
                 </div>
                 <div class="ocr-footer">
                     <div class="ocr-language">
+                        <label for="ocrEngine">Engine:</label>
+                        <select id="ocrEngine" onchange="fillOCRLanguages(this.value)">
+                            <option value="">Detecting...</option>
+                        </select>
+                    </div>
+                    <div class="ocr-language">
                         <label for="ocrLanguage">Language:</label>
                         <select id="ocrLanguage">
                             <option value="en">English</option>

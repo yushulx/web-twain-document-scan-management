@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "dynamic-web-twain-client-side-solution",
+    "id": "1ef3897b-486b-45e7-bf85-1914ce212ab8",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": false,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "dynamic-web-twain description"
+      },
+      "longDescription": {
+        "default": "dynamic-web-twain description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "dynamic-web-twain Feature",
+        "description": "The feature that activates elements of the dynamic-web-twain solution.",
+        "id": "f94d96ad-cf69-4778-bf88-8548270a90c0",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/dynamic-web-twain.sppkg"
+  }
+}

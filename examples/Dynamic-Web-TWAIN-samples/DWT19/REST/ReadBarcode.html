@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Barcode Reading REST API Example</title>
+  <script src="RESTAPI.js"></script>
+  <style>
+    #config {
+      width: 300px;
+      height: 200px;
+      resize: none;
+    }
+    #scannedImages img {
+      max-height: 150px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <label>
+      License: <input type="password" id="licenseInput" onchange="updateLicense();" />
+    </label>
+    <label>
+      Scanners:
+      <select id="scanners">
+      </select>
+    </label>
+    <input type="button" value="Scan" onclick="ScanAndReadBarcodes();" />
+    <span id="status"></span>
+    <br/>
+    <label>
+      Config:
+      <br/>
+      <textarea id="config">
+        {
+          "Resolution": 200,
+          "IfFeederEnabled": false,
+          "IfDuplexEnabled": false,
+          "IfShowUI": true
+        }
+      </textarea>
+    </label>
+    <div id="scannedImages"></div>
+    <pre id="barcodeResults"></pre>
+  </div>
+  <script type="text/javascript">
+    let scanners = [];
+    let jobuid = "";
+    let docUid = "";
+    WebTWAINService.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTAwMjI3NzYzLVRYbFFjbTlxIiwibWFpblNlcnZlclVSTCI6Imh0dHBzOi8vbWx0cy5keW5hbXNvZnQuY29tIiwib3JnYW5pemF0aW9uSUQiOiIxMDAyMjc3NjMiLCJzdGFuZGJ5U2VydmVyVVJMIjoiaHR0cHM6Ly9zbHRzLmR5bmFtc29mdC5jb20iLCJjaGVja0NvZGUiOjE4OTc4MDUzNDV9";
+    listScanners();
+
+    async function listScanners(){
+      updateStatus("Listing scanners...");
+      scanners = await WebTWAINService.listScanners();
+      console.log(scanners);
+      let scannersSelect = document.getElementById("scanners");
+      scannersSelect.innerHTML = "";
+      for (let i = 0; i < scanners.length; i++){
+        let option = document.createElement("option");
+        option.value = scanners[i].name;
+        option.innerHTML = scanners[i].name;
+        scannersSelect.appendChild(option);
+      }
+      updateStatus("");
+    }
+
+
+    async function ScanAndReadBarcodes() { 
+      updateStatus("Scanning...");
+      try {
+        await CreateScanJob();
+        await ReadBarcodesInImages();
+        updateStatus("Done");  
+      } catch (error) {
+        updateStatus(error);
+      }
+    }
+
+    async function CreateScanJob(){
+      jobuid = "";
+      let scannerName = document.getElementById("scanners").value;
+      let license = document.getElementById("licenseInput").value;
+      let selectedScannerIndex = document.getElementById("scanners").selectedIndex;
+      let selectedScanner = scanners[selectedScannerIndex];
+      let config = JSON.parse(document.getElementById("config").value);
+      jobuid = await WebTWAINService.CreateScanJob(selectedScanner.device,config);
+    }
+
+    async function ReadBarcodesInImages(){
+      let imgInfo = await WebTWAINService.nextPageInfo(jobuid);
+      while (imgInfo) {
+        console.log("Image info acquired successfully.");
+        await AppendImageAndReadBarcodes(imgInfo);
+        imgInfo = await WebTWAINService.nextPageInfo(jobuid);
+      }
+    }
+
+    async function AppendImageAndReadBarcodes(info){
+      let img = document.createElement("img");
+      img.src = info.url;
+      document.getElementById("scannedImages").appendChild(img);
+      let barcodeResults = await WebTWAINService.process("read-barcode",img.src);
+      document.getElementById("barcodeResults").innerHTML += JSON.stringify(barcodeResults, null, 2) + "\n";
+    }
+
+    function updateStatus(info){
+      document.getElementById("status").innerHTML = info;
+    }
+
+    function updateLicense(){
+      let license = document.getElementById("licenseInput").value;
+      WebTWAINService.license = license;
+    }
+  </script>
+</body>
+</html>

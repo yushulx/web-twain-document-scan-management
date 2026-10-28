@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scan via SANE on Windows</title>
+  <script src="https://cdn.jsdelivr.net/npm/dwt@latest/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+<body>
+  <button onclick="AcquireImage();">Scan</button>
+  <button onclick="SaveAsPDF();">Save as PDF</button>
+  <div id="dwtcontrolContainer"></div>
+  <script type="text/javascript">
+    Dynamsoft.DWT.Host = "local.dynamsoft.com";
+    Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@latest/dist";
+    //You need to set the service installer location here since the installer's size exceeds jsdelivr's limit. 
+    //You'd better host the installers in your own environment.
+    Dynamsoft.DWT.ServiceInstallerLocation = 'https://unpkg.com/dwt/dist/dist/';
+    Dynamsoft.DWT.ProductKey = localStorage.getItem("DynamsoftLicense") ?? 'DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9';
+    Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: 270, Height: 350 }];
+    window.onload = function () {
+      Dynamsoft.DWT.Load();
+    };
+    var DWTObject;
+    Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function() {
+      // dwtcontrolContainer is the id of the DIV to create the WebTwain instance in.
+      DWTObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
+    });
+    function AcquireImage() {
+      if (DWTObject) {
+        DWTObject.SelectSourceAsync().then(function(){
+          return DWTObject.AcquireImageAsync({
+            PixelType: Dynamsoft.DWT.EnumDWT_PixelType.TWPT_RGB,
+            Resolution: 200,
+            IfCloseSourceAfterAcquire: true
+          });
+        }).catch(function (exp) {
+          alert(exp.message);
+        });
+      }
+    }
+
+    function SaveAsPDF(){
+      if (DWTObject) {
+        DWTObject.ConvertToBlob(
+          DWTObject.SelectAllImages(),
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF,
+          function (result, indices, type) {
+            console.log(result.size);
+            DownloadBlobAsFile(result, "scanned_document.pdf");
+          },
+          function (errorCode, errorString) {
+            console.log(errorString);
+          },
+        );
+      }
+    }
+
+    function DownloadBlobAsFile(blob, fileName) {
+      var link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+    }
+  </script>
+</body>
+</html>

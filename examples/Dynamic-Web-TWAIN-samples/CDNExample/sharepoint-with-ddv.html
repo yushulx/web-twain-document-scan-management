@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Web TWAIN Scanner with DDV Edit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+      overflow: hidden;
+      padding: 1em;
+      background: #fff;
+      color: #323130;
+    }
+    .controls {
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      padding: 6px 14px;
+      border: 1px solid #edebe9;
+      background: #fff;
+      color: #323130;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 2px;
+      font-family: inherit;
+    }
+    .btn:hover:not(:disabled) {
+      background: #f3f2f1;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: #0078d4;
+      color: #fff;
+      border-color: #0078d4;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #106ebe;
+    }
+    .status {
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #605e5c;
+      min-height: 18px;
+    }
+    .container {
+      width: 100%;
+      height: calc(100vh - 120px);
+      min-height: 400px;
+    }
+    #ddvContainer {
+      display: none;
+    }
+    #ddvControls {
+      display: none;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/ddv.css">
+</head>
+<body>
+  <div class="status" id="status">Initializing...</div>
+  <div class="controls" id="dwtControls">
+    <button class="btn" id="scanBtn" disabled>Scan</button>
+    <button class="btn" id="uploadBtn" disabled>Upload</button>
+    <button class="btn" id="binarizeBtn" disabled>Convert to binary image</button>
+    <button class="btn" id="rotateCWBtn" disabled>Rotate clockwise</button>
+    <button class="btn" id="rotateCCWBtn" disabled>Rotate counter-clockwise</button>
+    <button class="btn btn-primary" id="editBtn" disabled>Edit in DDV</button>
+  </div>
+  <div class="controls" id="ddvControls">
+    <button class="btn btn-primary" id="saveBackBtn">Save Back to Scanner</button>
+    <button class="btn" id="cancelBtn">Cancel</button>
+  </div>
+  <div id="dwtContainer" class="container"></div>
+  <div id="ddvContainer" class="container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/dwt/dist/dynamsoft.webtwain.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/ddv.js"></script>
+  <script>
+    (function () {
+      var DWTObject = null;
+      var dwtReady = false;
+      var ddvReady = false;
+      var editViewer = null;
+      var ddvDoc = null;
+      var editingPageIndex = -1;
+
+      var containerId = 'dwtContainer';
+      var statusEl = document.getElementById('status');
+      var dwtButtons = ['scanBtn', 'uploadBtn', 'binarizeBtn', 'rotateCWBtn', 'rotateCCWBtn'];
+
+      function setDwtButtonsEnabled(enabled) {
+        dwtButtons.forEach(function (id) {
+          document.getElementById(id).disabled = !enabled;
+        });
+        updateEditBtn();
+      }
+
+      function updateEditBtn() {
+        console.log("updateEditBtn");
+        var editBtn = document.getElementById('editBtn');
+        editBtn.disabled = !(dwtReady && ddvReady && DWTObject && DWTObject.HowManyImagesInBuffer > 0);
+      }
+
+      function setStatus(msg) {
+        statusEl.textContent = msg;
+      }
+
+      // ── DWT ──────────────────────────────────────────────
+
+      function initDWT() {
+        Dynamsoft.DWT.AutoLoad = false;
+        Dynamsoft.DWT.IfCheckCssFiles = false;
+        Dynamsoft.DWT.Containers = [{
+          ContainerId: containerId,
+          Width: '100%',
+          Height: '100%'
+        }];
+        Dynamsoft.DWT.ProductKey = 't0199EQYAAJQJ0BrrxwxCEIW35CqafcYmk6qdTD5dGwTUkcPEBr/ptzp+4IgxQAQTIzQrSr4HVH39XGJGrfoz5dxktXHa8ZRed04e4NT+TqX+Tgxw8iMn0XvvunTbEteFBRyAeQf0eA4HgBJIezkBi4mzd4YM4BagDUBbe0ALqJ7CB5/L4G3Da0z/u9Cakwc4tb+zTJA+Tgxw8iOnT5DJkaz+tGtKEJQvJwO4BWgVwO8juyQInQFuAVoFllMWcwaQdaRWxH4BisA3UA==';
+        Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt/dist';
+        Dynamsoft.DWT.ServiceInstallerLocation = 'https://demo.dynamsoft.com/DWT/Resources/dist/';
+
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+          DWTObject = Dynamsoft.DWT.GetWebTwain(containerId);
+          dwtReady = true;
+          setDwtButtonsEnabled(true);
+          setStatus('Scanner ready.');
+
+          // Track buffer changes to update Edit button state
+          DWTObject.RegisterEvent('OnBufferChanged', function () {
+            console.log("OnBufferChanged");
+            updateEditBtn();
+          });
+        });
+
+        Dynamsoft.DWT.Load();
+      }
+
+      function acquireImage() {
+        if (!DWTObject) return;
+        DWTObject.SelectSourceAsync()
+          .then(function () {
+            return DWTObject.AcquireImageAsync({
+              IfCloseSourceAfterAcquire: true,
+              IfShowUI: false,
+              PixelType: Dynamsoft.DWT.EnumDWT_PixelType.TWPT_GRAY,
+              Resolution: 150
+            });
+          })
+          .catch(function (exp) {
+            alert(exp.message);
+          });
+      }
+
+      function upload() {
+        if (!DWTObject || DWTObject.HowManyImagesInBuffer === 0) {
+          alert('There is no image in buffer.');
+          return;
+        }
+        var strUrl = 'https://demo.dynamsoft.com/sample-uploads/';
+        var imgAry = [DWTObject.CurrentImageIndexInBuffer];
+        DWTObject.HTTPUpload(
+          strUrl,
+          imgAry,
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          Dynamsoft.DWT.EnumDWT_UploadDataFormat.Binary,
+          'WebTWAINImage.png',
+          function () { alert('Upload successful'); },
+          function (_errorCode, errorString, sHttpResponse) {
+            alert(sHttpResponse.length > 0 ? sHttpResponse : errorString);
+          }
+        );
+      }
+
+      function binarizeImage() {
+        if (DWTObject) {
+          DWTObject.ConvertToBW(DWTObject.CurrentImageIndexInBuffer);
+        }
+      }
+
+      function rotateCW() {
+        if (DWTObject) {
+          DWTObject.RotateRight(DWTObject.CurrentImageIndexInBuffer);
+        }
+      }
+
+      function rotateCCW() {
+        if (DWTObject) {
+          DWTObject.RotateLeft(DWTObject.CurrentImageIndexInBuffer);
+        }
+      }
+
+      // ── DDV ──────────────────────────────────────────────
+
+      function filterElements(config, elementsToHide) {
+        if (config.children && Array.isArray(config.children)) {
+          config.children = config.children.filter(function (child) {
+            return elementsToHide.indexOf(child) === -1;
+          });
+          config.children.forEach(function (child) {
+            if (typeof child === 'object') {
+              filterElements(child, elementsToHide);
+            }
+          });
+        }
+      }
+
+      async function initDDV() {
+        try {
+          // Public trial license valid for 24 hours.
+          // Request a 30-day trial key from https://www.dynamsoft.com/customer/license/trialLicense/?product=ddv
+          Dynamsoft.DDV.Core.license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+          Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@latest/dist/engine";
+          Dynamsoft.DDV.Core.loadWasm();
+          await Dynamsoft.DDV.Core.init();
+
+          // Get default UI config and hide unwanted elements
+          var uiConfig = Dynamsoft.DDV.getDefaultUiConfig("editViewer");
+          var elementsToHide = [
+            Dynamsoft.DDV.Elements.Print,
+            Dynamsoft.DDV.Elements.ThumbnailSwitch,
+            Dynamsoft.DDV.Elements.Pagination,
+            Dynamsoft.DDV.Elements.DisplayMode,
+            Dynamsoft.DDV.Elements.DeleteCurrent,
+            Dynamsoft.DDV.Elements.DeleteAll,
+            Dynamsoft.DDV.Elements.Load,
+            Dynamsoft.DDV.Elements.Download,
+            Dynamsoft.DDV.Elements.TextSearchPanelSwitch,
+            Dynamsoft.DDV.Elements.TextSearchPanel,
+            Dynamsoft.DDV.Elements.RedactionSet,
+            Dynamsoft.DDV.Elements.RedactionMode,
+            Dynamsoft.DDV.Elements.RedactPages,
+            Dynamsoft.DDV.Elements.RedactionApply,
+          ];
+          filterElements(uiConfig, elementsToHide);
+
+          editViewer = new Dynamsoft.DDV.EditViewer({
+            container: "ddvContainer",
+            uiConfig: uiConfig,
+          });
+
+          ddvReady = true;
+          updateEditBtn();
+          setStatus('Scanner ready.');
+        } catch (e) {
+          setStatus('DDV init failed: ' + e.message);
+        }
+      }
+
+      // ── Edit Flow ────────────────────────────────────────
+
+      function enterEditMode() {
+        if (!DWTObject || DWTObject.HowManyImagesInBuffer === 0) return;
+
+        editingPageIndex = DWTObject.CurrentImageIndexInBuffer;
+        setStatus('Exporting page to DDV...');
+
+        // Export current page as PDF blob
+        DWTObject.ConvertToBlob(
+          [editingPageIndex],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF,
+          async function (pdfBlob) {
+            try {
+              // Switch UI to DDV mode
+              document.getElementById('dwtContainer').style.display = 'none';
+              document.getElementById('dwtControls').style.display = 'none';
+              document.getElementById('ddvContainer').style.display = 'block';
+              document.getElementById('ddvControls').style.display = 'flex';
+
+              // Create document and load PDF
+              ddvDoc = Dynamsoft.DDV.documentManager.createDocument({ name: "edit-page" });
+              await ddvDoc.loadSource([{
+                fileData: pdfBlob,
+                convertMode: Dynamsoft.DDV.EnumConvertMode.CM_RENDERALL,
+                renderOptions: {
+                  renderAnnotations: Dynamsoft.DDV.EnumAnnotationRenderMode.LOAD_ANNOTATIONS
+                }
+              }]);
+              editViewer.openDocument(ddvDoc);
+
+              setStatus('Editing page ' + (editingPageIndex + 1) + '. Make changes and click "Save Back to Scanner".');
+            } catch (e) {
+              alert('Failed to load into DDV: ' + e.message);
+              exitEditMode(false);
+            }
+          },
+          function (errorCode, errorString) {
+            alert('Failed to export page: ' + errorString);
+          }
+        );
+      }
+
+      async function saveBackToScanner() {
+        if (!ddvDoc || !DWTObject) return;
+
+        try {
+          setStatus('Saving back to scanner...');
+
+          // Save edits to DDV document first
+          editViewer.saveOperations();
+
+          // Export edited page as PDF blob
+          var editedPdfBlob = await ddvDoc.saveToPdf([0], {
+            saveAnnotation: "annotation"
+          });
+
+          // Remove original page from DWT buffer
+          DWTObject.RemoveImage(editingPageIndex);
+
+          // Enable PDF annotation rendering when rasterizing
+          DWTObject.Addon.PDF.SetReaderOptions({
+            convertMode: Dynamsoft.DWT.EnumDWT_ConvertMode.CM_RENDERALL,
+            preserveUnmodifiedOnSave: true,
+            renderOptions: {
+              renderAnnotations: true,
+            },
+          });
+
+          // Wrap LoadImageFromBinary in a Promise
+          await new Promise(function (resolve, reject) {
+            DWTObject.LoadImageFromBinary(
+              editedPdfBlob,
+              function () {
+                resolve();
+              },
+              function (errorCode, errorString) {
+                reject(new Error(errorString));
+              }
+            );
+          });
+
+          // Insert the loaded page at the original position
+          // LoadImageFromBinary appends to the end, so move it to the right spot
+          var newIndex = DWTObject.HowManyImagesInBuffer - 1;
+          if (newIndex !== editingPageIndex) {
+            DWTObject.MoveImage(newIndex, editingPageIndex);
+          }
+
+          exitEditMode(true);
+          setStatus('Page ' + (editingPageIndex + 1) + ' updated.');
+        } catch (e) {
+          alert('Failed to save back: ' + e.message);
+          exitEditMode(false);
+        }
+      }
+
+      function cancelEdit() {
+        exitEditMode(false);
+        setStatus('Edit cancelled.');
+      }
+
+      function exitEditMode(clearDoc) {
+        if (editViewer) {
+          editViewer.closeDocument();
+        }
+        if (clearDoc) {
+          Dynamsoft.DDV.documentManager.deleteAllDocuments();
+        }
+        ddvDoc = null;
+        editingPageIndex = -1;
+
+        document.getElementById('ddvContainer').style.display = 'none';
+        document.getElementById('ddvControls').style.display = 'none';
+        document.getElementById('dwtContainer').style.display = 'block';
+        document.getElementById('dwtControls').style.display = 'flex';
+      }
+
+      // ── Bootstrap ────────────────────────────────────────
+
+      function bootstrap() {
+        if (window.Dynamsoft && Dynamsoft.DWT) {
+          initDWT();
+        } else {
+          setTimeout(bootstrap, 100);
+        }
+      }
+
+      document.getElementById('scanBtn').addEventListener('click', acquireImage);
+      document.getElementById('uploadBtn').addEventListener('click', upload);
+      document.getElementById('binarizeBtn').addEventListener('click', binarizeImage);
+      document.getElementById('rotateCWBtn').addEventListener('click', rotateCW);
+      document.getElementById('rotateCCWBtn').addEventListener('click', rotateCCW);
+      document.getElementById('editBtn').addEventListener('click', enterEditMode);
+      document.getElementById('saveBackBtn').addEventListener('click', saveBackToScanner);
+      document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
+
+      // Initialize DDV in parallel
+      initDDV();
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrap);
+      } else {
+        bootstrap();
+      }
+    })();
+  </script>
+</body>
+</html>

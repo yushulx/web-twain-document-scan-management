@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Web TWAIN Scanner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+      overflow: hidden;
+      padding: 1em;
+      background: #fff;
+      color: #323130;
+    }
+    .controls {
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border: 1px solid #edebe9;
+      background: #fff;
+      color: #323130;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 2px;
+      font-family: inherit;
+    }
+    .btn:hover:not(:disabled) {
+      background: #f3f2f1;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #605e5c;
+      min-height: 18px;
+    }
+    .container {
+      width: 100%;
+      height: calc(100vh - 80px);
+      min-height: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="status" id="status">Initializing scanner...</div>
+  <div class="controls">
+    <button class="btn" id="scanBtn" disabled>Scan</button>
+    <button class="btn" id="uploadBtn" disabled>Upload</button>
+    <button class="btn" id="binarizeBtn" disabled>Convert to binary image</button>
+    <button class="btn" id="rotateCWBtn" disabled>Rotate clockwise</button>
+    <button class="btn" id="rotateCCWBtn" disabled>Rotate counter-clockwise</button>
+  </div>
+  <div id="dwtContainer" class="container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/dwt/dist/dynamsoft.webtwain.min.js"></script>
+  <script>
+    (function () {
+      var DWTObject = null;
+      var dwtReady = false;
+      var containerId = 'dwtContainer';
+      var statusEl = document.getElementById('status');
+      var buttons = ['scanBtn', 'uploadBtn', 'binarizeBtn', 'rotateCWBtn', 'rotateCCWBtn'];
+
+      function setButtonsEnabled(enabled) {
+        buttons.forEach(function (id) {
+          document.getElementById(id).disabled = !enabled;
+        });
+      }
+
+      function setStatus(msg) {
+        statusEl.textContent = msg;
+      }
+
+      function initDWT() {
+        Dynamsoft.DWT.AutoLoad = false;
+        Dynamsoft.DWT.IfCheckCssFiles = false;
+        Dynamsoft.DWT.Containers = [{
+          ContainerId: containerId,
+          Width: '100%',
+          Height: '100%'
+        }];
+        Dynamsoft.DWT.ProductKey = 't0199EQYAAJQJ0BrrxwxCEIW35CqafcYmk6qdTD5dGwTUkcPEBr/ptzp+4IgxQAQTIzQrSr4HVH39XGJGrfoz5dxktXHa8ZRed04e4NT+TqX+Tgxw8iMn0XvvunTbEteFBRyAeQf0eA4HgBJIezkBi4mzd4YM4BagDUBbe0ALqJ7CB5/L4G3Da0z/u9Cakwc4tb+zTJA+Tgxw8iOnT5DJkaz+tGtKEJQvJwO4BWgVwO8juyQInQFuAVoFllMWcwaQdaRWxH4BisA3UA==';
+        Dynamsoft.DWT.ResourcesPath = 'https://cdn.jsdelivr.net/npm/dwt/dist';
+        Dynamsoft.DWT.ServiceInstallerLocation = 'https://demo.dynamsoft.com/DWT/Resources/dist/';
+
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
+          DWTObject = Dynamsoft.DWT.GetWebTwain(containerId);
+          dwtReady = true;
+          setButtonsEnabled(true);
+          setStatus('Scanner ready.');
+        });
+
+        Dynamsoft.DWT.Load();
+      }
+
+      function acquireImage() {
+        if (!DWTObject) return;
+        DWTObject.SelectSourceAsync()
+          .then(function () {
+            return DWTObject.AcquireImageAsync({
+              IfCloseSourceAfterAcquire: true,
+              IfShowUI: false,
+              PixelType: Dynamsoft.DWT.EnumDWT_PixelType.TWPT_GRAY,
+              Resolution: 150
+            });
+          })
+          .catch(function (exp) {
+            alert(exp.message);
+          });
+      }
+
+      function upload() {
+        if (!DWTObject || DWTObject.HowManyImagesInBuffer === 0) {
+          alert('There is no image in buffer.');
+          return;
+        }
+        var strUrl = 'https://demo.dynamsoft.com/sample-uploads/';
+        var imgAry = [DWTObject.CurrentImageIndexInBuffer];
+        DWTObject.HTTPUpload(
+          strUrl,
+          imgAry,
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          Dynamsoft.DWT.EnumDWT_UploadDataFormat.Binary,
+          'WebTWAINImage.png',
+          function () { alert('Upload successful'); },
+          function (_errorCode, errorString, sHttpResponse) {
+            alert(sHttpResponse.length > 0 ? sHttpResponse : errorString);
+          }
+        );
+      }
+
+      function binarizeImage() {
+        if (DWTObject) {
+          DWTObject.ConvertToBW(DWTObject.CurrentImageIndexInBuffer);
+        }
+      }
+
+      function rotateCW() {
+        if (DWTObject) {
+          DWTObject.RotateRight(DWTObject.CurrentImageIndexInBuffer);
+        }
+      }
+
+      function rotateCCW() {
+        if (DWTObject) {
+          DWTObject.RotateLeft(DWTObject.CurrentImageIndexInBuffer);
+        }
+      }
+
+      // Check if Dynamsoft is already loaded, if not wait for script onload
+      function bootstrap() {
+        if (window.Dynamsoft && Dynamsoft.DWT) {
+          initDWT();
+        } else {
+          setTimeout(bootstrap, 100);
+        }
+      }
+
+      document.getElementById('scanBtn').addEventListener('click', acquireImage);
+      document.getElementById('uploadBtn').addEventListener('click', upload);
+      document.getElementById('binarizeBtn').addEventListener('click', binarizeImage);
+      document.getElementById('rotateCWBtn').addEventListener('click', rotateCW);
+      document.getElementById('rotateCCWBtn').addEventListener('click', rotateCCW);
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrap);
+      } else {
+        bootstrap();
+      }
+    })();
+  </script>
+</body>
+</html>

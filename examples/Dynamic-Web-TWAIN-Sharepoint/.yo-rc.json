@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "useGulp": false,
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.19.0",
+    "sdksVersions": {},
+    "version": "1.22.2",
+    "libraryName": "dynamic-web-twain",
+    "libraryId": "1ef3897b-486b-45e7-bf85-1914ce212ab8",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "dynamic-web-twain",
+    "solutionShortDescription": "dynamic-web-twain description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

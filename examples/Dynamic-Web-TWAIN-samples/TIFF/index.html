@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Scan to TIFF</title>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+</head>
+
+<body>
+  <div>
+    Pixel Type:
+    <label for="BW">
+      <input type="radio" id="BW" name="PixelType">B&amp;W </label>
+    <label for="Gray">
+      <input type="radio" id="Gray" name="PixelType">Gray</label>
+    <label for="RGB">
+      <input type="radio" id="RGB" name="PixelType" checked="checked">Color</label>
+    
+    <br/>
+  
+    <label>
+      <input type="checkbox" id="ADF" checked="checked">Auto Feeder</label>
+    <label>
+      <input type="checkbox" id="ShowUI" checked="checked">Show UI
+    </label>
+  
+    <br />
+    Resolution:
+    <select size="1" id="Resolution">
+      <option value="100">100</option>
+      <option value="150">150</option>
+      <option value="200">200</option>
+      <option value="300">300</option>
+    </select>
+  
+    <br />
+    Scanner:
+    <select size="1" id="source" style="width: 220px;"></select>
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+  </div>
+  <div>
+    Custom TIFF Tag:
+    <input type="text" id="customTag">
+    <br />
+    TIFF Compression Type:
+    <select size="1" id="compressionType">
+      <option value="0">TIFF_AUTO</option>
+      <option value="1">TIFF_NONE</option>
+      <option value="2">TIFF_RLE</option>
+      <option value="3">TIFF_FAX3</option>
+      <option value="3">TIFF_T4</option>
+      <option value="4">TIFF_FAX4</option>
+      <option value="4">TIFF_T6</option>
+      <option value="5">TIFF_LZW</option>
+      <option value="7">TIFF_JPEG</option>
+      <option value="32773">TIFF_PACKBITS</option>
+    </select>
+    <br />
+    JPEG Quality:
+    <input type="text" id="JPEGQuality" value="100">
+    <br />
+    <input type="button" value="Save as TIFF" onclick="Save();" />
+  </div>
+  <div id="dwtcontrolContainer" style="width: 350px; height: 380px;"></div>
+  <script type="text/javascript">
+    Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+    let DWObject;
+
+    function Dynamsoft_OnReady() {
+      DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+      if (DWObject) {
+        let count = DWObject.SourceCount;
+        for (var i = 0; i < count; i++)
+          document.getElementById("source").options.add(new Option(DWObject.GetSourceNameItems(i), i));
+      }
+    }
+    function AcquireImage() {
+      if (DWObject) {
+        let OnAcquireImageSuccess = function () {
+          DWObject.CloseSource();
+        };
+        
+        let OnAcquireImageFailure = function (ec, es) {
+          DWObject.CloseSource();
+          alert(es);
+        };          
+
+        DWObject.SelectSourceByIndex(document.getElementById("source").selectedIndex);
+        DWObject.OpenSource();
+         //If auto feeder
+        if (document.getElementById("ADF").checked)
+          DWObject.IfFeederEnabled = true;
+        else
+          DWObject.IfFeederEnabled = false;
+        DWObject.IfDisableSourceAfterAcquire = true;
+        //Pixel type
+        if (document.getElementById("BW").checked)
+          DWObject.PixelType = Dynamsoft.DWT.EnumDWT_PixelType.TWPT_BW;
+        else if (document.getElementById("Gray").checked)
+          DWObject.PixelType = Dynamsoft.DWT.EnumDWT_PixelType.TWPT_GRAY;
+        else if (document.getElementById("RGB").checked)
+          DWObject.PixelType = Dynamsoft.DWT.EnumDWT_PixelType.TWPT_RGB; 
+        //If show UI
+        if (document.getElementById("ShowUI").checked)
+          DWObject.IfShowUI = true;
+        else
+          DWObject.IfShowUI = false;
+        //Resolution
+        DWObject.Resolution = parseInt(document.getElementById("Resolution").value);
+
+        DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
+      }
+    }
+
+    function Save(){
+      if (DWObject) {
+        let OnSuccess = function () {
+          alert("Success");
+        };
+        let OnFailure = function () {
+          alert("Fail");
+        };
+        DWObject.ClearTiffCustomTag(); //clear before setting
+        let customTag = document.getElementById("customTag").value;
+        if (customTag) {
+          DWObject.SetTiffCustomTag(700, customTag, false); //https://www.dynamsoft.com/web-twain/docs/info/api/WebTwain_IO.html#settiffcustomtag
+        }
+
+        //https://www.dynamsoft.com/web-twain/docs/info/api/Dynamsoft_Enum.html#dynamsoftdwtenumdwt_tiffcompressiontype
+        //https://www.dynamsoft.com/web-twain/docs/info/api/WebTwain_IO.html#tiffcompressiontype
+        let compressionType = document.getElementById("compressionType").selectedOptions[0].value;
+        DWObject.TIFFCompressionType = compressionType;
+        let JPEGQuality = document.getElementById("JPEGQuality").value;
+        DWObject.JPEGQuality = JPEGQuality;
+        DWObject.SaveAllAsMultiPageTIFF("DynamicWebTWAIN.tiff", OnSuccess, OnFailure);
+      }
+    }
+  </script>
+</body>
+
+</html>

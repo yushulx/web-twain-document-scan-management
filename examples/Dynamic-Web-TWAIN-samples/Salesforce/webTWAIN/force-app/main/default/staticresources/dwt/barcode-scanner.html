@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcode Scanner</title>
+  <style>
+  #cameraView {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader-bundle@11.6.3200/dist/dbr.bundle.js"></script>
+</head>
+<html>
+<body>
+  <div id="cameraView"></div>
+  <script>
+    let cvRouter;
+    let cameraEnhancer;
+    let scanning = false;
+    window.addEventListener(
+      "message",
+      async (event) => {
+        console.log("received message in iframe");
+        console.log(event);
+        if (event.data === "toggle") {
+          toggleScanning();
+        }
+      },
+      false,
+    );
+
+    initBarcodeScanner();
+    async function initBarcodeScanner(){
+      Dynamsoft.License.LicenseManager.initLicense("DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9");
+      Dynamsoft.Core.CoreModule.loadWasm(["dbr"]);
+      cvRouter = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+      let cameraView = await Dynamsoft.DCE.CameraView.createInstance();
+      cameraEnhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance(cameraView);
+      document.querySelector("#cameraView").append(cameraView.getUIElement());
+      cvRouter.setInput(cameraEnhancer);
+
+      const resultsContainer = document.querySelector("#results");
+      cvRouter.addResultReceiver({ onDecodedBarcodesReceived: (result) => {
+        console.log(result);
+        window.parent.postMessage(result);
+      }});
+      window.parent.postMessage({initialized:true});
+    }
+
+    async function toggleScanning() {
+      if (!cvRouter) {
+        alert("Please wait for the initialization...");
+        return;
+      }
+      if (!scanning) {
+        await cameraEnhancer.open();
+        await cvRouter.startCapturing("ReadBarcodes_Balance");
+      }else{
+        await cvRouter.stopCapturing();
+        await cameraEnhancer.close();
+      }
+      scanning = !scanning;
+    }
+  </script>
+</body>
+</html>

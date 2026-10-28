@@ -1,0 +1,118 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using Dynamsoft
+@using Dynamsoft.DBR
+@using System.Collections;
+@using System.Collections.Specialized;
+@inject IJSRuntime JS
+
+<div style="position:absolute;width:95%;height:95%;overflow:hidden;">
+    <div id="dwtcontrolContainer" style="width:100%;height:calc(100% - 120px);"></div>
+    <div class="controls" style="height:120px;overflow-y:auto;">
+        <button @onclick="Scan">Scan</button>
+        <button @onclick="LoadImage">Load Image</button>
+        <button @onclick="Save">Save</button>
+        <button @onclick="ReadBarcode">Read Barcode</button>
+        <EditForm Model="scanOptions">
+            Select Source:
+            <InputSelect @bind-Value=scanOptions.SelectedIndex>
+            @if (@scanners.Count>0)
+            {
+                for (int i = 0; i < scanners.Count; i++)
+                {
+                    <option value="@i">@scanners[i]</option>
+                }
+            }
+            </InputSelect>
+            <br/>
+            Resolution:
+            <InputNumber style="width:50px;" @bind-Value=scanOptions.Resolution></InputNumber>
+            <br/>
+            Show UI:
+            <InputCheckbox @bind-Value=@scanOptions.ShowUI/>
+            <br/>
+            Pixel Type:
+            <InputRadioGroup @bind-Value=@scanOptions.PixelType>
+                @foreach (DictionaryEntry option in pixelTypeOptions)
+	            {
+                    <InputRadio Value="option.Value" /> @option.Key
+	            }
+            </InputRadioGroup>
+
+        </EditForm>
+     </div>
+</div>
+
+@code{
+    private BarcodeReader reader = new BarcodeReader("t0068MgAAABZTSn2NdKeRAAJyT5O9gsgjgYZ/1e+4Ef/L1aSwQGD7CyJsmpTKOJCDz9oRhXdJtWc7sLAEA4iSVy8Y47xl12Y=;t0068UwAAAC7ZgQu/OGyijqv2SmDjibOUChPBe1sUKQ6JieKFFPtbV4rTnl65MLXV6LheAcrvHPpHbIVEllL81xs1jmlezWI=");
+    private List<string> scanners = new List<string>();
+    ListDictionary pixelTypeOptions = new ListDictionary();
+
+    private ScanOptions scanOptions = new ScanOptions() {
+            PixelType = 0,
+            SelectedIndex = 0,
+            ShowUI = false,
+            Resolution = 300,
+    };
+    protected override async void OnInitialized()
+    {
+        pixelTypeOptions.Add( "B&W", 0 );
+        pixelTypeOptions.Add( "Gray", 1 );
+        pixelTypeOptions.Add( "Color", 2 );
+       
+        await CreateDWT();
+        scanners.AddRange(await JS.InvokeAsync<IEnumerable<string>>("GetScannersList"));
+        StateHasChanged();
+    }
+
+    private async Task CreateDWT()
+    {
+        await JS.InvokeVoidAsync("CreateDWT");
+    }
+
+    private async Task Scan()
+    {
+        await JS.InvokeVoidAsync("Scan",scanOptions);
+    }
+
+    private async Task LoadImage()
+    {
+        await JS.InvokeVoidAsync("LoadImage");
+    }
+
+    private async Task Save()
+    {
+        await JS.InvokeVoidAsync("Save");
+    }
+
+    private async void ReadBarcode()
+    {
+        try
+        {
+            var base64 = await JS.InvokeAsync<String>("GetBase64OfSelected");
+            var results = reader.DecodeBase64String(base64, "");
+            MessageBox.Show("Found " + results.Length + " barcodes");
+        }
+        catch (Exception)
+        {
+            MessageBox.Show("Failed");
+        }
+    }
+
+    [JSInvokable]
+    public static void ServiceNotFound()
+    {
+        if (MessageBox.Show("Dynamsoft Service is not installed. Open the download link?", "", MessageBoxButtons.OKCancel) == DialogResult.OK)
+        {
+            //https://stackoverflow.com/questions/58024/open-a-url-from-windows-forms
+            System.Diagnostics.ProcessStartInfo psInfo = new System.Diagnostics.ProcessStartInfo
+            {
+               FileName = "https://www.dynamsoft.com/web-twain/downloads/",
+               UseShellExecute = true
+            };
+            System.Diagnostics.Process.Start(psInfo);
+
+        }
+    }
+ }

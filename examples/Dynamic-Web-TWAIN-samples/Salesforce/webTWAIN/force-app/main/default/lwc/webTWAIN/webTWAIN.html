@@ -1,0 +1,37 @@
+<template>
+  <lightning-card title="Web TWAIN">
+    <div class="slds-m-around_medium">
+    <lightning-select
+            name="devices"
+            label="Scanners: "
+            value={curScannerIndex}
+            options={scannerOptions}
+            onchange={handleDeviceChange} ></lightning-select>
+      <lightning-button
+                label="acquire"
+                onclick={acquire}
+      ></lightning-button>
+      <lightning-button
+                label="rotate"
+                onclick={rotate}
+      ></lightning-button>
+      <lightning-button
+                label="delete"
+                onclick={deleteImage}
+      ></lightning-button>
+      <lightning-button
+                label="showEditor"
+                onclick={showEditor}
+      ></lightning-button>
+      <lightning-button
+                label="save"
+                onclick={save}
+      ></lightning-button>
+      <lightning-button
+                label="getBase64"
+                onclick={getBase64}
+      ></lightning-button>
+      <div id = "dwt" class="dwtContainer" lwc:dom="manual" ></div>        
+    </div>
+  </lightning-card>
+</template>

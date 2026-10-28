@@ -17,6 +17,31 @@ let currentImageIndex = 0;
 let searchMatches = []; // Array of {docIndex, words: [{x,y,width,height,text}]}
 let currentMatchIndex = -1;
 
+// --- OCR engine selection (Dynamic Web TWAIN 19.5 OCR Connector) ---
+// The service can expose more than one engine (the system built-in OCR and any
+// ONNX Runtime engine). OCR Connector is available on Windows and macOS only.
+let ocrProfile = null;
+
+async function pickOCR() {
+    if (ocrProfile) {
+        return ocrProfile;
+    }
+    ocrProfile = { engine: "", language: "eng" };
+    try {
+        const info = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
+        const engines = (info && info.engines) || [];
+        if (engines.length > 0) {
+            const engine = engines[0];
+            ocrProfile.engine = engine.name;
+            if (engine.languages && engine.languages.length > 0) {
+                ocrProfile.language = engine.languages.indexOf("eng") > -1 ? "eng" : engine.languages[0];
+            }
+        }
+    } catch (error) {
+        console.warn("GetInstalledOCRInfo failed:", error);
+    }
+    return ocrProfile;
+}
 // --- Canvas References ---
 let imageCanvas = null;
 let highlightCanvas = null;
@@ -275,9 +300,12 @@ async function processAndSaveImage(dwtIndex) {
         let words = [];
         
         if (DWTObject.Addon && DWTObject.Addon.OCRConnector) {
-            const result = await DWTObject.Addon.OCRConnector.Recognize(dwtIndex, {
-                settings: { language: "eng" }
-            });
+            const ocr = await pickOCR();
+            const options = { settings: { language: ocr.language } };
+            if (ocr.engine) {
+                options.engine = { name: ocr.engine };
+            }
+            const result = await DWTObject.Addon.OCRConnector.Recognize(dwtIndex, options);
             
             if (result && result.blocks) {
                 result.blocks.forEach((block) => {

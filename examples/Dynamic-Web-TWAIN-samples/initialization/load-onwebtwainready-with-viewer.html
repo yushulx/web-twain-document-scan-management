@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynamic Web TWAIN — Load + OnWebTwainReady + Built-in Viewer</title>
+  <style>
+    :root {
+      --brand: #7c3aed;
+      --brand-dark: #6d28d9;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --ok: #16a34a;
+      --err: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(1200px 600px at 50% -10%, #f1eaff 0%, #f7f7fc 45%, #eef2f7 100%);
+    }
+
+    .shell {
+      width: min(960px, 100%);
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 45px -25px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+    }
+
+    .card__head {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fcfbff, #ffffff);
+    }
+
+    .card__head h1 {
+      margin: 0 0 6px;
+      font-size: 19px;
+      letter-spacing: -0.01em;
+    }
+
+    .card__head p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .code-tag {
+      display: inline-block;
+      margin: 0 2px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--brand-dark);
+      background: #f3ecff;
+      border: 1px solid #e6d9ff;
+      border-radius: 6px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    button.scan {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      padding: 11px 26px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(180deg, var(--brand), var(--brand-dark));
+      border-radius: 10px;
+      box-shadow: 0 8px 18px -10px rgba(124, 58, 237, 0.9);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+
+    button.scan:hover:not(:disabled) { transform: translateY(-1px); }
+    button.scan:active:not(:disabled) { transform: translateY(0); }
+
+    button.scan:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      box-shadow: none;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      transition: background 0.2s ease;
+    }
+
+    .status.is-ready::before { background: var(--ok); }
+    .status.is-busy::before { background: #f59e0b; }
+    .status.is-error::before { background: var(--err); }
+
+    .viewer-wrap {
+      padding: 24px 28px 28px;
+    }
+
+    /* The built-in viewer is created inside this element automatically on Load() */
+    #dwtcontrolContainer {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="card">
+      <div class="card__head">
+        <h1>Load() + OnWebTwainReady + Built-in Viewer</h1>
+        <p>
+          Standard approach: configure <span class="code-tag">Dynamsoft.DWT.Containers</span> with a
+          <span class="code-tag">ContainerId</span> and call
+          <span class="code-tag">Dynamsoft.DWT.Load()</span>. The <strong>built-in viewer</strong> is
+          created and bound to that container automatically, so scanned pages appear in the viewer
+          with no extra UI code.
+        </p>
+      </div>
+
+      <div class="toolbar">
+        <button id="scanBtn" class="scan" type="button" disabled>Scan</button>
+        <span id="status" class="status">Loading WebTwain resources…</span>
+      </div>
+
+      <div class="viewer-wrap">
+        <div id="dwtcontrolContainer"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 1. Load the SDK core library + local configuration (ProductKey / ResourcesPath come from the config file) -->
+  <script src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script src="Resources/dynamsoft.webtwain.config.js"></script>
+
+  <script>
+    /* ------------------------------------------------------------------
+     * Override the defaults from the config file:
+     *  - AutoLoad = false         -> call Load() manually instead
+     *  - Containers = [{...}]     -> declare an instance bound to a container div,
+     *                                which means the built-in viewer is created for us
+     *  - UseDefaultViewer = true  -> keep the built-in viewer js/css loaded
+     * ------------------------------------------------------------------ */
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.Containers = [
+      { ContainerId: "dwtcontrolContainer", Width: "100%", Height: 560 }
+    ];
+    Dynamsoft.DWT.UseDefaultViewer = true;
+    Dynamsoft.DWT.IfCheckCssFiles = false;
+
+    var DWTObject = null;
+
+    var scanBtn = document.getElementById("scanBtn");
+    var statusEl = document.getElementById("status");
+
+    /* ------------------------------------------------------------------
+     * Standard approach: register OnWebTwainReady, then call Load() to initialize
+     * ------------------------------------------------------------------ */
+    Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
+      DWTObject = Dynamsoft.DWT.GetWebTwain("dwtcontrolContainer"); // Resolve the instance by ContainerId
+
+      if (DWTObject) {
+        scanBtn.disabled = false;
+        setStatus("ready", 'Instance and viewer ready. Click "Scan" to start.');
+      } else {
+        setStatus("error", "Could not obtain a WebTwain instance.");
+      }
+    });
+
+    Dynamsoft.DWT.RegisterEvent("OnWebTwainError", function (error) {
+      setStatus("error", "Initialization failed: " + (error && error.message ? error.message : error));
+    });
+
+    // Initialize once the resources have loaded (AutoLoad is off, so trigger it manually here)
+    Dynamsoft.DWT.Load();
+
+    /* ------------------------------------------------------------------
+     * Scan
+     * ------------------------------------------------------------------ */
+    function scan() {
+      if (!DWTObject) {
+        return;
+      }
+
+      setStatus("busy", "Scanning…");
+      scanBtn.disabled = true;
+
+      DWTObject.SelectSourceAsync() // Select the scanner (opens the source picker on desktop)
+        .then(function () {
+          return DWTObject.AcquireImageAsync({
+            IfShowUI: false, // Do not show the scanner's native UI
+            IfCloseSourceAfterAcquire: true // Close the scanner connection after acquisition
+            // Add more options if needed:
+            // PixelType: Dynamsoft.DWT.EnumDWT_PixelType.TWPT_RGB,
+            // Resolution: 200,
+            // IfFeederEnabled: true,
+            // IfDuplexEnabled: false
+          });
+        })
+        .then(function () {
+          // The viewer refreshes itself; just report progress.
+          setStatus("ready", "Scan complete: " + DWTObject.HowManyImagesInBuffer + " page(s).");
+        })
+        .catch(function (exp) {
+          setStatus("error", "Scan failed: " + (exp && exp.message ? exp.message : exp));
+        })
+        .then(function () {
+          scanBtn.disabled = false;
+        });
+    }
+
+    function setStatus(state, text) {
+      statusEl.className = "status" + (state ? " is-" + state : "");
+      statusEl.textContent = text;
+    }
+
+    scanBtn.addEventListener("click", scan);
+  </script>
+</body>
+</html>

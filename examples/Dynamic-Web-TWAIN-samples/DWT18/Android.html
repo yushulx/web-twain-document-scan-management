@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Android Scan</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+  <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+</head>
+
+<body>
+  Scanners:
+  <select id="scanners" onChange="scannerSelected();"></select>
+  <br/>
+  <input id="loadButton" type="button" value="Load Devices" onclick="loadDevices();"/>
+  <br/>
+  <input id="scanButton" type="button" value="Scan" onclick="AcquireImage();"/>
+  <div id="dwtcontrolContainer" style="width: 350px; height: 380px;"></div>
+  <script type="text/javascript">
+    Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+    Dynamsoft.DWT.UseLocalService = true;
+    let DWObject;
+    let devices;
+    
+
+    function Dynamsoft_OnReady() {
+      DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+      console.log("ready");
+      
+    }
+    
+    async function loadDevices(){
+      let scannersSelect = document.getElementById("scanners");
+      scannersSelect.innerHTML = "";
+      devices = await DWObject.GetDevicesAsync();
+      devices.forEach(device => {
+        let option = new Option();
+        option.value = device.displayName;
+        option.text = device.displayName;
+        scannersSelect.appendChild(option);
+      });
+    }
+    
+    function AcquireImage() {
+      let index = document.getElementById("scanners").selectedIndex;
+      devices[index].acquireImage({IfShowUI:false}, DWObject);
+    }
+
+  </script>
+</body>
+
+</html>

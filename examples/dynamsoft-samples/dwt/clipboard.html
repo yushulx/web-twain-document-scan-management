@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Web TWAIN and Clipboard</title>
+    <!--<script src="Resources/dynamsoft.webtwain.initiate.js"> </script>
+    <script src="Resources/dynamsoft.webtwain.config.js"> </script>-->
+    <script type="text/javascript" src="https://unpkg.com/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+
+<body>
+    <select size="1" id="source" style="position: relative; width: 220px;"></select>
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+    <input type="button" value="Load" onclick="LoadImage();" />
+    <br />
+    <input type="button" value="Copy Selected" onclick="CopySelected();" />
+    <input type="button" value="Load Image from Clipboard" onclick="ReadImageFromClipboard();" />
+    <!-- dwtcontrolContainer is the default div id for Dynamic Web TWAIN control.
+    If you need to rename the id, you should also change the id in the dynamsoft.webtwain.config.js accordingly. -->
+    <div id="dwtcontrolContainer"></div>
+    <div id="downloadContainer"></div>
+    <script type="text/javascript">
+        var console = window['console'] ? window['console'] : { 'log': function () { } };
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+        var DWObject;
+        
+        window.onload = function() {
+            Dynamsoft.DWT.Containers = [{ContainerId: "dwtcontrolContainer", Width: "270px", Height: "350px"}];
+            Dynamsoft.DWT.ProductKey = "t0152KQMAAJYlpuCB+9LenZhN2NEnHIwcn6KSSMsMKoVYgN+wjBmmhS6GD2AOcepnMm17gMxw35mYtGZdxyE4SZsnjgFk16iIjQ3RMJ49LUuVfFsrw8N8s9Fi8FDnMrnXk/nh+OjUqQwnjI5Nnk/fNDOfM2Q7c204YXRsmpkr056zeZN1V8hWMkvPcMLo2JTMd0PTEEPgH635nyI=";
+            if (Dynamsoft.Lib.env.bMobile){
+                Dynamsoft.DWT.UseLocalService = false;
+            }else{
+                Dynamsoft.DWT.UseLocalService = true;
+            }
+            Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.5.0/dist";
+            Dynamsoft.DWT.Load();
+        };
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+            if (DWObject) {    	
+                var count = DWObject.SourceCount; // Populate how many sources are installed in the system
+                for (var i = 0; i < count; i++)
+                    document.getElementById("source").options.add(new Option(DWObject.GetSourceNameItems(i), i));  // Add the sources in a drop-down list
+            }
+        }
+        function AcquireImage() {
+            if (DWObject) {
+                var OnAcquireImageSuccess, OnAcquireImageFailure;
+                OnAcquireImageSuccess = OnAcquireImageFailure = function () {
+                    DWObject.CloseSource();
+                };
+                DWObject.SelectSourceByIndex(document.getElementById("source").selectedIndex);
+                DWObject.OpenSource();
+                DWObject.IfDisableSourceAfterAcquire = true;	// Scanner source will be disabled/closed automatically after the scan.
+                DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
+            }
+        }
+        
+        var onSuccess = function() {
+            console.log("Success!");
+        };
+        var onFailure = function(errorCode, errorString) {
+            console.log(errorString);
+        };
+        
+        function LoadImage() {
+            if (DWObject) {
+                DWObject.IfShowFileDialog = true; // Open the system's file dialog to load image
+                DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure); // Load images in all supported formats (.bmp, .jpg, .tif, .png, .pdf). sFun or fFun will be called after the operation
+            }
+        }
+        
+        function CopySelected(){
+            if (DWObject) {
+                DWObject.ConvertToBlob(
+                    DWObject.CurrentImageIndexInBuffer,
+                    Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+                    function(result) {
+                        CopyBlobToClipboard(result);
+                    },
+                    onFailure);
+            }
+        }
+        
+        function CopyBlobToClipboard(blob) {
+            var data = [new ClipboardItem({ "image/png": blob})];
+            navigator.clipboard.write(data).then(function() {
+              console.log("Copied to clipboard successfully!");
+            }, function() {
+              console.error("Unable to write to clipboard. :-(");
+            });
+        }
+        
+        async function ReadImageFromClipboard(){
+            const items = await navigator.clipboard.read();
+            const blob = await items[0].getType("image/png");
+            loadFileFromBinary(blob);
+        }
+        
+        function loadFileFromBinary(blob) {
+            if (DWObject) {
+                DWObject.LoadImageFromBinary(blob, onSuccess, onFailure)
+            }
+        }
+    </script>
+</body>
+
+</html>

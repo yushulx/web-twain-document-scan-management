@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Web TWAIN Mobile Sample</title>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+	<script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.camera.js"></script>
+	<script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"></script>
+	<script type="text/javascript" src="common.js"></script>
+	<script type="text/javascript" src="tabs.js"></script>
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+	<link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+	<link rel="stylesheet" href="css/tabs.css">
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+        <div class="six columns">
+			<div id="dwtcontrolContainer" style="float:left;width:100%"></div>
+		</div>
+		<div class="six columns">
+			<div class="tab" style="display:flex;overflow-x:auto">
+				<button class="tablinks" onclick="switchTab(event, 'camera')">Camera</button>
+				<button class="tablinks" onclick="switchTab(event, 'save')">Save</button>
+			</div>		
+			<div>
+				<div id="camera" class="tabcontent">
+					<select id="camerasource"></select>
+					<input id="captureButton" type="button" value="Capture Images" onclick="CaptureImages();" />
+					<input id="switchButton" type="button" value="Hide Video" onclick="SwitchViews();" />
+				</div>
+				<div id="save"  class="tabcontent">
+					Default Filename: <input type="text" id="filename" value="DynamicWebTWAIN"/>
+					<input onclick="SaveWithFileDialog();" type="button" value="Save">
+					<div>
+						<label>
+							<input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+						<label>
+							<input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+						<label>
+							<input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+					</div>
+				</div>				
+		   </div>
+		</div>
+	</div>
+  </div>
+    <script type="text/javascript">
+        var console = window['console'] ? window['console'] : { 'log': function () { } };
+        Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+        var DWObject;
+		switchTab(null, 'camera')
+		
+        function Dynamsoft_OnReady() {
+			DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+            if (DWObject) {
+			    DWObject.Viewer.width="100%";
+				DWObject.SetViewMode(2, 2);
+   
+				SetIfWebcamPlayVideo(false);	
+				DWObject.Addon.Camera.getSourceList().then(function (sourceName) {
+					var iCount = sourceName.length;
+					for (var i = 0; i < iCount; i++) {
+						document.getElementById("camerasource").options.add(new Option(sourceName[i].label, sourceName[i].deviceId));
+					}
+				});
+				document.getElementById('camerasource').onchange = function () {
+					var deviceId = document.getElementById("camerasource").options[document.getElementById("camerasource").selectedIndex].value;
+					DWObject.Addon.Camera.selectSource(deviceId).then(function () {
+						SetIfWebcamPlayVideo(true);
+						document.getElementById("switchButton").style.display = '';
+						document.getElementById("captureButton").disabled = "";
+					}, function (ex) { console.log(ex.message); });
+				}
+            }
+        }
+		
+		function CaptureImages() {
+			if (DWObject) {
+				DWObject.Addon.Camera.capture().then(function () {
+					DWObject.Viewer.render();
+					SetIfWebcamPlayVideo(false);
+				}, function (ex) {
+					console.log(ex.message);
+					SetIfWebcamPlayVideo(false);
+				});
+			}
+		}
+
+		function SetIfWebcamPlayVideo(bShow) {
+			if (bShow) {
+				DWObject.Addon.Camera.play(null, { width: 2560, height: 1440 },true).then(function (r) {
+					isVideoOn = true;
+					document.getElementById("captureButton").style.backgroundColor = "";
+					document.getElementById("captureButton").disabled = "";
+					document.getElementById("switchButton").value = "Hide Video";
+				}, function (ex) {
+					console.log(ex.message);
+					DWObject.Addon.Camera.stop();
+				});
+			}
+			else {
+				DWObject.Addon.Camera.stop();
+				isVideoOn = false;
+				document.getElementById("captureButton").style.backgroundColor = "#aaa";
+				document.getElementById("captureButton").disabled = "disabled";
+				document.getElementById("switchButton").value = "Show Video";
+
+			}
+		}
+
+		function SwitchViews() {
+			if (isVideoOn == false) {
+				// continue the video
+				SetIfWebcamPlayVideo(true);
+			} else {
+				// stop the video
+				SetIfWebcamPlayVideo(false);
+			}
+		}
+
+        //Callback functions for async APIs
+        function OnSuccess() {
+            console.log('successful');
+        }
+
+        function OnFailure(errorCode, errorString) {
+            alert(errorString);
+        }
+
+        function SaveWithFileDialog() {
+            if (DWObject) {
+                if (DWObject.HowManyImagesInBuffer > 0) {
+                    DWObject.IfShowFileDialog = true;
+					var filename=document.getElementById("filename").value;
+                    if (document.getElementById("imgTypejpeg").checked == true) {
+                        //If the current image is B&W
+                        //1 is B&W, 8 is Gray, 24 is RGB
+                        if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1)
+                            //If so, convert the image to Gray
+                            DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+                        //Save image in JPEG
+                        DWObject.SaveAsJPEG(filename+".jpg", DWObject.CurrentImageIndexInBuffer);
+                    }
+                    else if (document.getElementById("imgTypetiff").checked == true)
+                        DWObject.SaveAllAsMultiPageTIFF(filename+".tiff", OnSuccess, OnFailure);
+                    else if (document.getElementById("imgTypepdf").checked == true)
+                        DWObject.SaveAllAsPDF(filename+".pdf", OnSuccess, OnFailure);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

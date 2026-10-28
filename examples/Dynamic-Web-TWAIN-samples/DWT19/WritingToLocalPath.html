@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello World</title>
+    <script src="https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
+</head>
+
+<style>
+    #dwtContainer {
+        width: 800px;
+        height: 600px;
+        position: relative;
+    }
+
+    #deleteButton {
+        position: absolute;
+        background: white;
+        z-index: 9;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        border: 1px solid #bdbdbd;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+
+    #deleteButton:hover {
+        background: #dcdcdc;
+    }
+</style>
+
+<body>
+    <input type="button" value="Scan" onclick="AcquireImage();" />
+    <label>
+      Path:
+      <input type="text" id="pathInput" value="C:\out.pdf" />
+    </label>
+    <input type="button" value="Save to the path" onclick="Save();" />
+    <div id="dwtContainer">
+    </div>
+
+    <script type="text/javascript">
+        
+        let DWObject;
+        Dynamsoft.DWT.AutoLoad = false;
+        Dynamsoft.DWT.ResourcesPath = "https://cdn.jsdelivr.net/npm/dwt@19.5.0/dist";
+        Dynamsoft.DWT.ServiceInstallerLocation = "https://demo.dynamsoft.com/DWT/Resources/dist/";
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtContainer',Width: 270, Height: 350 }];
+        Dynamsoft.DWT.Load();
+
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtContainer');
+            DWObject.Viewer.width = "100%";
+            DWObject.Viewer.height = "100%";
+        }
+
+        function AcquireImage() {
+            if (DWObject) {
+                DWObject.SelectSourceAsync().then(function(){
+                    return DWObject.AcquireImageAsync({
+                            IfCloseSourceAfterAcquire: true // Scanner source will be closed automatically after the scan.
+                        });
+                }).catch(function (exp) {
+                    alert(exp.message);
+                });
+            }
+        }
+
+        function Save(){
+            if (DWObject) {
+                let path = document.getElementById("pathInput").value;
+                DWObject.IfShowFileDialog = false;
+                DWObject.SaveAllAsPDF(path, 
+                    function (){
+                        alert("success");
+                    },
+                    function (errorCode, errorString) {
+                      if (errorCode) {
+                          let cause = DWObject.ErrorCause;
+                          let msg = "Error string: "+errorString;
+                          if (cause){
+                              msg += "\nError cause: "+JSON.stringify(cause,null,2);
+                          }
+                          alert(msg);
+                      } else {
+                          alert("Saved successfully!");
+                      }
+                    }
+                );
+            }
+        }
+    </script>
+</body>
+
+</html>

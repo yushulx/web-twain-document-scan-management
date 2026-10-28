@@ -44,14 +44,12 @@
                         <button onclick="correctOrientation();" class="btn btn-secondary">Correct Orientation</button>
                         <button onclick="recognize();" class="btn btn-primary">Recognize Text</button>
                     </div>
-                    <select id="language" class="form-select">
-                        <option value="en">English</option>
-                        <option value="fr">French</option>
-                        <option value="es">Spanish</option>
-                        <option value="de">German</option>
-                        <option value="it">Italian</option>
-                        <option value="pt">Portuguese</option>
+                    <select id="engine" class="form-select" onchange="fillLanguages(this.value)" title="OCR engine">
+                        <option value="">Detecting OCR engines...</option>
                     </select>
+                    <select id="language" class="form-select" title="Recognition language">
+                    </select>
+                    <p class="ocr-note">OCR Connector runs on Windows and macOS only. Linux is not supported yet.</p>
                     <select id="processingTarget" class="form-select">
                         <option value="current">Current Image</option>
                         <option value="all">All Images</option>

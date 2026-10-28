@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/dwt/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .main-container {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .viewer-wrapper {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+
+    .viewer-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+    }
+
+    .viewer-header span {
+      font-size: 14px;
+      font-weight: 500;
+      color: #6b7280;
+    }
+
+    #page-info {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    #dwtcontrolContainer {
+      width: 100%;
+      height: 600px;
+    }
+
+    .status-bar {
+      margin-top: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: #6b7280;
+      background: #fff;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 600px;
+      color: #9ca3af;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 16px;
+    }
+
+    .outputinfo-section {
+      margin-top: 24px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+
+    .outputinfo-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+    }
+
+    .outputinfo-header span {
+      font-size: 14px;
+      font-weight: 500;
+      color: #6b7280;
+    }
+
+    .outputinfo-content {
+      padding: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .outputinfo-content pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 0;
+    }
+
+    .outputinfo-item {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+    }
+
+    .outputinfo-item:last-child {
+      margin-bottom: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .outputinfo-item .page-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #2563eb;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .outputinfo-item pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 0;
+    }
+
+    .expand-toggle {
+      font-size: 12px;
+      color: #2563eb;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .expand-toggle:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📄 Document Scanner</h1>
+    <div class="toolbar">
+      <button class="btn btn-primary" id="scan-btn" onclick="acquireImage()">🖨️ Scan</button>
+      <button class="btn btn-secondary" id="load-btn" onclick="loadImage()">📂 Load File</button>
+      <button class="btn btn-danger" id="clear-btn" onclick="clearBuffer()" disabled>🗑️ Clear All</button>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="viewer-wrapper">
+      <div class="viewer-header">
+        <span>Document Viewer</span>
+        <span id="page-info">No pages</span>
+      </div>
+      <div id="dwtcontrolContainer"></div>
+    </div>
+    <div class="status-bar" id="status-bar">Ready — click <strong>Scan</strong> to start scanning, or <strong>Load File</strong> to open an image.</div>
+
+    <div class="outputinfo-section" id="outputinfo-section" style="display: none;">
+      <div class="outputinfo-header">
+        <span>📋 OutputInfo (JSON)</span>
+        <span class="expand-toggle" id="collapse-all-btn" onclick="toggleAllOutputInfo()">Collapse All</span>
+      </div>
+      <div class="outputinfo-content" id="outputinfo-content"></div>
+    </div>
+  </div>
+
+  <script>
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.IfCheckCssFiles = false;
+    Dynamsoft.DWT.Containers = [
+      { ContainerId: "dwtcontrolContainer", Width: "100%", Height: "600px" },
+    ];
+    Dynamsoft.DWT.ResourcesPath =
+      "https://cdn.jsdelivr.net/npm/dwt/dist";
+    Dynamsoft.DWT.ServiceInstallerLocation =
+      "https://unpkg.com/dwt/dist/dist/";
+    Dynamsoft.DWT.Load();
+
+    var DWTObject;
+    var outputInfoList = [];
+
+    Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
+      DWTObject = Dynamsoft.DWT.GetWebTwain("dwtcontrolContainer");
+
+      // Update UI when buffer changes
+      DWTObject.RegisterEvent("OnBufferChanged", function (info) {
+        updatePageInfo();
+        updateClearButton();
+      });
+
+      // Log outputInfo after each image is transferred from the scanner
+      DWTObject.RegisterEvent("OnPostTransferAsync", function (outputInfo) {
+        console.log("OnPostTransfer outputInfo:", outputInfo);
+        // Clone to avoid reference issues — store a plain object
+        var clonedInfo = JSON.parse(JSON.stringify(outputInfo));
+        clonedInfo._index = outputInfoList.length + 1;
+        clonedInfo._timestamp = new Date().toISOString();
+        outputInfoList.push(clonedInfo);
+        renderOutputInfo();
+        setStatus(
+          "📥 Transferred page " + clonedInfo._index + " — ImageId: " + outputInfo.ImageId +
+          ", Path: " + outputInfo.Path +
+          ", Width: " + outputInfo.Width +
+          ", Height: " + outputInfo.Height +
+          ", FileSize: " + outputInfo.FileSize + " bytes" +
+          ", Format: " + outputInfo.Format +
+          ", Resolution: " + outputInfo.Resolution +
+          ", PageCount: " + outputInfo.PageCount
+        );
+      });
+    });
+
+    function updatePageInfo() {
+      var count = DWTObject ? DWTObject.HowManyImagesInBuffer : 0;
+      var el = document.getElementById("page-info");
+      if (count === 0) {
+        el.textContent = "No pages";
+      } else if (count === 1) {
+        el.textContent = "1 page";
+      } else {
+        el.textContent = count + " pages";
+      }
+    }
+
+    function updateClearButton() {
+      var count = DWTObject ? DWTObject.HowManyImagesInBuffer : 0;
+      document.getElementById("clear-btn").disabled = count === 0;
+    }
+
+    function setStatus(msg) {
+      document.getElementById("status-bar").innerHTML = msg;
+    }
+
+    function acquireImage() {
+      if (!DWTObject) {
+        setStatus("⚠️ Scanner is still initializing. Please wait...");
+        return;
+      }
+      setStatus("🔍 Selecting scanner source...");
+      DWTObject.SelectSourceAsync()
+        .then(function () {
+          setStatus("📷 Scanning document...");
+          return DWTObject.AcquireImageAsync({
+            IfCloseSourceAfterAcquire: true,
+            IfShowUI: true,
+            PixelType: Dynamsoft.DWT.EnumDWT_PixelType.TWPT_GRAY,
+            Resolution: 200,
+            IfGetImageInfo: true,
+            IfGetExtImageInfo: true,
+            IfDuplexEnabled: true,
+            extendedImageInfoQueryLevel: Dynamsoft.DWT.EnumDWT_ExtImageInfo.supported
+          });
+        })
+        .then(function () {
+          setStatus("✅ Scan complete — " + DWTObject.HowManyImagesInBuffer + " page(s) in buffer.");
+        })
+        .catch(function (exp) {
+          if (exp.message) {
+            setStatus("❌ Scan failed: " + exp.message);
+          } else {
+            setStatus("⚠️ Scan cancelled.");
+          }
+        });
+    }
+
+    function loadImage() {
+      if (!DWTObject) {
+        setStatus("⚠️ Scanner is still initializing. Please wait...");
+        return;
+      }
+      DWTObject.IfShowFileDialog = true;
+      DWTObject.LoadImageEx(
+        "",
+        Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL,
+        function () {
+          setStatus("✅ File loaded — " + DWTObject.HowManyImagesInBuffer + " page(s) in buffer.");
+        },
+        function (errorCode, errorString) {
+          setStatus("❌ Failed to load file: " + errorString);
+        }
+      );
+    }
+
+    function clearBuffer() {
+      if (!DWTObject) return;
+      DWTObject.RemoveAllImages();
+      outputInfoList = [];
+      renderOutputInfo();
+      setStatus("🗑️ Buffer cleared.");
+      updatePageInfo();
+      updateClearButton();
+    }
+
+    function renderOutputInfo() {
+      var section = document.getElementById("outputinfo-section");
+      var content = document.getElementById("outputinfo-content");
+      var count = outputInfoList.length;
+
+      if (count === 0) {
+        section.style.display = "none";
+        content.innerHTML = "";
+        return;
+      }
+
+      section.style.display = "block";
+
+      var html = "";
+      for (var i = 0; i < count; i++) {
+        var info = outputInfoList[i];
+        var jsonStr = JSON.stringify(info, null, 2);
+        html += '<div class="outputinfo-item">';
+        html += '<div class="page-label">📄 Page ' + info._index + ' (ImageId: ' + info.ImageId + ', ' + info._timestamp + ')</div>';
+        html += '<pre>' + escapeHtml(jsonStr) + '</pre>';
+        html += '</div>';
+      }
+      content.innerHTML = html;
+    }
+
+    function toggleAllOutputInfo() {
+      var content = document.getElementById("outputinfo-content");
+      var btn = document.getElementById("collapse-all-btn");
+      var items = content.querySelectorAll(".outputinfo-item pre");
+      if (!items.length) return;
+
+      // Check if currently all collapsed — if first one is hidden, expand all; else collapse all
+      var firstHidden = items[0].style.display === "none";
+
+      for (var i = 0; i < items.length; i++) {
+        items[i].style.display = firstHidden ? "block" : "none";
+      }
+      btn.textContent = firstHidden ? "Collapse All" : "Expand All";
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

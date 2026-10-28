@@ -1,0 +1,15 @@
+<template>
+  <lightning-card title="Barcode Scanner">
+    <lightning-button
+              label="Toggle Scanning"
+              onclick={toggleScanning}
+    ></lightning-button>
+    <div>
+      <label>
+        Barcode:&nbsp;
+        <span>{barcodeValue}</span>
+      </label>
+    </div>
+    <div class="viewer" id="viewer" style="height:500px;width:400px;"></div>
+  </lightning-card>
+</template>

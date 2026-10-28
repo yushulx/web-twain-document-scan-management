@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan and Classify Documents with Barcodes</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <script src="https://unpkg.com/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-core@3.2.30/dist/core.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader@10.2.10/dist/dbr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-router@2.2.30/dist/cvr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-license@3.2.21/dist/license.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-utility@1.2.20/dist/utility.js"></script>
+    <style>
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .thumbnail {
+        width: 50px;
+        border: 1px solid black;
+      }
+      .thumbnail:hover {
+        border: 1px solid orange;
+        cursor: pointer;
+      }
+    </style>
+</head>
+<body>
+  <h2>Scan and Classify Documents with Barcodes</h2>
+  <div class="container">
+    <div class="document-scanner" style="margin-right:20px;">
+      <h3>Step 1: Scan</h3>
+      <label>
+        Scanner:
+        <select id="select-scanner"></select>
+      </label>
+      <br/>
+      <label>
+        Use the scanner's configuration UI:
+        <input type="checkbox" id="showUI"/>
+      </label>
+      <br/>
+      <label>
+        Auto Document Feeder:
+        <input type="checkbox" id="ADF"/>
+      </label>
+      <br/>
+      <label>
+        Duplex:
+        <input type="checkbox" id="duplex"/>
+      </label>
+      <br/>
+      <label>
+        Resolution:
+        <select id="select-resolution">
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="300" selected>300</option>
+        </select>
+      </label>
+      <br/>
+      <label>
+        Pixel Type:
+        <select id="select-pixeltype">
+          <option>Black & White</option>
+          <option>Gray</option>
+          <option selected>Color</option>
+        </select>
+      </label>
+      </br>
+      <input type="button" value="Scan" onclick="AcquireImage();" />
+      <input type="button" value="Edit" onclick="Edit();" />
+      <input type="button" value="Load Files" onclick="LoadFiles();" />
+      <a href="https://github.com/tony-xlh/Dynamic-Web-TWAIN-samples/releases/download/assets/forms-with-barcodes.pdf" target="_blank">Sample PDF</a>
+      <div id="dwtcontrolContainer"></div>
+    </div>
+    <div class="barcode-reader">
+      <h3>Step 2: Classify</h3>
+      <input type="button" value="Classify"  class="classify-button" onclick="Classify();" />
+      <label>
+        Barcode Position:
+        <select class="barcode-position">
+          <option>First Page</option>
+          <option>Last Page</option>
+        </select>
+      </label>
+      <div class="documents"></div>
+    </div>
+  </div>
+  <div style="margin-top:20px;">
+    Powered by <a href="https://www.dynamsoft.com/web-twain/overview/" target="_blank">Dynamic Web TWAIN</a> and <a href="https://www.dynamsoft.com/barcode-reader/overview/" target="_blank">Dynamsoft Barcode Reader</a>
+  </div>
+  <script type="text/javascript">
+    let DWObject;
+    let scanners;
+    let router;
+    const FIRST = 0;
+    const LAST = 1;
+    let documents = []; //document object: {barcodes:[],imageIndex:[]}
+    initDWT();
+    initDBR();
+    addListenerForSalesForce();
+    
+    //only for salesforce:
+    function addListenerForSalesForce(){
+      window.addEventListener(
+        "message",
+        async (event) => {
+          console.log("received message in iframe");
+          console.log(event);
+          if (event.data === "acquire") {
+            window.parent.postMessage(documents);
+          }
+        },
+        false,
+      );
+    }
+
+    function initDWT(){
+      Dynamsoft.DWT.AutoLoad = false;
+      Dynamsoft.DWT.Containers = [];
+      Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.5.0/dist";
+      let oneDayTrialLicense = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
+      Dynamsoft.DWT.ProductKey = oneDayTrialLicense;  
+      Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          DWObject = obj;
+          DWObject.Viewer.bind(document.getElementById('dwtcontrolContainer'));
+          DWObject.Viewer.height = "480px";
+          DWObject.Viewer.width = "360px";
+          DWObject.Viewer.show();
+          DWObject.Viewer.setViewMode(2,2);
+          loadScanners();
+        },
+        function(err) {
+          console.log(err);
+        }
+      );
+    }
+
+    async function initDBR(){
+      let btn = document.getElementsByClassName("classify-button")[0];
+      btn.disabled = true;
+      btn.value = "Initializing...";
+      Dynamsoft.License.LicenseManager.initLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==");
+      Dynamsoft.Core.CoreModule.loadWasm(["dbr"]);
+      router = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+      btn.value = "Classify";
+      btn.disabled = false;
+    }
+
+    async function loadScanners(){
+      scanners = await DWObject.GetDevicesAsync();
+      let selScanners = document.getElementById("select-scanner");
+      selScanners.innerHTML = "";
+      for (let index = 0; index < scanners.length; index++) {
+        const scanner = scanners[index];
+        let option = new Option(scanner.displayName,index);
+        selScanners.appendChild(option);
+      }
+    }
+
+    async function AcquireImage() {
+      if (DWObject) {
+        const selectedIndex = document.getElementById("select-scanner").selectedIndex;
+        const options = {
+          IfShowUI:document.getElementById("showUI").checked,
+          PixelType:document.getElementById("select-pixeltype").selectedIndex,
+          Resolution:document.getElementById("select-resolution").selectedOptions[0].value,
+          IfFeederEnabled:document.getElementById("ADF").checked,
+          IfDuplexEnabled:document.getElementById("duplex").checked
+        };
+        await DWObject.SelectDeviceAsync(scanners[selectedIndex]);
+        await DWObject.OpenSourceAsync();
+        await DWObject.AcquireImageAsync(options);
+        await DWObject.CloseSourceAsync();
+      }
+    }
+
+    async function Classify(){
+      documents = [];
+      const barcodePosition = document.getElementsByClassName("barcode-position")[0].selectedIndex;
+      const total = DWObject.HowManyImagesInBuffer;
+      let doc;
+      for (let i = 0; i < total; i++) {
+        DWObject.SelectImages([i]);
+        const blob = await convertToBlob(i);
+        let barcodeReadingResult = await router.capture(blob, "ReadBarcodes_Balance");  
+        console.log(barcodeReadingResult);
+        if (barcodeReadingResult.items.length>0) {
+          if (doc) {
+            if (barcodePosition === LAST) {
+              doc.imageIndex.push(i);
+              doc.barcodes = barcodeReadingResult.items;    
+            }
+            documents.push(doc);
+          }
+          doc = {barcodes:[],imageIndex:[]} //reinit a document
+          if (barcodePosition === FIRST) {
+            doc.imageIndex.push(i);
+            doc.barcodes = barcodeReadingResult.items;
+          }
+        }else{
+          if (barcodePosition === FIRST) {
+            if (doc) {
+              doc.imageIndex.push(i);
+            }
+          }else{
+            if (!doc) {
+              doc = {barcodes:[],imageIndex:[]} //init a document
+            }
+            doc.imageIndex.push(i);
+          }
+        }
+      }
+      if (doc) {
+        documents.push(doc);
+      }
+      ListClassifiedDocuments();
+    }
+
+    function ListClassifiedDocuments(){
+      console.log(documents);
+      const documentsContainer = document.getElementsByClassName("documents")[0];
+      documentsContainer.innerHTML = "";
+      for (let i = 0; i < documents.length; i++) {
+        const doc = documents[i];
+        let documentContainer = document.createElement("div");
+        let title = document.createElement("div");
+        title.innerHTML = doc.barcodes[0].text;
+        documentContainer.appendChild(title);
+        let thumbnailsContainer = document.createElement("div");
+        thumbnailsContainer.className = "thumbnails";
+        for (let j = 0; j < doc.imageIndex.length; j++) {
+          const imageIndex = doc.imageIndex[j];
+          console.log(imageIndex);
+          const a = document.createElement("a");
+          const thumbnailImage = document.createElement("img");
+          thumbnailImage.className = "thumbnail";
+          thumbnailImage.src = DWObject.GetImageURL(imageIndex);
+          a.appendChild(thumbnailImage);
+          a.href = thumbnailImage.src;
+          a.target = "_blank";
+          thumbnailsContainer.appendChild(a);
+        }
+        documentContainer.appendChild(thumbnailsContainer);
+        let saveButton = document.createElement("button");
+        saveButton.innerText = "Save as PDF";
+        saveButton.className = "save-button";
+        saveButton.type = "button";
+        documentContainer.appendChild(saveButton);
+        saveButton.addEventListener("click",function(){
+          console.log("clicked");
+          DWObject.SelectImages(doc.imageIndex);
+          DWObject.SaveSelectedImagesAsMultiPagePDF("form-"+(i+1)+".pdf")
+        })
+        documentsContainer.appendChild(documentContainer);
+      }
+    }
+
+    async function convertToBlob(index){
+      return new Promise((resolve, reject) => {
+        DWObject.ConvertToBlob(
+          [index],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          function (result, indices, type) {
+            resolve(result);
+          },
+          function (errorCode, errorString) {
+            reject(errorString);
+          }
+        );  
+      })
+    }
+
+    function Edit(){
+      const imageEditor = DWObject.Viewer.createImageEditor();
+      imageEditor.show();
+    }
+
+    function LoadFiles(){
+      DWObject.LoadImageEx(
+        "", //file name can be empty if "Open File" dialog is called.
+        Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL,
+        function () {
+          console.log("success");
+        },
+        function (errorCode, errorString) {
+          console.log(errorString);
+        }
+      );
+    }
+  </script>
+</body>
+
+</html>

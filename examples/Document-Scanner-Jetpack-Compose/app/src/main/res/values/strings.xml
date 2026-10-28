@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Document Scanner</string>
+    <string name="title_activity_scanner">ScannerActivity</string>
+    <string name="title_activity_editor">EditorActivity</string>
+</resources>

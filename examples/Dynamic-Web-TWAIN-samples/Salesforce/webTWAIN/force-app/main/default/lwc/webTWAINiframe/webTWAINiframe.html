@@ -1,0 +1,23 @@
+<template>
+  <lightning-card title="Web TWAIN">
+    <lightning-button
+              label="Scan"
+              onclick={scan}
+    ></lightning-button>
+    <lightning-button
+              label="Show Editor"
+              onclick={showEditor}
+    ></lightning-button>
+    <lightning-button
+              label="Merge into PDF"
+              onclick={merge}
+    ></lightning-button>
+    <div>
+      <label>
+        PDF dataURL:&nbsp;
+        <a target="_blank" href={dataURL}>{dataURLLabel}</a>
+      </label>
+    </div>
+    <div class="viewer" id="viewer" style="height:500px;width:400px;"></div>
+  </lightning-card>
+</template>

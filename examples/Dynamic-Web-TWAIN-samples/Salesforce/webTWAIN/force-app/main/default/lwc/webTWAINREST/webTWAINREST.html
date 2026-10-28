@@ -1,0 +1,17 @@
+<template>
+  <lightning-card title="Web TWAIN REST">
+    <div>
+      <lightning-select
+          name="scanner"
+          label="Scanner:"
+          value={scanner}
+          options={scannerOptions}
+          onchange={handleScannerChange}
+      ></lightning-select>
+      <lightning-button label="Scan" onclick={scan}></lightning-button>
+      <div lwc:if={imageURL}>
+        <img class="scanned" src={imageURL} alt="scanned"/>
+      </div>
+    </div>
+  </lightning-card>
+</template>

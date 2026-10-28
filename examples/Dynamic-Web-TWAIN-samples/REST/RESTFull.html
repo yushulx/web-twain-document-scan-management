@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<!-- saved from url=(0057)https://demo.dynamsoft.com/Samples/dwt/restful/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RESTFull - TEST</title>
+<style>
+    html,body {
+        width: 100%;
+        height: 100%;
+        margin:10px;
+        padding:0;
+        overscroll-behavior-y: none;
+        overflow: hidden;
+    }
+
+    #container {
+        width: 100%;
+        height: 96%;
+    }
+    
+    #container img {
+        width: 150px;
+        height: 150px;
+        margin: 5px;
+        border: 1px solid gray;
+        cursor: pointer;
+    }
+    .selected {
+        border-color: red !important;
+    }
+</style></head>
+
+<body>
+    <input type="button" value="Init" onclick="init();">
+    Select Scanner: <select id="sources"> </select> <br>   
+    <input type="button" value="Scan" onclick="acquire();">
+    <input type="button" value="Load" onclick="load();">
+    <div id="container" style="width: 380px; height: 380px; border: 1px solid rgb(204, 204, 204); background: rgb(255, 255, 255);overflow: auto;"></div>
+    <input type="button" value="Read barcode" onclick="readBarcode();">
+    <input type="button" value="Save" onclick="save();">
+    <input type="button" value="remove current page" onclick="removeCurrentPage();">
+    <input type="button" value="remove all" onclick="removeAll();">
+    <input type="button" value="IsBlankImageAsync" onclick="IsBlankImage();">
+    <div id="barcodeInfo" style="width: 380px; height: 380px; border: 1px solid rgb(204, 204, 204); background: rgb(255, 255, 255);overflow: auto;"></div>
+
+
+<script>
+    let restServer = "https://127.0.0.1:18623";
+    let licenseString = 't0103CgEAADoB5BhRZkO/N5Rkozg1nRPpHAnqs6jbiULM6Czd3149hKnI6yMtx+xHqe11aTTIWi9pBjgzM9XBFOkV+BzFDi1L4jB0oL6sAGY7gDK+eRLCmjBO6DZhAjYnInPKesYbrVw7Cw==';
+    //'t00996QAAAJ1y5XJQSHPy7OIug6kPVk+7wWX4f9ochdG6xFIcih1GVjzdLS0ZgEebP1XulflUptGshd5BJIaCkTO5IyGIGNKTOA0DqBcrQO9/AGV+cybENWGeCN+ETFMj7ACBkzK6';
+    //'t0093yAAAAIm/nZjLsHuVQMJXBDKQFjMMBMY+roJ6mwpGh1qBSfyrtpkpT5A1uPmXq/Nrdl9+BulzMWhJIXnZ7cUZ0ychlIrzoAPlYQVo7Q+gzG9Gg65AMkWKuAEafSmb';
+    let curDcumentUid, currentIndex = 0;
+    
+    async function getSources(){
+        // timeout is 10 mins, cannot set now.
+        let url = `${restServer}/api/device/scanners?type=112`; // ?type=256
+        const response = await fetch(url, {"method":"GET"});
+        if (response.status == 200)
+        {
+            var x = document.getElementById("sources");
+            x.options.length = 0;
+            let scanners = await response.json();
+            for (const s of scanners) {
+                addSource(s);
+            }
+        }
+    }
+    
+    function addSource(scanner) {
+        var x = document.getElementById("sources");
+        var option = document.createElement("option");
+        if(`${scanner.type}` == `16`)
+            option.text = `${scanner.name}`;
+        else if(`${scanner.type}` == `32`)
+            option.text = `WIA-${scanner.name}`;
+        else if(`${scanner.type}` == `64`)
+            option.text = `TWAIN64-${scanner.name}`;
+        else
+            option.text = `${scanner.type}-${scanner.name}`;
+        option.tag = scanner;
+        x.add(option);
+    }
+
+    async function createDocument(){
+        // timeout is 10 mins, cannot set now.
+        let url = `${restServer}/api/storage/documents`; // ?type=256
+        const response = await fetch(url, {"body": JSON.stringify({ password: ''}), "method":"POST"});
+        if (response.status == 201)
+        {
+            let result = await response.json();
+            curDcumentUid = result.uid;
+            console.log(curDcumentUid);
+        }
+    }
+    
+
+    
+
+    async function acquire() {
+        let curJobid;
+        //if (curJobid) {
+        //    await fetch(`${restServer}/api/device/scanners/jobs/${curJobid}`, {"method":"DELETE"});
+        //    console.log("delete job " + curJobid);
+        //}
+        
+        let device;
+        var scanners = document.getElementById('sources');
+        if (scanners.options.length > 0) {
+            var option = scanners.options[scanners.selectedIndex];
+            device = option.tag.device;
+        }
+
+        let scanParams = {
+            license: licenseString, 
+        };
+        if (device) {
+            // optional. use the latest device.
+            scanParams.device = device;
+        }
+        //if (protocol && protocol.vieweruid) {
+        //    scanParams.vieweruid = protocol.vieweruid;
+        //}
+        // scanParams.output = {
+        //  // optional
+        //     document: {
+        //         uid: 'doc1904e1f525b2', //
+        //         password: '',
+        //     },
+        //     // insertBeforePageNumber: 0  // optional. default append to last
+        // }; 
+        //scanParams.logLevel=0;
+        // DeviceConfiguration https://www.dynamsoft.com/web-twain/docs/info/api/Interfaces.html#DeviceConfiguration
+        // optional. IfShowUI default is false
+        scanParams.config = {
+            IfShowUI: true, //document.getElementById("showUI").checked ,
+            //PixelType: 2,
+            //XferCount: 9,
+            //PageSize: 1,
+            Resolution: 300,
+            //IfFeederEnabled: document.getElementById("adf").checked,
+            //IfDuplexEnabled: document.getElementById("duplex").checked,
+        };
+        // Capabilities https://www.dynamsoft.com/web-twain/docs/info/api/Interfaces.html#capabilities
+        // optional
+        // scanParams.caps = {};
+        // scanParams.caps.exception = "ignore";
+        // scanParams.caps.capabilities = [
+        //     {
+        //         capability: 257, // pixel type
+        //         curValue: 2,
+        //     },
+        //     {
+        //         capability: 1, // xfercount
+        //         curValue: -1,
+        //     },
+        // ];
+
+        let url = `${restServer}/api/device/scanners/jobs?timeout=15`; // ?timeout=xx, default is 15 seconds. e.g. error dialog when open source, or show ui but no operation in timeout.
+        // if you want to show scanner ui you should install dynamsoft service personal installer.
+        // if you scan with scanner ui or can operate the PC where dynamsoft service installed, you can increase timeout to enough. 
+        const response = await fetch(url, {"body": JSON.stringify(scanParams), "method":"POST"});
+        if (response.status == 201)
+        {
+            const result = await response.json();
+            curJobid = result.jobuid;
+            // job max life time is 10 hours.
+            // job will be deleted auto after got all cached images.
+            // job will be deleted or cancelled after called delete.
+            //if (protocol && protocol.vieweruid) {
+
+            //}
+            //else {
+                await getImage(curJobid);
+            //}
+            
+        }
+        else {
+            console.log(await response.text());
+        }
+        
+        if (curJobid) {
+            await fetch(`${restServer}/api/device/scanners/jobs/${curJobid}`, {"method":"DELETE"});
+            console.log("delete job " + curJobid);
+        }
+    } 
+
+    async function getImage(jobid) {
+
+        // optional. get document info
+        let url = `${restServer}/api/device/scanners/jobs/${jobid}/next-page-info`;
+        let response = await fetch(url, {"method":"GET"});
+        if (response.status == 200)
+        {
+            const info = await response.json();
+            console.log(info);
+            console.log(info.url);
+            showImage(info.url);
+            await addToDocument(info.url, true);
+            
+            await getImage(jobid); 
+        }
+        else {
+            return;
+        }
+
+        // get image.
+        /*url = `${restServer}/api/device/scanners/jobs/${jobid}/next-page?type=image/jpeg`;
+        response = await fetch(url, {"method":"GET"});
+        if (response.status === 200)
+        {
+            const image = await response.arrayBuffer();
+            
+            //const doc = makesureDocOpened();
+            //await doc.loadSource(new Blob([image], {type: response.headers.get("content-type")}));
+
+            getImage(jobid); // get next image
+        }*/
+    }
+    
+    function showImage(strUrl){
+        const img = document.createElement('img');
+        img.style.width = "100px";
+        img.src = strUrl;
+        setSelectImage(img, true);
+        
+    
+
+        img.addEventListener('click', () => {
+            /*const images = document.querySelectorAll('#container img');
+            curDcumentUid = Array.from(images).indexOf(img);
+        
+            images.forEach(i => i.classList.remove('selected'));
+            img.classList.add('selected');*/
+            
+            setSelectImage(img, false);
+        });
+
+        const imageContainer = document.getElementById('container');
+        imageContainer.appendChild(img);
+    }
+    
+    function setSelectImage(img, bAdd){
+        const images = document.querySelectorAll('#container img');
+        if(bAdd)
+            currentIndex = images.length;
+        else
+            currentIndex = Array.from(images).indexOf(img);
+        images.forEach(i => i.classList.remove('selected'));
+        if(img)
+            img.classList.add('selected');
+    }
+    
+    async function addToDocument(data, bScan){
+        let response;
+        let url = `${restServer}/api/storage/documents/${curDcumentUid}/pages`; 
+        if(bScan) {
+            let documentParams = {
+                //insertPos: 0, 
+                source: data,
+            };
+            
+            response = await fetch(url, {"body": JSON.stringify(documentParams), "method":"POST"});
+        } else 
+            response = await fetch(url, {"body": data, "method":"POST"});
+            
+        if (response.status == 200)
+        {
+            const result = await response.json();
+            
+            console.log(result);
+        }
+        else {
+            console.log(await response.text());
+        }
+        
+    }
+    
+    function load(){
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*"; 
+        input.multiple = true; 
+        input.style.display = "none"; 
+        document.body.appendChild(input);
+
+        input.addEventListener("change", (event) => {
+            const files = event.target.files;
+            for(let i= 0; i<files.length; i++){
+                const file = files[i];
+                if (file) {
+                    displayImage(file);
+                    addToDocument(file);
+                }
+            }
+            document.body.removeChild(input); 
+        });
+
+        input.click(); 
+    }
+    
+    function displayImage(file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const imageUrl = event.target.result; 
+            showImage(imageUrl);
+        };
+
+        reader.readAsDataURL(file); 
+    }
+    
+    async function IsBlankImage(){
+        let blankImageParams = {
+            settings: {
+             "minBlockHeight": 20,
+              "maxBlockHeight": 30
+            },
+            source: {"document":{"uid": curDcumentUid, "pages":[currentIndex]}},
+        };
+        
+        let headers = {
+            'accept': 'application/json',
+            'DWT-PRODUCT-KEY': licenseString,
+            'Content-Type': 'application/json'
+        };
+        
+        let url = `${restServer}/api/process/check-blank`; // ?timeout=xx, default is 15 seconds. e.g. error dialog when open source, or show ui but no operation in timeout.
+        // if you want to show scanner ui you should install dynamsoft service personal installer.
+        // if you scan with scanner ui or can operate the PC where dynamsoft service installed, you can increase timeout to enough. 
+        const response = await fetch(url, {"body": JSON.stringify(blankImageParams), "method":"POST"});
+        if (response.status == 200)
+        {
+            const results = await response.json();
+        
+            console.log(results);
+        }
+    }
+    
+    async function readBarcode() {        
+        /*const container = document.getElementById('container');
+        const images = container.getElementsByTagName('img');
+        const secondImageUrl = images[currentIndex].src; 
+        console.log(secondImageUrl);
+        
+        let barcodeParams = {
+            settings: {},
+            source: secondImageUrl,
+        };*/
+        
+        
+        let barcodeParams = {
+            settings: {},
+            source: {"document":{"uid": curDcumentUid, "pages":[currentIndex]}},
+        };
+        
+        let headers = {
+            'accept': 'application/json',
+            'DWT-PRODUCT-KEY': licenseString,
+            'Content-Type': 'application/json'
+        };
+        
+        let url = `${restServer}/api/process/read-barcode`; // ?timeout=xx, default is 15 seconds. e.g. error dialog when open source, or show ui but no operation in timeout.
+        // if you want to show scanner ui you should install dynamsoft service personal installer.
+        // if you scan with scanner ui or can operate the PC where dynamsoft service installed, you can increase timeout to enough. 
+        const response = await fetch(url, {"headers": headers, "body": JSON.stringify(barcodeParams), "method":"POST"});
+        if (response.status == 200)
+        {
+            const results = await response.json();
+        
+            console.log(results);
+             //Retrieve barcode details
+            if (results.length == 0) {
+                document.getElementById('barcodeInfo').innerHTML = "The barcode for the selected format is not found.";
+                return;
+            } else {
+                var barcodeText = [], Barcode_text;
+                for (i = 0; i < results.length; i++) {
+                    var result = results[i];
+                    Barcode_text = result.barcodeText;
+                    var loc = result.localizationResult;
+                    var x = loc.x1;
+                    var y = loc.y1;
+                    var format = result.barcodeFormatString;
+                    if (result.barcodeFormat == 0)
+                        format = result.barcodeFormatString_2;
+                    barcodeText.push("barcode[" + (i + 1) + "]: " + "<br /><strong>" + Barcode_text + "</strong><br />");
+                    barcodeText.push("format:" + format + "<br />");
+                    barcodeText.push("x:" + x + " y:" + y + "<br />");
+                    barcodeText.push("------------------------------<br />");
+                }
+
+                barcodeText.splice(0, 0, '<p style="padding:5px; margin:0;">');
+                barcodeText.push('</p>');
+                document.getElementById('barcodeInfo').innerHTML = barcodeText.join('');
+            }
+        }
+        else {
+            console.log(await response.text());
+        }
+
+    }
+
+    async function save() {
+    
+        let url = `${restServer}/api/storage/documents/${curDcumentUid}/content?type=application%2Fpdf&quality=80&compression=0&pageType=0&version=1.5`; // ?type=256
+        const response = await fetch(url, {"headers": {'Accept': 'application/pdf'}, "method":"GET"});
+        if (response.status == 200)
+        {
+            let blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'document.pdf'; 
+              //document.body.appendChild(a); 
+              a.click(); 
+              //a.remove(); 
+              window.URL.revokeObjectURL(url); 
+        } else {
+            let responseText = await response.text();
+            console.log(responseText);
+            const jsonString =  JSON.parse(responseText);
+            alert(jsonString.message);
+        }
+
+    }
+
+    async function removeCurrentPage(){
+        const pageId = await getPageId(currentIndex); 
+        if (pageId) {
+            await fetch(`${restServer}/api/storage/documents/${curDcumentUid}/pages/${pageId}`, {"method":"DELETE"});
+            console.log("delete page " + pageId);
+            
+            const container = document.getElementById('container');
+            const images = container.getElementsByTagName('img');
+            if (images.length > 0) {
+                container.removeChild(images[currentIndex]);
+                if(images[currentIndex])
+                    setSelectImage(images[currentIndex], false);
+                else
+                    setSelectImage(images[currentIndex-1], false);
+            }
+            
+        }
+    }
+    
+    async function getPageId(currentIndex){
+        let pageId = 0; 
+        
+        // timeout is 10 mins, cannot set now.
+        let url = `${restServer}/api/storage/documents/${curDcumentUid}`; 
+        const response = await fetch(url, {"method":"GET"});
+        if (response.status == 200)
+        {
+            let document = await response.json();
+            if(document.pages.length > 0)
+                pageId = document.pages[currentIndex].uid;
+        }
+  
+        return pageId;
+    }
+    
+    async function removeAll(){
+        if (curDcumentUid) {
+            await fetch(`${restServer}/api/storage/documents/${curDcumentUid}`, {"method":"DELETE"});
+            console.log("delete document " + curDcumentUid);
+            
+            const container = document.getElementById('container');
+            const images = container.getElementsByTagName('img');
+            Array.from(images).forEach(image => {
+              container.removeChild(image);
+            });
+            
+            await createDocument();
+        }
+    }
+    
+    function init(){
+        getSources();
+        createDocument();
+    }
+</script>
+
+</body></html>

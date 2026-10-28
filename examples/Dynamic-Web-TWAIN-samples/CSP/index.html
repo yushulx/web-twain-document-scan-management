@@ -1,0 +1,38 @@
+<html>
+  <head>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'none';
+        script-src 'self';
+        style-src 'self';
+        img-src 'self' data: blob:
+          http://127.0.0.1:18622 https://127.0.0.1:18623;
+        font-src 'self' data:;
+        connect-src 'self' blob:
+          https://www.dynamsoft.com https://demo.dynamsoft.com
+          https://mlds.dynamsoft.com https://sdls.dynamsoft.com
+          http://127.0.0.1:18622 https://127.0.0.1:18623 ws://127.0.0.1:18622 wss://127.0.0.1:18623;
+        worker-src 'self' blob:;
+        frame-src 'self' blob:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
+    <script src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script src="Resources/dynamsoft.webtwain.config.js"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/dwt/dist/dynamsoft.webtwain.min.js"></script>-->
+  </head>
+
+  <body>
+    <button id="btnScan">Scan</button>
+    <button id="btnUpload">Upload</button>
+    <button id="btnBinarize">Convert to BW</button>
+    <button id="btnRotateCW">Rotate Clockwise</button>
+    <button id="btnRotateCCW">Rotate Counter-Clockwise</button>
+    <div id="dwtcontrolContainer"></div>
+
+    <script src="dwt-script.js"></script>
+  </body>
+</html>

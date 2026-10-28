@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Use Dynamic Web TWAIN to load and save images</title>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script type="text/javascript" src="Resources/dynamsoft.webtwain.config.js"></script>
+    <script type="text/javascript" src="Resources/addon/dynamsoft.webtwain.addon.pdf.js"> </script>
+    <style>
+    
+    .options{
+        border: 1px solid #969696;
+        width: fit-content;
+        padding: 5px;
+        margin: 5px;
+    }
+    
+    </style>
+</head>
+
+<body>
+    <input type="button" value="Load" onclick="LoadImage();" />
+    <input type="button" value="Save" onclick="SaveWithFileDialog();" />
+    <input type="button" value="Remove selected" onclick="RemoveSelected();" />
+    <br />
+    <div class="options">
+        Output Format: 
+        <label>
+            <input type="radio" value="jpg" name="ImageType" id="imgTypejpeg" />JPEG</label>
+        <label>
+            <input type="radio" value="png" name="ImageType" id="imgTypepng" />PNG</label>
+        <label>
+            <input type="radio" value="bmp" name="ImageType" id="imgTypebmp" />BMP</label>
+        <label>
+            <input type="radio" value="tif" name="ImageType" id="imgTypetiff" />TIFF</label>
+        <label>
+            <input type="radio" value="pdf" name="ImageType" id="imgTypepdf" checked="checked" />PDF</label>
+        <br />
+        <label>Select PDF Only
+        <input type="checkbox" name="SelectPDF" id="SelectPDF" /></label>
+        <br />
+        <label>JPEG Quality:
+            <input type="range" value="80" step="5" min="5" max="100" name="jpegQuality" id="jpegQuality" onchange="UpdateQuality(this.value)"/><span id="quality">80</span></label>
+        <br />
+        TIFF Compression Type:
+        <select id="tiffCompresstionType">
+            <option value="0">AUTO</option>
+            <option value="1">NONE</option>
+            <option value="2">RLE</option>
+            <option value="3">FAX3</option>
+            <option value="3">T4</option>
+            <option value="4">FAX4</option>
+            <option value="4">T6</option>
+            <option value="5">LZW</option>
+            <option value="6">JPEG</option>
+            <option value="32773">PACKBITS</option>
+        </select>
+    </div>
+    
+    <div class = "options">
+        PDF Loading Options:
+        <br />
+        <label>Password:
+        <input type="password" value="" name="pdfPassword" id="pdfPassword" /></label>
+        <br />
+        <label>Resolution:
+        <input type="range" value="200" step="25" min="75" max="1200" name="pdfResolution" id="pdfResolution" onchange="UpdateResolution(this.value)"/><span id="resolution">200</span></label>
+
+    </div>
+    <div class = "options">
+        PDF Writing Options:
+        <br />
+        Compression Type
+        <select id="pdfCompressionType">
+            <option value="0">Auto</option>
+            <option value="2">FAX4</option>
+            <option value="3">LZW</option>
+            <option value="5">JPEG</option>
+            <option value="6">JPEG2000</option>
+            <option value="7">JBig2</option>
+        </select>
+        <br />
+        Page Type
+        <select id="pdfPageType">
+            <option value="0">Default</option>
+            <option value="1">Custom</option>
+            <option value="2">A4</option>
+            <option value="3">A4_Reverse</option>
+            <option value="4">A3</option>
+            <option value="5">A3_Reverse</option>
+            <option value="6">Letter</option>
+            <option value="7">Letter_Reverse</option>
+            <option value="8">Legal</option>
+            <option value="9">Legal_Reverse</option>
+        </select>
+
+        <br />
+        <label>Author:
+        <input type="text" value="" name="pdfAuthor" id="pdfAuthor" /></label>
+    </div>
+    <!-- dwtcontrolContainer is the default div id for Dynamic Web TWAIN control.
+     If you need to rename the id, you should also change the id in dynamsoft.webtwain.config.js accordingly. -->
+    <div id="dwtcontrolContainer"></div>
+
+    <script type="text/javascript">
+        var console = window['console'] ? window['console'] : { 'log': function () { } };
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+        var DWObject;
+        
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
+            if (DWObject) {
+                DWObject.RegisterEvent('OnPostAllTransfers', function(){setTimeout(SaveWithFileDialog,20);});
+            }
+        }
+
+        //Callback functions for async APIs
+        function OnSuccess() {
+            console.log('successful');
+        }
+
+        function OnFailure(errorCode, errorString) {
+            if(errorCode != -2326)
+            alert(errorString);
+        }
+
+        function LoadImage() {
+            if (DWObject) {
+                if (DWObject.Addon.PDF.IsModuleInstalled()) {
+                    DWObject.Addon.PDF.SetResolution(document.getElementById("resolution").innerText);
+                    DWObject.Addon.PDF.SetConvertMode(Dynamsoft.DWT.EnumDWT_ConvertMode.CM_AUTO);
+                    DWObject.Addon.PDF.SetPassword(document.getElementById("pdfPassword").value);
+                }
+                DWObject.IfShowFileDialog = true; // Open the system's file dialog to load image
+                if (document.getElementById("SelectPDF").checked == false){
+                    DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure); // Load images in all supported formats (.bmp, .jpg, .tif, .png, .pdf). OnSuccess or OnFailure will be called after the operation
+                }else{
+                    DWObject.LoadImageEx("", Dynamsoft.DWT.EnumDWT_ImageType.IT_PDF, OnSuccess, OnFailure);
+                }
+                
+            }
+        }
+
+        function SaveWithFileDialog() {
+            if (DWObject) {
+                if (DWObject.HowManyImagesInBuffer > 0) {
+                    DWObject.IfShowFileDialog = true;
+                    if (document.getElementById("imgTypejpeg").checked == true) {
+                        //If the current image is B&W
+                        //1 is B&W, 8 is Gray, 24 is RGB
+                        if (DWObject.GetImageBitDepth(DWObject.CurrentImageIndexInBuffer) == 1)
+                            //If so, convert the image to Gray
+                            DWObject.ConvertToGrayScale(DWObject.CurrentImageIndexInBuffer);
+                        //Save image in JPEG
+                        DWObject.SaveAsJPEG("DynamicWebTWAIN.jpg", DWObject.CurrentImageIndexInBuffer);
+                    }
+                    else if (document.getElementById("imgTypebmp").checked == true){
+                        DWObject.SaveAsBMP("DynamicWebTWAIN.bmp", DWObject.CurrentImageIndexInBuffer);
+                    }
+                    
+                    else if (document.getElementById("imgTypepng").checked == true){
+                        DWObject.SaveAsPNG("DynamicWebTWAIN.png", DWObject.CurrentImageIndexInBuffer);
+                    }
+                    else if (document.getElementById("imgTypetiff").checked == true) {
+                        var compressionType = parseInt(document.getElementById("tiffCompresstionType").selectedOptions[0].value);
+                        DWObject.TIFFCompressionType = compressionType;
+                        DWObject.SaveAllAsMultiPageTIFF("DynamicWebTWAIN.tiff", OnSuccess, OnFailure);
+                    }
+                    else if (document.getElementById("imgTypepdf").checked == true){
+                        UpdatePDFWriteSettings();
+                        DWObject.SaveAllAsPDF("DynamicWebTWAIN.pdf", OnSuccess, OnFailure);
+                    }
+                }
+            }
+        }
+        
+        function RemoveSelected(){
+            if (DWObject) {
+                DWObject.RemoveImage(DWObject.CurrentImageIndexInBuffer);
+            }
+        }
+        
+        function UpdateResolution(value){
+            document.getElementById("resolution").innerText = value;
+        }
+        
+        function UpdateResolution(value){
+            document.getElementById("resolution").innerText = value;
+        }
+        
+        function UpdateQuality(value){
+            document.getElementById("quality").innerText = value;
+            if (DWObject){
+                DWObject.JPEGQuality=parseInt(value);
+            }
+        }
+        
+        function UpdatePDFWriteSettings(){
+            if (DWObject){
+                var author = document.getElementById("pdfAuthor").value;
+                var compressionType = parseInt(document.getElementById("pdfCompressionType").selectedOptions[0].value);
+                var pdfPageType = parseInt(document.getElementById("pdfPageType").selectedOptions[0].value);
+                DWObject.Addon.PDF.Write.Setup({author: author,compression: compressionType, pageType:pdfPageType, creator: "DWT",creationDate: "",keyWords: "",modifiedDate: "",producer: "Dynamsoft Corporation",subject: "",title: "",version: 1.5, quality: DWObject.JPEGQuality});
+            }
+        }
+    </script>
+</body>
+
+</html>
