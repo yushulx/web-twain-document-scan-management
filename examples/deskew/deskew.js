@@ -16,7 +16,8 @@
     slider: $('angleSlider'), angleValue: $('angleValue'),
     inputMeta: $('inputMeta'), outputMeta: $('outputMeta'),
     status: $('statusMessage'),
-    metricAngle: $('metricAngle'), metricContours: $('metricContours'), metricTime: $('metricTime')
+    metricAngle: $('metricAngle'), metricApplied: $('metricApplied'),
+    metricContours: $('metricContours'), metricTime: $('metricTime')
   };
 
   const state = { cv: null, src: null, resultCanvas: null, angle: null, rects: [], busy: false };
@@ -72,6 +73,7 @@
     els.empty.classList.remove('is-hidden');
     els.outputMeta.textContent = '—';
     els.metricAngle.textContent = '—';
+    els.metricApplied.textContent = '—';
     els.metricContours.textContent = '—';
     els.metricTime.textContent = '—';
     els.download.disabled = true;
@@ -157,8 +159,8 @@
     const scale = img.width / els.source.naturalWidth;
     const ox = img.left - stage.left, oy = img.top - stage.top;
 
-    ctx.strokeStyle = 'rgba(79, 195, 247, 0.65)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(79, 195, 247, 0.95)';
+    ctx.lineWidth = 2;
     rects.forEach((r) => {
       ctx.strokeRect(ox + r.x * scale, oy + r.y * scale, r.w * scale, r.h * scale);
     });
@@ -168,15 +170,26 @@
     const cy = oy + (els.source.naturalHeight / 2) * scale;
     const half = Math.min(img.width, img.height) * 0.42;
     ctx.setLineDash([6, 6]);
-    ctx.strokeStyle = 'rgba(233, 244, 251, 0.45)'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(233, 244, 251, 0.6)'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(cx - half, cy); ctx.lineTo(cx + half, cy); ctx.stroke();
     ctx.setLineDash([]);
     const rad = angle * Math.PI / 180;
-    ctx.strokeStyle = '#fe8e14'; ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(cx - half * Math.cos(rad), cy - half * Math.sin(rad));
-    ctx.lineTo(cx + half * Math.cos(rad), cy + half * Math.sin(rad));
-    ctx.stroke();
+    const x1 = cx - half * Math.cos(rad), y1 = cy - half * Math.sin(rad);
+    const x2 = cx + half * Math.cos(rad), y2 = cy + half * Math.sin(rad);
+    ctx.strokeStyle = '#fe8e14'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    [ [x1, y1], [x2, y2] ].forEach(([px, py]) => {
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#fe8e14'; ctx.fill();
+    });
+
+    const label = rects.length + ' text-line regions  ·  orange = measured tilt';
+    ctx.font = '600 11px "Segoe UI", system-ui, sans-serif';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(7, 24, 39, 0.88)';
+    ctx.fillRect(12, 12, tw + 20, 26);
+    ctx.fillStyle = '#e9f4fb';
+    ctx.fillText(label, 22, 29);
   }
 
   function renderResult(angle) {
@@ -187,6 +200,7 @@
     els.result.src = canvas.toDataURL('image/png');
     els.empty.classList.add('is-hidden');
     els.outputMeta.textContent = canvas.width + ' × ' + canvas.height + ' px';
+    els.metricApplied.textContent = angle.toFixed(2) + '°';
     els.download.disabled = false;
   }
 

@@ -135,7 +135,9 @@ h1 { margin: 0; font-size: 25px; font-weight: 650; letter-spacing: -0.02em; }
 .stage.is-dragover { border-color: var(--accent); box-shadow: inset 0 0 0 2px rgba(79,195,247,.28); }
 .stage img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
 #resultImage:not([src]) { display: none; }
-#resultImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Keep BOTH panels on the same sizing rules; otherwise the output looks
+   like a different (cropped) image instead of a rotated copy of the input. */
+#resultImage { position: relative; z-index: 1; }
 #sourceImage { position: relative; z-index: 1; }
 #overlay { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; }
 .stage-hint { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-faint); pointer-events: none; }

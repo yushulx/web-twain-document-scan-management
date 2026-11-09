@@ -51,7 +51,7 @@
         </div>
         <div class="toolbar-group toolbar-group-right">
           <label class="angle-control" for="angleSlider">
-            <span>Correction angle</span>
+            <span>Correction angle (override)</span>
             <input type="range" id="angleSlider" min="-15" max="15" step="0.1" value="0" />
             <output id="angleValue">0.0°</output>
           </label>
@@ -71,7 +71,7 @@
             <canvas id="overlay" aria-hidden="true"></canvas>
             <div class="stage-hint" id="stageHint">Loading sample…</div>
           </div>
-          <div class="panel-foot"><span>Detected text-line regions and the measured tilt are drawn over the input</span></div>
+          <div class="panel-foot"><span>Blue = text-line regions, orange = measured tilt. Deskew rotates the page; it does not detect the four page corners.</span></div>
         </section>
 
         <section class="panel">
@@ -94,6 +94,7 @@
         <div class="status-message" id="statusMessage">Preparing the demo…</div>
         <div class="metrics">
           <span><b id="metricAngle">—</b> detected</span>
+          <span><b id="metricApplied">—</b> applied</span>
           <span><b id="metricContours">—</b> contours</span>
           <span><b id="metricTime">—</b> processing</span>
         </div>
