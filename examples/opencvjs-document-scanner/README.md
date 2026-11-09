@@ -2,8 +2,6 @@
 
 Detect document boundaries and correct perspective distortion entirely in the browser with OpenCV.js. The `DocumentScanner` class lives in `src/document-scanner.ts`; the Vite project in this folder is a demo UI built around it.
 
-This is a standalone sample and is **not published to npm**.
-
 ![Demo UI](./screenshot.png)
 
 [Demo video](./demo.mp4)
