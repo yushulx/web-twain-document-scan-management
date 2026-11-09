@@ -1,109 +1,83 @@
 # opencvjs-document-scanner
 
-![version](https://img.shields.io/npm/v/opencv-document-scanner.svg)
-![downloads](https://img.shields.io/npm/dm/opencv-document-scanner.svg)
-![jsdelivr](https://img.shields.io/jsdelivr/npm/hm/opencv-document-scanner.svg)
+Detect document boundaries and correct perspective distortion entirely in the browser with OpenCV.js. The `DocumentScanner` class lives in `src/document-scanner.ts`; the Vite project in this folder is a demo UI built around it.
 
-A document scanner implemented with opencv.js. It can detect the boundaries of documents and apply perspective transformation to get a deskewed image.
+This is a standalone sample and is **not published to npm**.
 
-[Online demo](https://tony-xlh.github.io/opencvjs-document-scanner/example/vanilla.html)
+![Demo UI](./screenshot.png)
 
-[Demo video](https://github.com/tony-xlh/opencvjs-document-scanner/assets/5462205/0f1748fc-1e19-462f-9928-c9efde0863ad)
+[Demo video](./demo.mp4)
 
-Example:
-
-![example](https://github.com/tony-xlh/opencvjs-document-scanner/assets/5462205/dba83ab0-75bd-4685-a462-ef61fb21629d)
-
-## Installation
-
-Via NPM:
+## Run the demo
 
 ```bash
-npm install opencv-document-scanner
+npm install
+npm run dev
 ```
 
-Via CDN:
+Open the printed local URL. The demo loads a sample document automatically:
 
-```html
-<script type="module">
-  import { DocumentScanner } from 'https://cdn.jsdelivr.net/npm/opencv-document-scanner/dist/opencv-document-scanner.js';
-</script>
+- **Detect & normalize** runs grayscale conversion → Gaussian blur → Otsu threshold → largest contour → corner classification → `cv.warpPerspective`.
+- The detected quad and its four corner points are drawn over the input image.
+- **Upload image** or drag and drop to use your own photo.
+- **Canny edges** switches the first stage to Canny edge detection, which helps with uneven lighting.
+- **Download PNG** saves the corrected page.
+
+The first load needs network access because OpenCV.js 4.8.0 is pulled from `https://docs.opencv.org/4.8.0/opencv.js`. You can also vendor that file to `public/opencv.js` (gitignored) and change the `<script src>` in `index.html` for offline use.
+
+## Use the scanner class in your own project
+
+This sample is not published to npm. Copy `src/document-scanner.ts` into your project (it has no dependencies beyond OpenCV.js) and import it directly:
+
+```ts
+import { DocumentScanner } from './document-scanner';
 ```
 
-You also need to include OpenCV:
+OpenCV.js itself must be loaded before you construct the scanner:
 
 ```html
-<script type="text/javascript">
+<script>
   var Module = {
-    // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
     onRuntimeInitialized() {
-      document.getElementById('status').innerHTML = 'OpenCV.js is ready.';
+      window.dispatchEvent(new Event('opencv-ready'));
     }
   };
 </script>
-<script async src="https://docs.opencv.org/4.8.0/opencv.js" type="text/javascript"></script>
+<script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
 ```
+
+Wait for `window.cv.Mat` (or the `opencv-ready` event) before creating an instance.
 
 ## Usage
 
-1. Initialize an instance.
+```js
+const scanner = new DocumentScanner();
 
-   ```js
-   const documentScanner = new DocumentScanner();
-   ```
-   
-2. Detect the polygon of documents and return the points.
+// 1. Find the four corner points of the page.
+const img = document.getElementById('photo');
+const points = scanner.detect(img, { useCanny: false });
 
-   ```js
-   const imgElement = document.getElementById("photoRaw");
-   const points = documentScanner.detect(imgElement, {useCanny:false}); //detect from an img or canvas element. You can use canny edge detection to detect document with uneven lightings. If the contrast of the background and the document is vivid, then you don't need to enable this.
-   ```
-   
-3. Get the cropped document image.
-   
-   ```js
-   let imgElement = document.getElementById("photoRaw")
-   const canvas = documentScanner.crop(imgElement); //get cropped image from an img or canvas element
-   ```
-   
-4. Live scanning with camera using [Dynamsoft Document Viewer](https://www.dynamsoft.com/document-viewer/docs/introduction/index.html) (v5.0+).
+// 2. Warp the quad into a flat, cropped page.
+const canvas = scanner.crop(img, points);
+document.getElementById('output').src = canvas.toDataURL('image/png');
+```
 
-   Since v5.0, camera capture lives in a plugin, so include and register the camera plugin before initializing the SDK:
+`detect()` and `crop()` accept an `HTMLImageElement` or an `HTMLCanvasElement`. If you omit `points`, `crop()` runs detection itself. `ScanOptions.useCanny` defaults to `false`; enable it when the background and the document have similar brightness.
 
-   ```html
-   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/ddv.js"></script>
-   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/plugins/ddv-plugin-camera.js"></script>
-   <script type="module">
-     import { DocumentScanner, OpenCVDocumentDetectHandler } from 'https://cdn.jsdelivr.net/npm/opencv-document-scanner/dist/opencv-document-scanner.js';
-     Dynamsoft.DDV.Core.engineResourcePath = "https://cdn.jsdelivr.net/npm/dynamsoft-document-viewer@5.0.1/dist/engine";
-     Dynamsoft.DDV.use(Dynamsoft.DDV.CameraPlugin); // required for CaptureViewer and setProcessingHandler
-     await Dynamsoft.DDV.Core.init();
-     const documentScanner = new DocumentScanner();
-     const detectHandler = new OpenCVDocumentDetectHandler(documentScanner);
-     Dynamsoft.DDV.setProcessingHandler("documentBoundariesDetect", detectHandler);
-   </script>
-   ```
+A minimal example that imports the class directly lives at [`example/vanilla.html`](./example/vanilla.html); open it through the Vite dev server, not from the file system.
 
-   > The camera plugin is required for `CaptureViewer` and `DDV.setProcessingHandler()`. Without it these APIs throw an error.
+## Scope
 
-   ![image](https://github.com/tony-xlh/opencvjs-document-scanner/assets/5462205/3572db79-d98c-4012-b640-fef3b5cc83d0)
+This is a teaching baseline for **static images**. It returns four corner points and a corrected canvas; it has no confidence score, no stability check, and no live-camera auto-capture. For production scanning (multi-page capture, quad editing, PDF export, auto-capture stabilization), see the [Dynamsoft Capture Vision multi-page scanner tutorial](https://www.dynamsoft.com/codepool/build-multi-page-document-scanner-web-app.html).
 
+## Build
 
-5. Edit the polygon with Dynamsoft Document Viewer.
+```bash
+npm run build
+```
 
-   ```js
-   const points = documentScanner.detect(imgElement);
-   const quad = [];
-   points.forEach(point => {
-     quad.push([point.x,point.y]);
-   });
-   perspectiveViewer.setQuadSelection(quad);
-   ```
-
-   ![image](https://github.com/tony-xlh/opencvjs-document-scanner/assets/5462205/aad13adb-3c7e-45ae-81c3-2df5d283b4c5)
+Runs the TypeScript check and writes the Vite build output to `dist/`.
 
 ## Blog
 
-[Web Document Scanner with OpenCV.js](https://www.dynamsoft.com/codepool/web-document-scanner-with-opencvjs.html)
-
-
+[How to Build a Browser Document Scanner with OpenCV.js and JavaScript](https://www.dynamsoft.com/codepool/web-document-scanner-with-opencvjs.html)

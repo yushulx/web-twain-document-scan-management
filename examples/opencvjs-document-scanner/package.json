@@ -2,6 +2,7 @@
   "name": "opencv-document-scanner",
   "private": false,
   "version": "1.2.2",
+  "description": "Detect document boundaries and correct perspective distortion in the browser with OpenCV.js.",
   "type": "module",
   "main": "./dist/opencv-document-scanner.umd.cjs",
   "module": "./dist/opencv-document-scanner.js",
@@ -25,20 +26,25 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "repository": "https://github.com/tony-xlh/opencvjs-document-scanner",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yushulx/web-twain-document-scan-management.git",
+    "directory": "examples/opencvjs-document-scanner"
+  },
   "author": "xulihang <xulihanghai@gmail.com> (https://github.com/xulihang)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tony-xlh/opencvjs-document-scanner/issues"
+    "url": "https://github.com/yushulx/web-twain-document-scan-management/issues"
   },
-  "homepage": "https://github.com/tony-xlh/opencvjs-document-scanner#readme",
+  "homepage": "https://github.com/yushulx/web-twain-document-scan-management/tree/main/examples/opencvjs-document-scanner",
   "keywords": [
     "document",
     "opencv",
     "scanning",
     "correction",
     "detection",
-    "dynamsoft"
+    "perspective",
+    "webassembly"
   ],
   "scripts": {
     "dev": "vite",
@@ -47,8 +53,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.8",
-    "dynamsoft-document-viewer": "^5.0.1",
-    "rimraf": "^6.0.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-dts": "^3.7.0"
