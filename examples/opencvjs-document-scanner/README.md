@@ -27,7 +27,7 @@ The first load needs network access because OpenCV.js 4.13.0 is pulled from `htt
 
 ## Use the scanner class in your own project
 
-This sample is not published to npm. Copy `src/document-scanner.ts` into your project (it has no dependencies beyond OpenCV.js) and import it directly:
+Copy `src/document-scanner.ts` into your project (it has no dependencies beyond OpenCV.js) and import it directly:
 
 ```ts
 import { DocumentScanner } from './document-scanner';
