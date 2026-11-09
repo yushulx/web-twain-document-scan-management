@@ -124,16 +124,26 @@ h1 { margin: 0; font-size: 25px; font-weight: 650; letter-spacing: -0.02em; }
 .panel-meta { font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); }
 
 .stage {
-  position: relative; flex: 1 1 auto; min-height: 0; margin: 14px 16px;
+  position: relative; flex: 1 1 auto; min-height: 0; margin: 14px 16px; padding: 12px;
   border-radius: var(--radius-sm); border: 1px dashed var(--line-strong);
   background:
     linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%),
     var(--bg-stage);
   background-size: 22px 22px;
+  /* minmax(0,1fr) gives the cell a definite height. With an auto track the
+     image's max-height:100% resolves against an indefinite size, so the sheet
+     overflows and overflow:hidden crops it — the page then looks like it fills
+     the whole panel. */
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
   display: grid; place-items: center; overflow: hidden;
 }
 .stage.is-dragover { border-color: var(--accent); box-shadow: inset 0 0 0 2px rgba(79,195,247,.28); }
-.stage img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+/* The padding + shadow keep the sheet a visible object inside the stage. Without
+   them a page whose paper fills the file makes the panel look like the document. */
+.stage img {
+  display: block; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 2px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07);
+}
 #resultImage:not([src]) { display: none; }
 /* Keep BOTH panels on the same sizing rules; otherwise the output looks
    like a different (cropped) image instead of a rotated copy of the input. */

@@ -8,7 +8,7 @@
 
   const els = {
     engineBadge: $('engineBadge'), engineText: $('engineText'),
-    sample1: $('sample1Btn'), sample2: $('sample2Btn'), upload: $('uploadBtn'),
+    deskSample: $('deskSampleBtn'), flatSample: $('flatScanBtn'), upload: $('uploadBtn'),
     file: $('fileInput'), dropZone: $('dropZone'), hint: $('stageHint'),
     source: $('sourceImage'), overlay: $('overlay'),
     result: $('resultImage'), empty: $('emptyState'),
@@ -107,11 +107,17 @@
       cv.dilate(thresh, dilate, kernel);
       cv.findContours(dilate, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
+      // Text lines are thin. The sheet outline survives every other filter, so
+      // cap the short side: without this a photo whose paper edge is visible
+      // contributes its own boundary angle to the median.
+      const maxThickness = Math.max(60, Math.min(src.cols, src.rows) * 0.05);
+
       const angles = [];
       for (let i = 0; i < contours.size(); i++) {
         const c = contours.get(i);
         if (cv.contourArea(c) < 100) continue;
         const r = cv.minAreaRect(c);
+        if (Math.min(r.size.width, r.size.height) > maxThickness) continue;
         let a = r.angle;
         while (a > 45) a -= 90;
         while (a < -45) a += 90;
@@ -135,12 +141,25 @@
     return result;
   }
 
+  // Fill the empty wedges left by the rotation with the page's own corner
+  // tone: white for a flatbed scan, the desk colour for a photo.
+  function cornerFill(cv, src) {
+    const pts = [[0, 0], [0, src.cols - 1], [src.rows - 1, 0], [src.rows - 1, src.cols - 1]];
+    let b = 0, g = 0, r = 0, a = 0;
+    pts.forEach(([y, x]) => {
+      const p = src.ucharPtr(y, x);
+      b += p[0]; g += p[1]; r += p[2]; a += p[3];
+    });
+    const n = pts.length;
+    return new cv.Scalar(b / n, g / n, r / n, a / n);
+  }
+
   function rotate(cv, src, angleDeg) {
     const dst = new cv.Mat();
     const center = new cv.Point(src.cols / 2, src.rows / 2);
     const M = cv.getRotationMatrix2D(center, angleDeg, 1);
     cv.warpAffine(src, dst, M, new cv.Size(src.cols, src.rows), cv.INTER_LINEAR,
-      cv.BORDER_CONSTANT, new cv.Scalar(255, 255, 255, 255));
+      cv.BORDER_CONSTANT, cornerFill(cv, src));
     M.delete();
     const canvas = document.createElement('canvas');
     cv.imshow(canvas, dst);
@@ -252,8 +271,10 @@
   }
 
   function bind() {
-    els.sample1.addEventListener('click', () => loadImage('samples/1.jpg').then(() => setStatus('Sample 1 loaded. Run detection.', 'info')));
-    els.sample2.addEventListener('click', () => loadImage('samples/2.jpg').then(() => setStatus('Sample 2 loaded. Run detection.', 'info')));
+    els.deskSample.addEventListener('click', () => loadImage('samples/sample-desk.jpg')
+      .then(() => setStatus('Photo on a desk loaded. Run detection.', 'info')));
+    els.flatSample.addEventListener('click', () => loadImage('samples/1.jpg')
+      .then(() => setStatus('Flat scan loaded. Run detection.', 'info')));
     els.upload.addEventListener('click', () => els.file.click());
     els.file.addEventListener('change', () => { if (els.file.files[0]) readFile(els.file.files[0]); els.file.value = ''; });
     els.detect.addEventListener('click', runDetection);
@@ -287,8 +308,8 @@
       state.cv = window.cv;
       setEngine('ready', 'OpenCV.js 4.13.0 ready');
       els.detect.disabled = false;
-      await loadImage('samples/1.jpg');
-      setStatus('Sample 1 loaded. Click “Detect & deskew” to measure the skew angle.', 'ok');
+      await loadImage('samples/sample-desk.jpg');
+      setStatus('Sample loaded. Click “Detect & deskew” to measure the skew angle.', 'ok');
     } catch (e) {
       setEngine('error', 'OpenCV.js unavailable');
       setStatus(e.message + ' — check the CDN connection and reload.', 'error');
