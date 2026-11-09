@@ -1,137 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <title>Scan Documents and Deskew</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <script src="https://unpkg.com/dwt@19.5.0/dist/dynamsoft.webtwain.min.js"></script>
-    <style>
-      #dwtcontrolContainer {
-        width: 360px;
-        height: 480px;
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Detect text-line skew and rotate a scanned page back to level with OpenCV.js, then see when a production document detector is needed." />
+    <title>Auto-Deskew a Scanned Document with OpenCV.js</title>
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      // OpenCV.js reads this global before its own script runs.
+      window.Module = {
+        onRuntimeInitialized() {
+          window.dispatchEvent(new Event('opencv-ready'));
+        }
+      };
+    </script>
+    <script async src="https://docs.opencv.org/4.13.0/opencv.js"></script>
   </head>
   <body>
-    <div class="app">
-      <div>
-        <input class="scanButton" type="button" value="Scan" onclick="AcquireImage();" />
-        <input class="loadFilesButton" type="button" value="Load Files" onclick="LoadFiles();" />
-        <input class="editButton" type="button" value="Edit" onclick="Edit();" />
-        <input class="saveButton" type="button" value="Save" onclick="Save();" />
-        <input class="copyButton" type="button" value="Copy Selected" onclick="CopySelected();" />
-      </div>
-      <div>
-        <input class="deskewButton" type="button" value="Deskew Selected" onclick="DeskewSelected();" />
-        <input class="deskewAllButton" type="button" value="Deskew All" onclick="DeskewAll();" />
-      </div>
-      <div id="dwtcontrolContainer"></div>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Document Deskew</h1>
+            <p>Detect text-line skew and rotate a scanned page back to level with OpenCV.js</p>
+          </div>
+        </div>
+        <div class="engine" id="engineBadge" data-state="loading">
+          <span class="dot"></span><span id="engineText">Loading OpenCV.js 4.13.0…</span>
+        </div>
+      </header>
+
+      <section class="product-banner" aria-label="Production scanning path">
+        <div class="product-copy">
+          <strong>This baseline fixes tilted text lines only.</strong>
+          <span>A page photographed at an angle also has perspective distortion — that needs a real document detector.</span>
+        </div>
+        <div class="product-actions">
+          <a class="btn btn-primary" href="https://www.dynamsoft.com/codepool/build-multi-page-document-scanner-web-app.html" data-demo-cta="tutorial">Production scanner tutorial</a>
+          <a class="btn btn-ghost" href="https://www.dynamsoft.com/codepool/demos/multi-document-capture/">Try the DCV demo</a>
+          <a class="btn btn-ghost" href="https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform">Get a trial license</a>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Deskew controls">
+        <div class="toolbar-group">
+          <button class="btn btn-ghost" id="sample1Btn" type="button">Sample 1</button>
+          <button class="btn btn-ghost" id="sample2Btn" type="button">Sample 2</button>
+          <button class="btn btn-ghost" id="uploadBtn" type="button">Upload image</button>
+        </div>
+        <div class="toolbar-group toolbar-group-right">
+          <label class="angle-control" for="angleSlider">
+            <span>Correction angle</span>
+            <input type="range" id="angleSlider" min="-15" max="15" step="0.1" value="0" />
+            <output id="angleValue">0.0°</output>
+          </label>
+          <button class="btn btn-primary" id="detectBtn" type="button" disabled>Detect &amp; deskew</button>
+          <button class="btn btn-ghost" id="downloadBtn" type="button" disabled>Download PNG</button>
+        </div>
+      </section>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Input</h2>
+            <span class="panel-meta" id="inputMeta">—</span>
+          </div>
+          <div class="stage" id="dropZone">
+            <img id="sourceImage" alt="Scanned document to deskew" />
+            <canvas id="overlay" aria-hidden="true"></canvas>
+            <div class="stage-hint" id="stageHint">Loading sample…</div>
+          </div>
+          <div class="panel-foot"><span>Detected text-line regions and the measured tilt are drawn over the input</span></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Deskewed output</h2>
+            <span class="panel-meta" id="outputMeta">—</span>
+          </div>
+          <div class="stage stage-result" id="resultStage">
+            <img id="resultImage" alt="Deskewed document" />
+            <div class="empty-state" id="emptyState">
+              <div class="empty-icon" aria-hidden="true"></div>
+              <p>Run detection to see the corrected page</p>
+            </div>
+          </div>
+          <div class="panel-foot"><span>Affine rotation with a white border fill</span></div>
+        </section>
+      </main>
+
+      <footer class="statusbar">
+        <div class="status-message" id="statusMessage">Preparing the demo…</div>
+        <div class="metrics">
+          <span><b id="metricAngle">—</b> detected</span>
+          <span><b id="metricContours">—</b> contours</span>
+          <span><b id="metricTime">—</b> processing</span>
+        </div>
+      </footer>
     </div>
-    <script>
-      let DWObject;
-      Dynamsoft.DWT.AutoLoad = false;
-      Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.5.0/dist";
-      init();
 
-      function init(){
-        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer',Width: 270, Height: 350 }];
-        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', function () {
-          console.log("ready");
-          DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
-          DWObject.Viewer.width = "100%";
-          DWObject.Viewer.height = "100%";
-          DWObject.SetViewMode(2,2);
-        });
-        Dynamsoft.DWT.Load();
-      }
-
-      function AcquireImage(){
-        if (DWObject) {
-          DWObject.SelectSourceAsync().then(function (sourceIndex) {
-            return DWObject.AcquireImageAsync();
-          })
-          .catch(function (e) {
-            console.log(e);
-          });
-        }
-      }
-
-      function LoadFiles(){
-        if (DWObject) {
-          DWObject.IfShowFileDialog = true; //"Open File" dialog will be opened.
-          DWObject.LoadImageEx(
-            "", //file name can be empty if "Open File" dialog is called.
-            Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL,
-            function () {
-              console.log("success");
-            },
-            function (errorCode, errorString) {
-              console.log(errorString);
-            }
-          );
-        }
-      }
-
-      function Save() {
-        if (DWObject) {
-          DWObject.SaveAllAsPDF("Scannd.pdf");
-        }
-      }
-
-      function Edit(){
-        if (DWObject){
-          const imageEditor = DWObject.Viewer.createImageEditor();
-          imageEditor.show();
-        }
-      }
-
-      function CopySelected(){
-        if (DWObject){
-          DWObject.CopyToClipboard(DWObject.CurrentImageIndexInBuffer);
-          alert("Copied");
-        }
-      }
-
-      function DeskewSelected(){
-        if (DWObject){
-          Deskew(DWObject.CurrentImageIndexInBuffer);
-        }
-      }
-
-      async function DeskewAll(){
-        if (DWObject){
-          for (let index = 0; index < DWObject.HowManyImagesInBuffer; index++) {
-            DWObject.Viewer.gotoPage(index);
-            await Deskew(index);
-          }
-        }
-      }
-
-      function Deskew(index) {
-        return new Promise((resolve, reject) => {
-          DWObject.GetSkewAngle(
-            index,
-            function(angle) {
-              console.log("skew angle: " + angle);
-              DWObject.Rotate(index, angle, true,
-                function() {
-                  console.log("Successfully deskewed an image!");
-                  resolve();
-                },
-                function(errorCode, errorString) {
-                  console.log(errorString);
-                  reject(errorString);
-                }
-              );
-            },
-            function(errorCode, errorString) {
-              console.log(errorString);
-              reject(errorString);
-            }
-          );
-        })
-      }
-    </script>
+    <input type="file" id="fileInput" accept="image/png,image/jpeg,image/bmp,image/webp" hidden />
+    <script src="deskew.js"></script>
   </body>
 </html>
