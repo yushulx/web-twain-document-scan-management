@@ -266,7 +266,7 @@ async function start(): Promise<void> {
   try {
     await waitForOpenCV();
     scanner = new DocumentScanner();
-    setEngine('ready', 'OpenCV.js 4.8.0 ready');
+    setEngine('ready', 'OpenCV.js 4.13.0 ready');
     els.detectBtn.disabled = false;
     await loadImage('/sample-document.jpg');
     setStatus('Sample document loaded. Click “Detect & normalize” to run the pipeline.', 'ok');

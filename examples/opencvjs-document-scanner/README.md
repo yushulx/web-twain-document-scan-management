@@ -21,7 +21,9 @@ Open the printed local URL. The demo loads a sample document automatically:
 - **Canny edges** switches the first stage to Canny edge detection, which helps with uneven lighting.
 - **Download PNG** saves the corrected page.
 
-The first load needs network access because OpenCV.js 4.8.0 is pulled from `https://docs.opencv.org/4.8.0/opencv.js`. You can also vendor that file to `public/opencv.js` (gitignored) and change the `<script src>` in `index.html` for offline use.
+Two extra test images in `public/` — `difficult-cluttered.jpg` and `difficult-low-contrast.jpg` — reproduce the failure cases measured in the article (a busy desk and a pale sheet on a pale desk). Upload them to see how a largest-contour detector behaves outside the high-contrast case.
+
+The first load needs network access because OpenCV.js 4.13.0 is pulled from `https://docs.opencv.org/4.13.0/opencv.js`. You can also vendor that file to `public/opencv.js` (gitignored) and change the `<script src>` in `index.html` for offline use.
 
 ## Use the scanner class in your own project
 
@@ -41,7 +43,7 @@ OpenCV.js itself must be loaded before you construct the scanner:
     }
   };
 </script>
-<script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
+<script async src="https://docs.opencv.org/4.13.0/opencv.js"></script>
 ```
 
 Wait for `window.cv.Mat` (or the `opencv-ready` event) before creating an instance.
