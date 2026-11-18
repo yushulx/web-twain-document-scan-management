@@ -34,6 +34,10 @@
     --radius: 0.5rem;
     --radius-lg: 0.75rem;
     --radius-xl: 1rem;
+
+    /* Every toolbar control shares this height so selects, buttons and the
+       search box sit on one line instead of stair-stepping. */
+    --control-height: 2.25rem;
     
     --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -123,9 +127,11 @@ html, body {
 
 .toolbar {
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 0.75rem 1.5rem;
+    /* Bottom alignment keeps unlabelled groups on the same baseline as the
+       labelled OCR groups, whose controls sit under a small caption. */
+    align-items: flex-end;
+    gap: 1rem 1.5rem;
+    padding: 0.5rem 1.5rem;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
@@ -153,19 +159,21 @@ html, body {
 }
 
 .btn-icon-only {
-    padding: 0.5rem;
+    width: var(--control-height);
+    padding: 0;
     min-width: auto;
 }
 
 .toolbar-group {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.375rem;
 }
 
 .toolbar-label {
     font-size: 0.6875rem;
     font-weight: 600;
+    line-height: 1;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -180,10 +188,11 @@ html, body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    height: var(--control-height);
+    padding: 0 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    line-height: 1.25;
+    line-height: 1;
     border: 1px solid transparent;
     border-radius: var(--radius);
     cursor: pointer;
@@ -268,7 +277,8 @@ html, body {
 
 .select {
     appearance: none;
-    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    height: var(--control-height);
+    padding: 0 2rem 0 0.75rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-primary);
@@ -289,6 +299,18 @@ html, body {
     box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+.select:disabled {
+    color: var(--text-muted);
+    background-color: var(--bg-tertiary);
+    cursor: not-allowed;
+}
+
+/* Engine names such as Windows.Media.Ocr are long; keep the toolbar compact. */
+.ocr-section .select {
+    min-width: 150px;
+    max-width: 190px;
+}
+
 /* ============================================================
    Search Box
    ============================================================ */
@@ -297,6 +319,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 0;
+    height: var(--control-height);
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -321,7 +344,8 @@ html, body {
 
 .search-input {
     flex: 1;
-    padding: 0.625rem 0.75rem;
+    height: 100%;
+    padding: 0 0.75rem;
     font-size: 0.875rem;
     color: var(--text-primary);
     background: transparent;
@@ -335,7 +359,8 @@ html, body {
 }
 
 .search-btn {
-    padding: 0.625rem 1rem;
+    height: 100%;
+    padding: 0 1rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: #fff;
@@ -467,8 +492,10 @@ html, body {
         justify-content: flex-start;
     }
     
+    /* Full-width search on its own row reads like a text field, not a search
+       box; cap it so it keeps the same weight as the controls above. */
     .search-box {
-        max-width: none;
+        max-width: 520px;
     }
 }
 
@@ -478,7 +505,7 @@ html, body {
     }
     
     .toolbar {
-        padding: 0.75rem 1rem;
+        padding: 0.5rem 1rem;
         gap: 0.75rem;
     }
     
@@ -487,7 +514,7 @@ html, body {
     }
     
     .btn {
-        padding: 0.5rem 0.75rem;
+        padding: 0 0.75rem;
         font-size: 0.8125rem;
     }
     
@@ -520,16 +547,12 @@ html, body {
         display: none;
     }
     
-    .search-box {
-        flex-wrap: nowrap;
-    }
-    
     .search-input {
-        padding: 0.5rem;
+        padding: 0 0.5rem;
     }
     
     .search-btn {
-        padding: 0.5rem 0.75rem;
+        padding: 0 0.75rem;
     }
 }
 

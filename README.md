@@ -120,7 +120,6 @@ articles reference is versioned and updated together with the rest of the reposi
 - [Sync Scanned Documents](./examples/Sync-Scanned-Documents/)
 - [TIFF Viewer](./examples/TIFF-Viewer/)
 - [Tauri Document Scanner](./examples/Tauri-Document-Scanner/)
-- [Web TWAIN Tesseract](./examples/Web-TWAIN-Tesseract/)
 - [Angular Document Scanner](./examples/angular-document-scanner/)
 - [Clean and Repair Scanned Documents](./examples/clean-and-repair-scanned-documents/)
 - [Deskew](./examples/deskew/)

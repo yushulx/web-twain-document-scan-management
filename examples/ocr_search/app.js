@@ -4,6 +4,9 @@
 // ============================================================
 
 // --- Configuration ---
+// The key below is a 24-hour temporary license and will report "license expired"
+// once it lapses. Replace it with your own from
+// https://www.dynamsoft.com/customer/license/trialLicense?product=dwt
 Dynamsoft.DWT.ProductKey = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
 Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@19.5.0/dist/";
 Dynamsoft.DWT.AutoLoad = false;
@@ -18,30 +21,85 @@ let searchMatches = []; // Array of {docIndex, words: [{x,y,width,height,text}]}
 let currentMatchIndex = -1;
 
 // --- OCR engine selection (Dynamic Web TWAIN 19.5 OCR Connector) ---
-// The service can expose more than one engine (the system built-in OCR and any
-// ONNX Runtime engine). OCR Connector is available on Windows and macOS only.
-let ocrProfile = null;
+// OCR Connector bridges to the engine the local service can drive: Windows.Media.Ocr
+// on Windows, Apple.Vision on macOS, both shipped with the operating system. Each
+// engine exposes its own language list, so the language picker is rebuilt whenever
+// the engine changes. OCR Connector is available on Windows and macOS only.
+let ocrEngines = [];
+let ocrReady = false;
 
-async function pickOCR() {
-    if (ocrProfile) {
-        return ocrProfile;
-    }
-    ocrProfile = { engine: "", language: "eng" };
+async function setupOCR() {
+    const engineSelect = document.getElementById("ocr-engine");
+    const languageSelect = document.getElementById("ocr-language");
+    ocrEngines = [];
+    ocrReady = false;
     try {
         const info = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
-        const engines = (info && info.engines) || [];
-        if (engines.length > 0) {
-            const engine = engines[0];
-            ocrProfile.engine = engine.name;
-            if (engine.languages && engine.languages.length > 0) {
-                ocrProfile.language = engine.languages.indexOf("eng") > -1 ? "eng" : engine.languages[0];
-            }
+        ocrEngines = (info && info.engines) || [];
+        if (ocrEngines.length === 0) {
+            throw new Error("the local service reported no OCR engine");
         }
+        fillSelect(engineSelect, ocrEngines.map((engine) => engine.name));
+        fillOCRLanguages(ocrEngines[0].name);
+        ocrReady = true;
     } catch (error) {
         console.warn("GetInstalledOCRInfo failed:", error);
+        fillSelect(engineSelect, [], "OCR not available");
+        fillSelect(languageSelect, [], "OCR not available");
+        updateStatus("OCR is unavailable: " + (error.message || error) +
+            ". OCR Connector runs on Windows and macOS only. Scanning and search keep working on pages already stored.");
     }
-    return ocrProfile;
+    refreshOCRControls();
 }
+
+function fillSelect(select, values, placeholder) {
+    select.innerHTML = "";
+    if (values.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = placeholder || "Not available";
+        select.add(option);
+        return;
+    }
+    values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.add(option);
+    });
+}
+
+function fillOCRLanguages(engineName) {
+    const select = document.getElementById("ocr-language");
+    const engine = ocrEngines.find((item) => item.name === engineName);
+    const languages = (engine && engine.languages) || [];
+    fillSelect(select, languages, "No language");
+    // Prefer English when the engine lists it, otherwise keep the engine's own order.
+    const preferred = languages.find((code) => /^en\b/i.test(code)) || languages[0];
+    if (preferred) {
+        select.value = preferred;
+    }
+}
+
+function refreshOCRControls() {
+    const engineSelect = document.getElementById("ocr-engine");
+    const languageSelect = document.getElementById("ocr-language");
+    if (engineSelect) {
+        engineSelect.disabled = !ocrReady;
+    }
+    if (languageSelect) {
+        languageSelect.disabled = !ocrReady || languageSelect.options.length === 0;
+    }
+}
+
+// Every recognition call carries the engine and language shown in the toolbar.
+function ocrOptions() {
+    return {
+        engine: { name: document.getElementById("ocr-engine").value },
+        settings: { language: document.getElementById("ocr-language").value }
+    };
+}
+
 // --- Canvas References ---
 let imageCanvas = null;
 let highlightCanvas = null;
@@ -130,7 +188,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     
     // Initialize DWT
     await initDWT();
-    
+
+    // The language list follows the engine, so rebuild it on every change.
+    document.getElementById("ocr-engine").addEventListener("change", function () {
+        fillOCRLanguages(this.value);
+    });
+
     // Load documents from IndexedDB
     await loadDocumentsFromDB();
     
@@ -144,7 +207,7 @@ function initDWT() {
         
         Dynamsoft.DWT.CreateDWTObjectEx(
             { WebTwainId: "dwtControl" },
-            function (obj) {
+            async function (obj) {
                 DWTObject = obj;
                 DWTObject.IfShowUI = false;
                 // Enable 64-bit TWAIN driver support
@@ -154,10 +217,16 @@ function initDWT() {
                 
                 // No UI binding - DWT used only for scanning and OCR
                 
+                // Ask the service which OCR engines it can drive before the first
+                // scan, so the toolbar never offers an engine that is not installed.
+                await setupOCR();
+                
                 // Populate scanner list
                 populateScanners();
                 
-                updateStatus("Ready");
+                if (ocrReady) {
+                    updateStatus("Ready");
+                }
                 resolve();
             },
             function (err) {
@@ -227,14 +296,17 @@ async function acquireImage() {
         const endCount = DWTObject.HowManyImagesInBuffer;
         
         // Process newly scanned images
+        let recognized = 0;
         for (let i = startCount; i < endCount; i++) {
-            await processAndSaveImage(i);
+            if (await processAndSaveImage(i)) {
+                recognized += 1;
+            }
         }
         
         // Clear DWT buffer after saving
         DWTObject.RemoveAllImages();
         
-        updateStatus("Scan complete");
+        updateStatus(describeBatch(endCount - startCount, recognized));
     } catch (err) {
         console.error("Scan error:", err);
         updateStatus("Scan failed: " + (err.message || err));
@@ -252,15 +324,18 @@ function loadImage() {
         async function () {
             const count = DWTObject.HowManyImagesInBuffer;
             
-            // Process all loaded images
+            // Process all newly loaded images
+            let recognized = 0;
             for (let i = 0; i < count; i++) {
-                await processAndSaveImage(i);
+                if (await processAndSaveImage(i)) {
+                    recognized += 1;
+                }
             }
             
             // Clear DWT buffer after saving
             DWTObject.RemoveAllImages();
             
-            updateStatus("Load complete");
+            updateStatus(describeBatch(count, recognized));
         },
         function (errCode, errStr) {
             console.error("Load error:", errStr);
@@ -272,79 +347,122 @@ function loadImage() {
 // ============================================================
 // OCR Processing and Image Storage
 // ============================================================
+function convertToBase64(dwtIndex) {
+    return new Promise((resolve, reject) => {
+        DWTObject.ConvertToBase64(
+            [dwtIndex],
+            Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+            function (result) {
+                // Add the data URL prefix so the value can be assigned to an <img> src
+                resolve(`data:image/png;base64,${result.getData(0, result.getLength())}`);
+            },
+            function (errorCode, errorString) {
+                reject(new Error(errorString));
+            }
+        );
+    });
+}
+
+// Turn one OCRResult into searchable text plus word boxes.
+// Blocks are page regions, lines are text lines, and words carry the geometry.
+// Engines that only return whole lines still produce text: line.value is used when
+// line.words is empty, and those pages simply have nothing to highlight.
+function readOCRResult(result) {
+    const lines = [];
+    const words = [];
+
+    ((result && result.blocks) || []).forEach((block) => {
+        ((block && block.lines) || []).forEach((line) => {
+            const lineWords = (line && line.words) || [];
+            const values = [];
+
+            lineWords.forEach((word) => {
+                if (!word || !word.value) {
+                    return;
+                }
+                values.push(word.value);
+
+                const geo = word.geometry;
+                if (!geo) {
+                    return;
+                }
+                const width = geo.right - geo.left;
+                const height = geo.bottom - geo.top;
+                if (width <= 0 || height <= 0) {
+                    return;
+                }
+                words.push({
+                    text: word.value,
+                    x: geo.left,
+                    y: geo.top,
+                    width: width,
+                    height: height
+                });
+            });
+
+            if (values.length > 0) {
+                lines.push(values.join(" "));
+            } else if (line && line.value) {
+                lines.push(line.value);
+            }
+        });
+    });
+
+    return { text: lines.join("\n"), words: words };
+}
+
+// Returns true when the page came back with text from the OCR engine.
 async function processAndSaveImage(dwtIndex) {
-    if (!DWTObject) return;
+    if (!DWTObject) return false;
     
     updateStatus("Processing image...");
     
     try {
-        // Convert image to base64 data URL
-        const imageData = await new Promise((resolve, reject) => {
-            DWTObject.ConvertToBase64(
-                [dwtIndex],
-                Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
-                function(result, indices, type) {
-                    // Add data URL prefix for PNG
-                    const dataURL = `data:image/png;base64,${result.getData(0, result.getLength())}`;
-                    resolve(dataURL);
-                },
-                function(errorCode, errorString) {
-                    console.error("ConvertToBase64 error:", errorString);
-                    reject(new Error(errorString));
-                }
-            );
-        });
+        const imageData = await convertToBase64(dwtIndex);
         
-        // Perform OCR
         let ocrText = "";
         let words = [];
+        let recognized = false;
         
-        if (DWTObject.Addon && DWTObject.Addon.OCRConnector) {
-            const ocr = await pickOCR();
-            const options = { settings: { language: ocr.language } };
-            if (ocr.engine) {
-                options.engine = { name: ocr.engine };
+        if (ocrReady && DWTObject.Addon && DWTObject.Addon.OCRConnector) {
+            try {
+                const result = await DWTObject.Addon.OCRConnector.Recognize(dwtIndex, ocrOptions());
+                const extracted = readOCRResult(result);
+                ocrText = extracted.text;
+                words = extracted.words;
+                recognized = ocrText.length > 0;
+            } catch (error) {
+                // A page that fails recognition is still worth keeping as an image.
+                console.error("OCR failed for page " + (dwtIndex + 1) + ":", error);
             }
-            const result = await DWTObject.Addon.OCRConnector.Recognize(dwtIndex, options);
-            
-            if (result && result.blocks) {
-                result.blocks.forEach((block) => {
-                    if (block.lines) {
-                        block.lines.forEach((line) => {
-                            if (line.words) {
-                                line.words.forEach((word) => {
-                                    ocrText += word.value + " ";
-                                    
-                                    // Extract geometry and convert to x, y, width, height
-                                    if (word.geometry) {
-                                        const geo = word.geometry;
-                                        words.push({
-                                            text: word.value,
-                                            x: geo.left,
-                                            y: geo.top,
-                                            width: geo.right - geo.left,
-                                            height: geo.bottom - geo.top
-                                        });
-                                    }
-                                });
-                                ocrText += "\n";
-                            }
-                        });
-                    }
-                });
-            }
-            
-            console.log("Total words extracted:", words.length);
         }
         
-        // Save to IndexedDB
-        const id = await saveDocument(imageData, ocrText.trim(), words);
+        await saveDocument(imageData, ocrText, words);
         
         // Reload documents array and display
         await loadDocumentsFromDB();
+        return recognized;
     } catch (err) {
         console.error("Process and save error:", err);
+        return false;
     }
+}
+
+function describeBatch(pageCount, recognized) {
+    if (pageCount === 0) {
+        return "No pages were added";
+    }
+    if (!ocrReady) {
+        return `Saved ${pageCount} page(s) without text. OCR is unavailable on this machine, so they can only be browsed as images.`;
+    }
+    const missing = pageCount - recognized;
+    if (missing === 0) {
+        return `Saved ${pageCount} page(s) with searchable text`;
+    }
+    if (recognized === 0) {
+        return `Saved ${pageCount} page(s) but no text was recognized. Rescan at 300 DPI or pick another language.`;
+    }
+    return `Saved ${pageCount} page(s); ${missing} had no readable text`;
 }
 
 // ============================================================
@@ -368,7 +486,10 @@ async function loadDocumentsFromDB() {
     }
     
     updateImageCounter();
-    updateStatus(`Loaded ${documents.length} document(s)`);
+    // Keep the OCR status message visible on an empty page.
+    if (documents.length > 0) {
+        updateStatus(`Loaded ${documents.length} document(s)`);
+    }
 }
 
 function displayCurrentImage() {
