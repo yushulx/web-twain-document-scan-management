@@ -103,10 +103,8 @@ The samples below started life as standalone repositories linked from the
 articles reference is versioned and updated together with the rest of the repository.
 
 - [Burn PDF Annotation](./examples/Burn-PDF-Annotation/)
-- [Chat with Scanned Documents](./examples/Chat-with-Scanned-Documents/)
 - [Color Conversion](./examples/Color-Conversion-JavaScript/)
 - [Flip Image](./examples/Flip-Image-JavaScript/)
-- [Full-Text Search of Scanned Documents](./examples/Full-Text-Search-of-Scanned-Documents/)
 - [Image Converter](./examples/Image-Converter/)
 - [Next.js Document Scanner](./examples/NextJS-Document-Scanner/)
 - [Nuxt.js Document Scanner](./examples/NuxtJS-Document-Scanner/)
