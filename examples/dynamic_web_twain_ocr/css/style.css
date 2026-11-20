@@ -85,6 +85,26 @@ body, html {
     width: 100%;
 }
 
+.form-select:disabled,
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn:disabled:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: none;
+}
+
+.ocr-note {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--secondary-color);
+}
+
 .checkbox-group {
     flex-direction: row;
     align-items: center;

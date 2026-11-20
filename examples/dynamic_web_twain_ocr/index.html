@@ -41,15 +41,15 @@
                 <div class="control-group">
                     <div class="control-label">Processing</div>
                     <div class="button-group">
-                        <button onclick="correctOrientation();" class="btn btn-secondary">Correct Orientation</button>
-                        <button onclick="recognize();" class="btn btn-primary">Recognize Text</button>
+                        <button id="correctOrientationButton" onclick="correctOrientation();" class="btn btn-secondary" disabled>Correct Orientation</button>
+                        <button id="recognizeButton" onclick="recognize();" class="btn btn-primary" disabled>Recognize Text</button>
                     </div>
-                    <select id="engine" class="form-select" onchange="fillLanguages(this.value)" title="OCR engine">
+                    <select id="engine" class="form-select" onchange="fillLanguages(this.value)" title="OCR engine" disabled>
                         <option value="">Detecting OCR engines...</option>
                     </select>
-                    <select id="language" class="form-select" title="Recognition language">
+                    <select id="language" class="form-select" title="Recognition language" disabled>
                     </select>
-                    <p class="ocr-note">OCR Connector runs on Windows and macOS only. Linux is not supported yet.</p>
+                    <p class="ocr-note">Engines are read from the local service: Windows.Media.Ocr on Windows, Apple.Vision on macOS, Onnx.Ocr when the OCR pack is installed. Windows and macOS only — Linux is not supported yet.</p>
                     <select id="processingTarget" class="form-select">
                         <option value="current">Current Image</option>
                         <option value="all">All Images</option>
@@ -59,7 +59,7 @@
                 <div class="control-group">
                     <div class="control-label">Output</div>
                     <div class="button-group">
-                        <button onclick="saveAsPDF();" class="btn btn-primary">Save as PDF</button>
+                        <button id="saveAsPDFButton" onclick="saveAsPDF();" class="btn btn-primary" disabled>Save as PDF</button>
                     </div>
                     <select id="outputFormat" class="form-select">
                         <option value="extralayer">With Extra Text Layer</option>

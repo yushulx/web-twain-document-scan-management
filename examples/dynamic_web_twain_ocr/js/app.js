@@ -131,11 +131,15 @@ Dynamsoft.DWT.RegisterEvent("OnWebTwainReady", function () {
     DWTObject.Viewer.height = "100%";
     setupEventListeners();
     
-    // Always restore from local storage (enabled by default)
-    restoreStorage().then(function() {
-        initOCR();
-        
-    });
+    // Always restore from local storage (enabled by default). A blocked IndexedDB or
+    // missing storage must not stop the OCR engine list from loading.
+    restoreStorage()
+        .catch(function (error) {
+            console.error('Error restoring storage:', error);
+        })
+        .then(function () {
+            initOCR();
+        });
 });
 
 function setupEventListeners() {
@@ -181,8 +185,8 @@ async function restoreTextPanel(imageId) {
     let result = await getOCRResult(imageId);
     if (result) {
         printPrettyResult(result);
-    } else {
-        // Clear text panel if no result
+    } else if (ocrReady) {
+        // Clear text panel if no result - but never erase the "OCR unavailable" note.
         document.getElementById("result").innerText = "";
     }
 }
@@ -305,136 +309,196 @@ function LoadImage() {
     );
 }
 
+// --- OCR (Dynamic Web TWAIN 19.5 OCR Connector) ---
+// OCR Connector bridges to the engines the local service can drive: Windows.Media.Ocr
+// on Windows 10+, Apple.Vision on macOS 10.15+, and Onnx.Ocr when the optional OCR
+// pack is installed. Windows and macOS only — a Linux service rejects every call.
+let ocrInfo = null;
+let ocrReady = false;
+let ocrError = "";
+
 async function correctOrientation() {
-    if (DWTObject) {
-        if (document.getElementById("processingTarget").value === "all") {
-            let count = DWTObject.HowManyImagesInBuffer;
-            for (let i = 0; i < count; i++) {
-                DWTObject.SelectImages([i]);
-                await correctOrientationForOne(i);
-            }
-            return;
-        } else {
-            if (DWTObject.CurrentImageIndexInBuffer != -1) {
-                await correctOrientationForOne(DWTObject.CurrentImageIndexInBuffer);
-            }
+    if (!DWTObject || !ensureOCRAvailable()) {
+        return;
+    }
+    try {
+        for (const index of targetIndices()) {
+            DWTObject.SelectImages([index]);
+            await correctOrientationForOne(index);
         }
+    } catch (error) {
+        alert("Orientation detection failed: " + (error.message || error) +
+            "\nOnly the Onnx.Ocr engine can detect page orientation. Install the Dynamic Web TWAIN OCR pack to use it.");
     }
 }
 
 async function correctOrientationForOne(index) {
-    let options = {};
-    if (selectedEngine()) {
-        options.engine = selectedEngine();
-    }
-    let result = await DWTObject.Addon.OCRConnector.DetectPageOrientation(index, options);
-    if (result.angle != 0) {
-        DWTObject.Rotate(index, -result.angle, true);
+    // Only Onnx.Ocr detects orientation, so leave the engine unset and let the service
+    // pick it. Rotate() expects a clockwise angle, hence 360 - angle.
+    const result = await DWTObject.Addon.OCRConnector.DetectPageOrientation(index, orientationOptions());
+    const angle = (360 - (result.angle || 0)) % 360;
+    if (angle) {
+        DWTObject.Rotate(index, angle, true);
     }
 }
 
 async function recognize() {
-    if (DWTObject) {
-        if (document.getElementById("processingTarget").value === "all") {
-            let count = DWTObject.HowManyImagesInBuffer;
-            for (let i = 0; i < count; i++) {
-                DWTObject.SelectImages([i]);
-                await recognizeOnePage(i);
-            }
-            return;
-        } else {
-            if (DWTObject.CurrentImageIndexInBuffer != -1) {
-                await recognizeOnePage(DWTObject.CurrentImageIndexInBuffer);
-            }
+    if (!DWTObject || !ensureOCRAvailable()) {
+        return;
+    }
+    try {
+        for (const index of targetIndices()) {
+            DWTObject.SelectImages([index]);
+            await recognizeOnePage(index);
         }
+    } catch (error) {
+        alert("Recognition failed: " + (error.message || error));
     }
 }
 
-async function recognizeOnePage(index) {
-    let language = document.getElementById("language").value;
-    let options = { settings: { language: language } };
-    if (selectedEngine()) {
-        options.engine = { name: selectedEngine() };
+// The picker decides whether one page or the whole buffer is processed.
+function targetIndices() {
+    const all = document.getElementById("processingTarget").value === "all";
+    if (!all) {
+        const current = DWTObject.CurrentImageIndexInBuffer;
+        return current < 0 ? [] : [current];
     }
-    let result = await DWTObject.Addon.OCRConnector.Recognize(index, options);
+    return Array.from({ length: DWTObject.HowManyImagesInBuffer }, function (_, index) { return index; });
+}
+
+async function recognizeOnePage(index) {
+    const result = await DWTObject.Addon.OCRConnector.Recognize(index, ocrOptions());
     await saveOCRResult(result.imageID, result);
     printPrettyResult(result);
 }
 
+// OCRResult nests blocks > lines > (words). The line already carries the joined text
+// on most engines, so only fall back to the words when it does not.
 function printPrettyResult(result) {
-    let prettyResult = "";
-    result.blocks.forEach(block => {
-        block.lines.forEach(line => {
-            line.words.forEach(word => {
-                prettyResult += word.value + " ";
-            });
-            prettyResult += "\n";
+    const lines = [];
+    ((result && result.blocks) || []).forEach(function (block) {
+        ((block && block.lines) || []).forEach(function (line) {
+            const text = line.value || ((line.words || []).map(function (word) { return word.value; }).join(" "));
+            if (text) {
+                lines.push(text);
+            }
         });
-        prettyResult += "\n";
     });
-    document.getElementById("result").innerText = prettyResult;
+    document.getElementById("result").innerText = lines.join("\n") || "No text was recognized on this page.";
 }
 
-let ocrInfo = null;
-
-// Enumerate the OCR engines the local service exposes (the system built-in engine
-// plus any ONNX Runtime engine) and fill the engine/language pickers.
+// Enumerate the OCR engines the local service exposes and fill the engine/language
+// pickers. Called once the DWT object exists, before the first recognition.
 async function initOCR() {
     const engineSelect = document.getElementById("engine");
+    const languageSelect = document.getElementById("language");
+    ocrInfo = null;
+    ocrReady = false;
+    ocrError = "";
     try {
+        if (!DWTObject.Addon || !DWTObject.Addon.OCRConnector) {
+            throw new Error("this Dynamic Web TWAIN build has no OCR Connector");
+        }
         ocrInfo = await DWTObject.Addon.OCRConnector.GetInstalledOCRInfo();
+        if (!ocrInfo || !ocrInfo.engines || ocrInfo.engines.length === 0) {
+            throw new Error("the local service reported no OCR engine");
+        }
+        engineSelect.innerHTML = "";
+        ocrInfo.engines.forEach(function (engine) {
+            engineSelect.add(new Option(engine.name, engine.name));
+        });
+        fillLanguages(engineSelect.value);
+        ocrReady = true;
     } catch (error) {
+        console.warn("GetInstalledOCRInfo failed:", error);
+        ocrError = "OCR is not available here: " + (error.message || error) +
+            "\nOCR Connector runs on Windows and macOS only. Linux is not supported yet.";
         engineSelect.innerHTML = "";
         engineSelect.add(new Option("Not available", ""));
-        document.getElementById("result").innerText =
-            "OCR Connector is unavailable: " + (error.message || error) +
-            "\nOCR Connector runs on Windows and macOS only. Linux is not supported yet.";
-        return;
+        languageSelect.innerHTML = "";
+        languageSelect.add(new Option("Not available", ""));
+        document.getElementById("result").innerText = ocrError;
     }
-    if (!ocrInfo || !ocrInfo.engines || ocrInfo.engines.length === 0) {
-        engineSelect.innerHTML = "";
-        engineSelect.add(new Option("No OCR engine installed", ""));
-        document.getElementById("result").innerText =
-            "No OCR engine was reported by the service. Windows should have the system OCR; on macOS install the OCR Connector add-on.";
-        return;
-    }
-    engineSelect.innerHTML = "";
-    ocrInfo.engines.forEach(function (engine) {
-        engineSelect.add(new Option(engine.name, engine.name));
-    });
-    fillLanguages(engineSelect.value);
+    refreshOCRControls();
 }
 
 // Languages are engine specific: the system engine exposes the OS language pack list.
+// Prefer English when the engine lists it, otherwise keep the engine's own order.
 function fillLanguages(engineName) {
     const languageSelect = document.getElementById("language");
     languageSelect.innerHTML = "";
-    if (!ocrInfo || !ocrInfo.engines) {
-        return;
-    }
-    const engine = ocrInfo.engines.find(function (item) { return item.name === engineName; });
+    const engine = ((ocrInfo && ocrInfo.engines) || []).find(function (item) { return item.name === engineName; });
     const languages = (engine && engine.languages) || [];
     languages.forEach(function (language) {
         languageSelect.add(new Option(language, language));
     });
+    const preferred = languages.find(function (code) { return /^en\b/i.test(code); }) || languages[0];
+    if (preferred) {
+        languageSelect.value = preferred;
+    }
 }
 
-function selectedEngine() {
-    const value = document.getElementById("engine").value;
-    return value ? value : undefined;
+function refreshOCRControls() {
+    const engineSelect = document.getElementById("engine");
+    const languageSelect = document.getElementById("language");
+    engineSelect.disabled = !ocrReady;
+    languageSelect.disabled = !ocrReady || languageSelect.options.length === 0;
+    ["correctOrientationButton", "recognizeButton", "saveAsPDFButton"].forEach(function (id) {
+        const button = document.getElementById(id);
+        if (button) {
+            button.disabled = !ocrReady;
+        }
+    });
+}
+
+function ensureOCRAvailable() {
+    if (ocrReady) {
+        return true;
+    }
+    alert(ocrError || "OCR is not available. Connect first, and run this page on Windows or macOS.");
+    return false;
+}
+
+// Every recognition call carries the engine and language shown in the toolbar.
+function ocrOptions() {
+    const options = { settings: { language: document.getElementById("language").value } };
+    const engine = document.getElementById("engine").value;
+    if (engine) {
+        options.engine = { name: engine };
+    }
+    return options;
+}
+
+function orientationOptions() {
+    // Forward the selection only for Onnx.Ocr; any other engine makes the call fail.
+    const engine = document.getElementById("engine").value;
+    return /onnx/i.test(engine) ? { engine: { name: engine } } : {};
 }
 
 async function saveAsPDF() {
+    if (!DWTObject || !ensureOCRAvailable()) {
+        return;
+    }
+    const indices = DWTObject.SelectAllImages();
+    if (!indices || indices.length === 0) {
+        alert("There is no page to export. Scan or load an image first.");
+        return;
+    }
+    const withTextLayer = document.getElementById("outputFormat").value === "extralayer";
+    const format = withTextLayer
+        ? Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_WITH_EXTRA_TEXTLAYER
+        : Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_PLAIN_TEXT;
     try {
-        let format = document.getElementById('outputFormat').value;
-        if (format === "extralayer") {
-            let indicesOfAll = DWTObject.SelectAllImages();
-            await DWTObject.Addon.OCRConnector.SaveToPath(indicesOfAll, Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_WITH_EXTRA_TEXTLAYER, "test");
-        } else {
-            await DWTObject.Addon.OCRConnector.SaveToPath(DWTObject.SelectAllImages(), Dynamsoft.DWT.EnumDWT_OCRConnectorOutputFormat.PDF_PLAIN_TEXT, "test");
-        }
+        // A filename without a directory opens the system save dialog, so the user
+        // chooses where the file lands. PDF_WITH_EXTRA_TEXTLAYER keeps the page image
+        // and adds an invisible text layer; PDF_PLAIN_TEXT writes the text only.
+        await DWTObject.Addon.OCRConnector.SaveToPath(
+            indices,
+            format,
+            withTextLayer ? "searchable-document.pdf" : "document-text.pdf"
+        );
     } catch (error) {
-        alert(error.message);
+        alert("Could not save the PDF: " + (error.message || error));
     }
 }
 
